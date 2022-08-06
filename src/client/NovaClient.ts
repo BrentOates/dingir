@@ -12,6 +12,7 @@ const globPromise = promisify(glob);
 class NovaClient extends Client {
 	public commands: Collection<string, Command> = new Collection();
 	public events: Collection<string, Event> = new Collection();
+	public slashCommands: [];
 
 	public constructor() {
 		super ({ 
@@ -43,6 +44,9 @@ class NovaClient extends Client {
 		const eventFiles: string[] = await globPromise(
 			`${__dirname}/../events/**/*{.js,.ts}`
 		);
+		const slashCommandFiles: string[] = await globPromise(
+			`${__dirname}/../slash-commands/*{.js,.ts}`
+		)
 		
 		commandFiles.forEach(async (cmdFile: string) => {
 			const cmd = (await import(cmdFile)) as Command;
@@ -52,6 +56,10 @@ class NovaClient extends Client {
 			const event = (await import(eventFile)) as Event;
 			this.events.set(event.name, event);
 			this.on(event.name, event.run.bind(null, this));
+		});
+		slashCommandFiles.forEach(async (slashCommandFile: string) => {
+			const cmd = (await import(slashCommandFile));
+
 		});
 
 		process.on('SIGTERM', () => {

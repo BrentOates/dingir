@@ -1,12 +1,14 @@
-import { ChannelType, Message } from 'discord.js';
+import { ChannelType, ChatInputCommandInteraction, Message, PermissionFlagsBits, SlashCommandBuilder } from 'discord.js';
 import { NovaClient } from '../../client/NovaClient';
 import { EmbedColours } from '../../resources/EmbedColours';
 import { Command } from '../../types/Command';
 import { ServerConfig } from '../../client/models/ServerConfig';
 import { ChannelService } from '../../utilities/ChannelService';
 import { EmbedCompatLayer } from '../../utilities/EmbedCompatLayer';
+import { SlashCommand } from '../../types/SlashCommand';
 
-const run = async (client: NovaClient, message: Message, config: ServerConfig, args: any[]): Promise<any> => {
+const run = async (interaction: ChatInputCommandInteraction, config: ServerConfig): Promise<any> => {
+
 	if (args.length === 0) {
 		if (!config.guestRoleIds) {
 			return message.channel.send('No guest roles set');
@@ -15,7 +17,7 @@ const run = async (client: NovaClient, message: Message, config: ServerConfig, a
 		const currentGuestRoles = [];
 		const guildRoles = await message.guild.roles.fetch();
 		const guestRoleIds = config.guestRoleIds.split(',');
-		
+
 		guestRoleIds.forEach(roleId => {
 			const guestRole = guildRoles.get(roleId);
 			currentGuestRoles.push(guestRole ? guestRole.toString() : 'Unknown');
@@ -28,7 +30,7 @@ const run = async (client: NovaClient, message: Message, config: ServerConfig, a
 			.setTimestamp();
 
 		return message.channel.send({
-			embeds: [embed] 
+			embeds: [embed]
 		});
 	}
 
@@ -48,7 +50,7 @@ const run = async (client: NovaClient, message: Message, config: ServerConfig, a
 	const audit = new EmbedCompatLayer()
 		.setColor(EmbedColours.info)
 		.setAuthor({
-			name: message.author.tag, iconURL: message.author.displayAvatarURL() 
+			name: message.author.tag, iconURL: message.author.displayAvatarURL()
 		})
 		.setDescription(`Guest roles ${!config.guestRoleIds ? 'Removed' : 'Updated'}`)
 		.setTimestamp();
@@ -69,17 +71,28 @@ const run = async (client: NovaClient, message: Message, config: ServerConfig, a
 
 };
 
-const command: Command = {
-	name: 'setguest',
-	title: 'Set the guest roles',
-	description: 'Sets the roles a user is given on accepting the rules for this server.',
-	usage: 'setguest <role mentions>',
-	example: 'setguest @somerole1 @somerole2',
-	admin: true,
-	deleteCmd: false,
-	limited: false,
-	channels: [ChannelType.GuildText],
-	run: run
-};
+export const data = new SlashCommandBuilder()
+	.setName('screenroles')
+	.addSubcommand(sub =>
+		sub
+			.setName('get')
+			.setDescription('Gets the roles assigned to newly screened members'))
+	.addSubcommand(sub =>
+		sub
+			.setDescription('Sets the roles of newly screened members')
+			.addRoleOption(option =>
+				option.setName('role-one')
+					.setDescription('First role to give to newly screened members')
+					.setRequired(true))
+			.addRoleOption(option =>
+				option
+					.setName('role-two')
+					.setDescription('Second optional role to give to newly screened members'))
+	);
 
-export = command;
+const slashCommand: SlashCommand = {
+	commandData: data,
+	execute: run
+
+}
+
