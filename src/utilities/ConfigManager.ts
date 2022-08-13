@@ -12,7 +12,7 @@ export class ConfigManager {
 			messageContent = 'Please tag the channel.';
 		} else if (!chan) {
 			messageContent = 'Channel not found, or I do not have permission to access it.';
-		} else if (chan.type !== ChannelType.GuildText) {
+		} else if (chan.type !== ChannelType.GuildText && chan.type !== ChannelType.GuildNews) {
 			messageContent = 'Channel must be a Text Channel.';
 		} 
 
