@@ -17,7 +17,7 @@ const applyText = (canvas: Canvas, text: string, baseSize: number, weight: strin
 
 	do {
 		ctx.font = `${weight} ${fontSize -= 1}px Roboto`;
-	} while (ctx.measureText(text).width > canvas.width - 200);
+	} while (ctx.measureText(text).width > canvas.width - 300);
 
 	return ctx.font;
 };
@@ -81,7 +81,7 @@ export const run: RunFunction = async (client: NovaClient, oldMember: GuildMembe
 	}
 
 	const serverConfig = await ConfigService.getConfig(newMember.guild.id);
-	const notPassedScreen = oldMember.pending || (oldMember.pending === null && newMember.roles.cache.size === 1)
+	const notPassedScreen = oldMember.pending || (oldMember.pending === null && newMember.roles.cache.size === 1);
 
 	if (notPassedScreen && !newMember.pending && serverConfig.guestRoleIds) {
 		try {
@@ -104,8 +104,8 @@ export const run: RunFunction = async (client: NovaClient, oldMember: GuildMembe
 			const guildRoles = await newMember.guild.roles.fetch();
 		
 			await newMember.roles.add(guildRoles.filter(role => guestRoleIds.includes(role.id)));
-			console.log(guildRoles.filter(role => guestRoleIds.includes(role.id)));
-		} catch {
+		} catch (e) {
+			Logger.writeError(`Adding guest roles failed in guildMemberUpdate for server: ${serverConfig.id}.`, e);
 			const audit = new EmbedCompatLayer()
 				.setColor(EmbedColours.negative)
 				.setAuthor({
@@ -121,7 +121,8 @@ export const run: RunFunction = async (client: NovaClient, oldMember: GuildMembe
 		if (serverConfig.welcomeMessage && serverConfig.systemMessagesEnabled && serverConfig.welcomeMessageBackgroundUrl) {
 			try {
 				await sendSystemMessage(serverConfig, newMember);
-			} catch {
+			} catch (e) {
+				Logger.writeError(`Sending welcome message failed in guildMemberUpdate for server: ${serverConfig.id}.`, e);
 				const audit = new EmbedCompatLayer()
 					.setColor(EmbedColours.negative)
 					.setAuthor({
