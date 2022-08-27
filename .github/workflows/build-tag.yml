@@ -29,5 +29,5 @@ jobs:
           push: true
           platforms: linux/amd64
           tags: | 
-              ghcr.io/BrentOates/dingir:${{ github.ref_name }}
-              ghcr.io/BrentOates/dingir:latest
+              ghcr.io/brentoates/dingir:${{ github.ref_name }}
+              ghcr.io/brentoates/dingir:latest
