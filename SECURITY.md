@@ -5,5 +5,8 @@
 
 | Version | Supported          |
 | ------- | ------------------ |
-| 1.0.0   | :white_check_mark: |
+| 1.0.x   | :no_entry: |
+| 1.1.x   | :no_entry: |
+| 1.2.x   | :no_entry: |
+| 1.3.x   | :white_check_mark: |
 
