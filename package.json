@@ -3,7 +3,7 @@
 	"author": "Brent Oates",
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/Irkallu/dingir.git"
+		"url": "git+https://github.com/BrentOates/dingir.git"
 	},
 	"scripts": {
 		"prebuild": "rimraf dist",
