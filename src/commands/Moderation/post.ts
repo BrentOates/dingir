@@ -24,9 +24,10 @@ const run = async (client: NovaClient, message: Message, config: ServerConfig, a
 		files.push(a.url);
 	});
 
-	(channel as TextChannel).send({
-		content: messageContent, files: files 
-	})
+	channel
+		.send({
+			content: messageContent, files: files 
+		})
 		.catch((error) => {
 			if (error.message === 'Missing Access') {
 				return message.channel.send('I do not have permission to access this channel.');
