@@ -14,7 +14,7 @@
 		"canvas": "2.9.3",
 		"discord.js": "14.2.0",
 		"dotenv": "16.0.1",
-		"luxon": "3.0.1",
+		"luxon": "3.0.2",
 		"node-schedule": "2.1.0",
 		"reflect-metadata": "0.1.13",
 		"sequelize": "6.21.4",
