@@ -1,4 +1,4 @@
-import { ChannelType, Message, TextChannel } from 'discord.js';
+import { ChannelType, Message, PermissionFlagsBits } from 'discord.js';
 import { NovaClient } from '../../client/NovaClient';
 import { Command } from '../../types/Command';
 import { ServerConfig } from '../../client/models/ServerConfig';
@@ -10,8 +10,12 @@ const run = async (client: NovaClient, message: Message, config: ServerConfig, a
 		return message.channel.send('Channel not found, or I do not have permission to access it.');
 	}
 
-	if (channel.type !== ChannelType.GuildText) {
-		return message.channel.send('Channel must be a text channel.');
+	if (!channel.isTextBased() || channel.isDMBased()) {
+		return message.channel.send('Channel must be a guild text channel.');
+	}
+
+	if (!channel.permissionsFor(client.user).has([PermissionFlagsBits.SendMessages, PermissionFlagsBits.AttachFiles])) {
+		return message.channel.send(`I do not have permission to send messages and attachments in ${channel.toString()}.`);
 	}
 
 	let messageContent = message.content.slice(config.prefix.length + command.name.length).trim();
@@ -24,14 +28,9 @@ const run = async (client: NovaClient, message: Message, config: ServerConfig, a
 		files.push(a.url);
 	});
 
-	(channel as TextChannel).send({
+	channel.send({
 		content: messageContent, files: files 
-	})
-		.catch((error) => {
-			if (error.message === 'Missing Access') {
-				return message.channel.send('I do not have permission to access this channel.');
-			}
-		});
+	});
 };
 
 const command: Command = {
