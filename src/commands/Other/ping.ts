@@ -1,9 +1,26 @@
 import { ChannelType, Message } from 'discord.js';
 import { NovaClient } from '../../client/NovaClient';
 import { Command } from '../../types/Command';
+import * as packageJson from '../../../package.json';
+import { EmbedColours } from '../../resources/EmbedColours';
+import { EmbedCompatLayer } from '../../utilities/EmbedCompatLayer';
 
 const run = async (client: NovaClient, message: Message): Promise<any> => {
-	message.channel.send('Pong!');
+	const version = packageJson.version;
+
+	const embed = new EmbedCompatLayer()
+		.setColor(EmbedColours.positive)
+		.setAuthor({
+			name: client.user.tag, iconURL: client.user.displayAvatarURL() 
+		})
+		.setDescription('Pong!')
+		.addField('Version', version.length > 0 ? version : 'Unknown')
+		.addField('Servers', client.guilds.cache.size.toString())
+		.setTimestamp();
+
+	message.channel.send({
+		embeds: [embed]  
+	});
 };
 
 const command: Command = {
