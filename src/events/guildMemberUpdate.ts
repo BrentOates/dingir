@@ -4,19 +4,19 @@ import { RunFunction } from '../types/Event';
 import { EmbedColours } from '../resources/EmbedColours';
 import { ChannelService } from '../utilities/ChannelService';
 import { ConfigService } from '../utilities/ConfigService';
-import { Canvas, registerFont, createCanvas, loadImage } from 'canvas';
 import { DateTime } from 'luxon';
 import { ServerConfig } from '../client/models/ServerConfig';
 import { Logger } from '../utilities/Logger';
 import { EmbedCompatLayer } from '../utilities/EmbedCompatLayer';
+import { Canvas, createCanvas, GlobalFonts, loadImage } from '@napi-rs/canvas';
 
-const applyText = (canvas: Canvas, text: string, baseSize: number, weight: string) => {
+const applyText = (canvas: Canvas, text: string, baseSize: number) => {
 	const ctx = canvas.getContext('2d');
 
 	let fontSize = baseSize;
 
 	do {
-		ctx.font = `${weight} ${fontSize -= 1}px Roboto`;
+		ctx.font = `${fontSize -= 1}px Roboto`;
 	} while (ctx.measureText(text).width > canvas.width - 300);
 
 	return ctx.font;
@@ -25,9 +25,7 @@ const applyText = (canvas: Canvas, text: string, baseSize: number, weight: strin
 const sendSystemMessage = async (config: ServerConfig, member: GuildMember) => {
 	const welcomeMessage = config.welcomeMessage.replace('{member}', `<@${member.id}>`);
 
-	registerFont(`${__dirname}/../resources/fonts/Roboto-Regular.ttf`, {
-		family: 'Roboto', weight: 'regular'
-	});
+	GlobalFonts.registerFromPath(`${__dirname}/../resources/fonts/Roboto-Regular.ttf`, 'Roboto');
 
 	const canvas = createCanvas(700, 250);
 	const ctx = canvas.getContext('2d');
@@ -38,17 +36,17 @@ const sendSystemMessage = async (config: ServerConfig, member: GuildMember) => {
 	ctx.drawImage(background, 0, 0, canvas.width, canvas.height);
 
 	// Draw Username
-	ctx.font = applyText(canvas, member.user.tag, 48, 'regular');
+	ctx.font = applyText(canvas, member.user.tag, 48);
 	ctx.fillStyle = '#ffffff';
 	ctx.fillText(member.user.tag, 225, 125);
 
 	// Draw Server name
-	ctx.font = applyText(canvas, `Welcome to ${member.guild.name}!`, 34, 'regular');
+	ctx.font = applyText(canvas, `Welcome to ${member.guild.name}!`, 34);
 	ctx.fillStyle = '#ffffff';
 	ctx.fillText(`Welcome to ${member.guild.name}!`, 225, 160);
 
 	// Draw Joined at
-	ctx.font = applyText(canvas, `Joined: ${joinedTs}`, 20, 'regular');
+	ctx.font = applyText(canvas, `Joined: ${joinedTs}`, 20);
 	ctx.fillStyle = '#ffffff';
 	ctx.fillText(`Joined: ${joinedTs}`, 225, 200);
 
@@ -66,7 +64,7 @@ const sendSystemMessage = async (config: ServerConfig, member: GuildMember) => {
 	}));
 	ctx.drawImage(avatar, 50, 50, 150, 150);
 
-	const attachment = new AttachmentBuilder(canvas.toBuffer())
+	const attachment = new AttachmentBuilder(await canvas.encode('png'))
 		.setName('welcome-image.png');
 
 	await member.guild.systemChannel.send({
