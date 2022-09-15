@@ -3,7 +3,7 @@ import { NovaClient } from '../../client/NovaClient';
 import { Command } from '../../types/Command';
 import * as packageJson from '../../../package.json';
 import { EmbedColours } from '../../resources/EmbedColours';
-import { EmbedCompatLayer } from '../../utilities/EmbedCompatLayer';
+import { EmbedCompatLayer } from '../../types/EmbedCompatLayer';
 
 const run = async (client: NovaClient, message: Message): Promise<any> => {
 	const version = packageJson.version;

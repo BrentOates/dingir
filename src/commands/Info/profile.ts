@@ -2,7 +2,7 @@ import { ChannelType, Message } from 'discord.js';
 import { NovaClient } from '../../client/NovaClient';
 import { EmbedColours } from '../../resources/EmbedColours';
 import { Command } from '../../types/Command';
-import { EmbedCompatLayer } from '../../utilities/EmbedCompatLayer';
+import { EmbedCompatLayer } from '../../types/EmbedCompatLayer';
 import { UserProfileService } from '../../utilities/UserProfileService';
 
 const run = async (client: NovaClient, message: Message): Promise<any> => {

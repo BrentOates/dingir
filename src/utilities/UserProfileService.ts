@@ -1,4 +1,4 @@
-import { DateTime } from "luxon";
+import { DateTime } from 'luxon';
 import { Op } from 'sequelize';
 import { UserProfile } from '../client/models/UserProfile';
 
@@ -56,7 +56,7 @@ export class UserProfileService {
 
 	public static async incrementActivityScore (serverId: string, userId: string): Promise<UserProfile> {
 		await this.getUserProfile(serverId, userId);
-		return await UserProfile.increment({ 
+		await UserProfile.increment({ 
 			activityScore: 1 
 		}, {
 			where: {
@@ -64,11 +64,12 @@ export class UserProfileService {
 				userId: userId
 			}
 		});
+		return await this.getUserProfile(serverId, userId);
 	}
 
 	public static async decrementActivityScore (serverId: string, userId: string): Promise<UserProfile> {
 		await this.getUserProfile(serverId, userId);
-		return await UserProfile.increment({ 
+		await UserProfile.increment({ 
 			activityScore: -1 
 		}, {
 			where: {
@@ -76,6 +77,7 @@ export class UserProfileService {
 				userId: userId
 			}
 		});
+		return await this.getUserProfile(serverId, userId);
 	}
 
 	public static async deleteUser (serverId: string, userId: string): Promise<boolean> {

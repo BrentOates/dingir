@@ -4,7 +4,7 @@ import { EmbedColours } from '../../resources/EmbedColours';
 import { Command } from '../../types/Command';
 import { ServerConfig } from '../../client/models/ServerConfig';
 import { ChannelService } from '../../utilities/ChannelService';
-import { EmbedCompatLayer } from '../../utilities/EmbedCompatLayer';
+import { EmbedCompatLayer } from '../../types/EmbedCompatLayer';
 
 const run = async (client: NovaClient, message: Message, config: ServerConfig): Promise<any> => {
 	const newWelcome = message.content.slice(config.prefix.length + command.name.length).trim();

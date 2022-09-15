@@ -4,7 +4,7 @@ import { EmbedColours } from '../resources/EmbedColours';
 import { RunFunction } from '../types/Event';
 import { ChannelService } from '../utilities/ChannelService';
 import { ConfigService } from '../utilities/ConfigService';
-import { EmbedCompatLayer } from '../utilities/EmbedCompatLayer';
+import { EmbedCompatLayer } from '../types/EmbedCompatLayer';
 import { UserProfileService } from '../utilities/UserProfileService';
 
 export const name = 'guildMemberRemove';
