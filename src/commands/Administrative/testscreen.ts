@@ -3,8 +3,7 @@ import { NovaClient } from '../../client/NovaClient';
 import { Command } from '../../types/Command';
 
 const run = async (client: NovaClient, message: Message): Promise<any> => {
-  const oldMemberMock = Object.assign(
-    {},
+  const oldMemberMock = Object.assign({},
     message.mentions.members.first() ?? message.member,
     {
       pending: true,

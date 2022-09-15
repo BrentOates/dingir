@@ -1,10 +1,4 @@
-import {
-  Table,
-  Column,
-  Model,
-  PrimaryKey,
-  Default,
-} from 'sequelize-typescript';
+import { Table, Column, Model, PrimaryKey, Default } from 'sequelize-typescript';
 
 @Table
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
