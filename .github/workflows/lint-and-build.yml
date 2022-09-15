@@ -11,7 +11,7 @@ on:
       - main
 
 permissions:
-  pull-requests: write
+  checks: write
 
 jobs:
   lint-and-build:
