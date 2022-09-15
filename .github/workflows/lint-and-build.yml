@@ -1,4 +1,4 @@
-name: Lint
+name: Lint and Build
 
 on:
   # Trigger the workflow on push or pull request,
@@ -12,7 +12,7 @@ on:
 
 jobs:
   lint-and-build:
-    name: Run ESLint
+    name: Lint and Build
     runs-on: ubuntu-latest
 
     steps:
