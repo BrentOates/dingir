@@ -11,7 +11,7 @@ on:
       - main
 
 jobs:
-  lint and build:
+  lint-and-build:
     name: Run ESLint
     runs-on: ubuntu-latest
 
