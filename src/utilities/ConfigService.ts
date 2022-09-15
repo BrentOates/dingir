@@ -25,7 +25,7 @@ export class ConfigService {
   }
 
   public static async getConfigs(): Promise<ServerConfig[]> {
-    return await ServerConfig.findAll();
+    return ServerConfig.findAll();
   }
 
   public static async deleteConfig(serverId: string): Promise<boolean> {
