@@ -11,8 +11,8 @@ on:
       - main
 
 jobs:
-  run-linters:
-    name: Run linters
+  lint and build:
+    name: Run ESLint
     runs-on: ubuntu-latest
 
     steps:
@@ -24,7 +24,6 @@ jobs:
         with:
           node-version: 16
 
-      # ESLint and Prettier must be in `package.json`
       - name: Install Node.js dependencies
         run: npm ci
 
@@ -34,3 +33,6 @@ jobs:
           eslint: true
           eslint_extensions: ts
           continue_on_error: false
+
+      - name: Build TypeScript
+        run: npm run build
