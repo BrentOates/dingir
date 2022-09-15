@@ -7,7 +7,7 @@ import { ConfigService } from '../utilities/ConfigService';
 import { DateTime } from 'luxon';
 import { ServerConfig } from '../client/models/ServerConfig';
 import { Logger } from '../utilities/Logger';
-import { EmbedCompatLayer } from '../utilities/EmbedCompatLayer';
+import { EmbedCompatLayer } from '../types/EmbedCompatLayer';
 import { Canvas, createCanvas, GlobalFonts, loadImage } from '@napi-rs/canvas';
 
 const applyText = (canvas: Canvas, text: string, baseSize: number) => {
