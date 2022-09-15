@@ -34,3 +34,5 @@ jobs:
           eslint: true
           prettier: true
           eslint_extensions: ts
+          prettier_extensions: ts
+          continue_on_error: false
