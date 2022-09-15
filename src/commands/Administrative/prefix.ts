@@ -9,7 +9,7 @@ const run = async (
   config: ServerConfig,
   args: any[]
 ): Promise<any> => {
-  config.prefix = args[0];
+  config.prefix = args[0]
 
   await config.save();
 
