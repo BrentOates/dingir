@@ -9,7 +9,7 @@ export class UserProfileService {
       !today.isInLeapYear && today.day === 28 && today.month === 2;
     const day = includeLeapDayInNoneLeapYear ? [28, 29] : today.day;
 
-    return await UserProfile.findAll({
+    return UserProfile.findAll({
       where: {
         birthdayDay: day,
         birthdayMonth: today.month,
@@ -18,7 +18,7 @@ export class UserProfileService {
   }
 
   public static async getAllBirthdays(): Promise<UserProfile[]> {
-    return await UserProfile.findAll({
+    return UserProfile.findAll({
       where: {
         birthdayDay: {
           [Op.not]: null,
@@ -33,7 +33,7 @@ export class UserProfileService {
   public static async getServerBirthdays(
     serverId: string
   ): Promise<UserProfile[]> {
-    return await UserProfile.findAll({
+    return UserProfile.findAll({
       where: {
         birthdayDay: {
           [Op.not]: null,
@@ -76,7 +76,7 @@ export class UserProfileService {
         },
       }
     );
-    return await this.getUserProfile(serverId, userId);
+    return this.getUserProfile(serverId, userId);
   }
 
   public static async decrementActivityScore(
@@ -95,7 +95,7 @@ export class UserProfileService {
         },
       }
     );
-    return await this.getUserProfile(serverId, userId);
+    return this.getUserProfile(serverId, userId);
   }
 
   public static async deleteUser(

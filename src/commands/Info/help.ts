@@ -35,13 +35,19 @@ const run = async (
     return message.channel.send(access.reason);
   }
 
+  let cmdAccess: string;
+  if (cmd.admin) {
+    cmdAccess = 'Admin only';
+  } else if (cmd.limited) {
+    cmdAccess = 'Limited';
+  } else {
+    cmdAccess = 'Everyone';
+  }
+
   embed.addField('Command', args[0].toLowerCase());
   embed.addField('Title', cmd.title);
   embed.addField('Description', cmd.description);
-  embed.addField(
-    'Access',
-    cmd.admin ? 'Admin only' : cmd.limited ? 'Limited' : 'Everyone'
-  );
+  embed.addField('Access', cmdAccess);
   if (cmd.limited) {
     embed.addField('Limitation', cmd.limitation);
   }
