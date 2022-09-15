@@ -27,7 +27,7 @@
 	"devDependencies": {
 		"@types/glob": "^8.0.0",
 		"@types/luxon": "^3.0.1",
-		"@types/node": "^16.11.57",
+		"@types/node": "^16.11.59",
 		"@types/node-schedule": "^2.1.0",
 		"@types/underscore": "^1.11.4",
 		"@types/validator": "^13.7.6",
