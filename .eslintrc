@@ -1,49 +1,31 @@
 {
-	"root": true,
-	"parser": "@typescript-eslint/parser",
-	"plugins": [
-	  "@typescript-eslint"
+  "root": true,
+  "parser": "@typescript-eslint/parser",
+  "plugins": ["@typescript-eslint"],
+  "extends": [
+    "eslint:recommended",
+    "plugin:@typescript-eslint/eslint-recommended",
+    "plugin:@typescript-eslint/recommended"
+  ],
+  "rules": {
+    "no-tabs": ["error", { "allowIndentationTabs": true }],
+    "quotes": [
+		"error",
+		"single",
+		{ "avoidEscape": true, "allowTemplateLiterals": false }
 	],
-	"extends": [
-	  "eslint:recommended",
-	  "plugin:@typescript-eslint/eslint-recommended",
-	  "plugin:@typescript-eslint/recommended"
-	],
-	"rules": {
-		"indent": [
-			"error",
-			"tab",
-			{
-				"MemberExpression": 1,
-				"ignoredNodes": [
-					"FunctionExpression > .params[decorators.length > 0]",
-					"FunctionExpression > .params > :matches(Decorator, :not(:first-child))",
-					"ClassBody.body > PropertyDefinition[decorators.length > 0] > .key"
-				]
-			}
-		],
-		"quotes": [
-			"error",
-			"single"
-		],
-		"semi": [
-			"error",
-			"always"
-		],
-		"brace-style": "error",
-		"curly": [
-			"error",
-			"all"
-		],
-		"object-curly-newline": [
-			"error", {
-				"ObjectExpression": "always",
-				"ObjectPattern": "always",
-				"ImportDeclaration": "never",
-				"ExportDeclaration": "never"
-
-			}
-		],
-		"@typescript-eslint/no-explicit-any": "off"
-	}
+    "semi": ["error", "always"],
+    "brace-style": "error",
+    "curly": ["error", "all"],
+    "object-curly-newline": [
+      "error",
+      {
+        "ObjectExpression": { "multiline": true, "minProperties": 1},
+        "ObjectPattern": "always",
+        "ImportDeclaration": "never",
+        "ExportDeclaration": "never"
+      }
+    ],
+    "@typescript-eslint/no-explicit-any": "off"
+  }
 }

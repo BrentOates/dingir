@@ -6,8 +6,34 @@ on:
     - '*'
       
 jobs:
-  docker:
+  run-linters:
+    name: Run ESLint
     runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out Git repository
+        uses: actions/checkout@v2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v1
+        with:
+          node-version: 16
+
+      # ESLint and Prettier must be in `package.json`
+      - name: Install Node.js dependencies
+        run: npm ci
+
+      - name: Run linters
+        uses: wearerequired/lint-action@v2
+        with:
+          eslint: true
+          eslint_extensions: ts
+          continue_on_error: false
+
+  docker:
+    name: Build Docker Image
+    runs-on: ubuntu-latest
+
     steps:
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v2
@@ -22,14 +48,6 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
 
-      - name: Cache Docker layers
-        uses: actions/cache@v2
-        with:
-          path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-multi-buildx-${{ github.sha }}
-          restore-keys: |
-            ${{ runner.os }}-multi-buildx
-
       - name: Build and push
         id: docker_build
         uses: docker/build-push-action@v3
@@ -39,13 +57,3 @@ jobs:
           tags: | 
               ghcr.io/brentoates/dingir:${{ github.ref_name }}
               ghcr.io/brentoates/dingir:latest
-          cache-from: type=local,src=/tmp/.buildx-cache
-          cache-to: type=local,mode=max,dest=/tmp/.buildx-cache-new
-      
-        # Temp fix
-        # https://github.com/docker/build-push-action/issues/252
-        # https://github.com/moby/buildkit/issues/1896
-      -  name: Move cache
-         run: |
-            rm -rf /tmp/.buildx-cache
-            mv /tmp/.buildx-cache-new /tmp/.buildx-cache
