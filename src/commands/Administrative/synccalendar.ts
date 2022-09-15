@@ -4,13 +4,13 @@ import { Command } from '../../types/Command';
 import { ServerConfig } from '../../client/models/ServerConfig';
 import { BirthdayManager } from '../../utilities/BirthdayManager';
 
-const run = async (client: NovaClient, message: Message, config: ServerConfig, args: any[]): Promise<any> => {
+const run = async (client: NovaClient, message: Message, config: ServerConfig): Promise<any> => {
 	try {
 		await BirthdayManager.populateCalendars(client, config.serverId);
 	} catch {
 		return message.channel.send({
-			content: `An error ocurred running the calendar sync for this server.`
-		})
+			content: 'An error ocurred running the calendar sync for this server.'
+		});
 	}
 
 	return message.channel.send({
