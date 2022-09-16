@@ -23,29 +23,34 @@ const run = async (interaction: ChatInputCommandInteraction, config: ServerConfi
 			currentGuestRoles.push(guestRole ? guestRole.toString() : 'Unknown');
 		});
 
-		const embed = new EmbedCompatLayer()
-			.setColor(EmbedColours.info)
-			.setTitle('Current Guest Roles')
-			.setDescription(currentGuestRoles.join('\n'))
-			.setTimestamp();
+    guestRoleIds.forEach((roleId) => {
+      const guestRole = guildRoles.get(roleId);
+      currentGuestRoles.push(guestRole ? guestRole.toString() : 'Unknown');
+    });
 
 		return message.channel.send({
 			embeds: [embed]
 		});
 	}
 
-	const newRoleIds = message.mentions.roles.map(role => role.id);
+    return message.channel.send({
+      embeds: [embed],
+    });
+  }
 
-	if (args[0] === 'unset') {
-		config.guestRoleIds = null;
-	} else if (!newRoleIds) {
-		return message.channel.send('Roles not found, make sure you tagged it correctly.');
-	} else {
-		config.guestRoleIds = newRoleIds.join(',');
-	}
+  const newRoleIds = message.mentions.roles.map((role) => role.id);
 
+  if (args[0] === 'unset') {
+    config.guestRoleIds = null;
+  } else if (!newRoleIds) {
+    return message.channel.send(
+      'Roles not found, make sure you tagged it correctly.'
+    );
+  } else {
+    config.guestRoleIds = newRoleIds.join(',');
+  }
 
-	await config.save();
+  await config.save();
 
 	const audit = new EmbedCompatLayer()
 		.setColor(EmbedColours.info)
@@ -55,20 +60,22 @@ const run = async (interaction: ChatInputCommandInteraction, config: ServerConfi
 		.setDescription(`Guest roles ${!config.guestRoleIds ? 'Removed' : 'Updated'}`)
 		.setTimestamp();
 
-	if (!config.guestRoleIds) {
-		audit.addField('New Guest Roles', 'Not set');
-	} else {
-		audit.addField('New Guest Roles', message.mentions.roles.map(role => role.toString()).join('\n'));
-	}
+  if (!config.guestRoleIds) {
+    audit.addField('New Guest Roles', 'Not set');
+  } else {
+    audit.addField(
+      'New Guest Roles',
+      message.mentions.roles.map((role) => role.toString()).join('\n')
+    );
+  }
 
-	await ChannelService.sendAuditMessage(client, config, audit);
+  await ChannelService.sendAuditMessage(client, config, audit);
 
-	if (config.guestRoleIds) {
-		return message.channel.send('Guest User role(s) updated.');
-	} else {
-		return message.channel.send('Guest User role removed.');
-	}
-
+  if (config.guestRoleIds) {
+    return message.channel.send('Guest User role(s) updated.');
+  } else {
+    return message.channel.send('Guest User role removed.');
+  }
 };
 
 export const data = new SlashCommandBuilder()

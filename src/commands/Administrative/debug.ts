@@ -5,7 +5,7 @@ export const execute = async (interaction: ChatInputCommandInteraction, config: 
 	const newValue = interaction.options.getBoolean('state');
 	config.debug = newValue;
 
-	await config.save();
+  await config.save();
 
 	return await interaction.reply({
 		content: `Debug mode ${config.debug ? 'enabled' : 'disabled'} for ${interaction.guild.name}.`,

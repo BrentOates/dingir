@@ -9,30 +9,30 @@ export class ConfigService {
 			}
 		});
 
-		return config;
-	}
+    return config;
+  }
 
-	public static async getConfig (serverId: string): Promise<ServerConfig> {
-		const [ config ] = await ServerConfig.findOrCreate({
-			where: {
-				serverId: serverId 
-			}
-		});
+  public static async getConfig(serverId: string): Promise<ServerConfig> {
+    const [config] = await ServerConfig.findOrCreate({
+      where: {
+        serverId: serverId,
+      },
+    });
 
-		return config;
-	}
+    return config;
+  }
 
-	public static async getConfigs(): Promise<ServerConfig[]> {
-		return await ServerConfig.findAll();	
-	}
+  public static async getConfigs(): Promise<ServerConfig[]> {
+    return ServerConfig.findAll();
+  }
 
-	public static async deleteConfig(serverId: string): Promise<boolean> {
-		const recordsDeleted = await ServerConfig.destroy({
-			where: {
-				serverId: serverId 
-			}
-		});
+  public static async deleteConfig(serverId: string): Promise<boolean> {
+    const recordsDeleted = await ServerConfig.destroy({
+      where: {
+        serverId: serverId,
+      },
+    });
 
-		return recordsDeleted > 0;
-	}
+    return recordsDeleted > 0;
+  }
 }
