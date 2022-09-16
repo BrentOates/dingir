@@ -1,6 +1,5 @@
 import { glob } from 'glob';
 import { Client, Collection, Partials, GatewayIntentBits } from 'discord.js';
-import { Command } from '../types/Command';
 import { promisify } from 'util';
 import { Event } from '../types/Event';
 import { Logger } from '../utilities/Logger';
@@ -11,7 +10,6 @@ import { SlashCommand } from '../types/SlashCommand';
 const globPromise = promisify(glob);
 
 class NovaClient extends Client {
-	public commands: Collection<string, Command> = new Collection();
 	public events: Collection<string, Event> = new Collection();
 	public slashCommands: Collection<string, SlashCommand> = new Collection();
 
@@ -35,24 +33,14 @@ class NovaClient extends Client {
   }
 
   public async start(): Promise<void> {
-    await sequelize.sync({
-      alter: true,
-    });
+    await sequelize.sync({alter: true,});
 
-		const commandFiles: string[] = await globPromise(
-			`${__dirname}/../commands/**/*{.js,.ts}`
-		);
 		const eventFiles: string[] = await globPromise(
 			`${__dirname}/../events/**/*{.js,.ts}`
 		);
 		const slashCommandFiles: string[] = await globPromise(
 			`${__dirname}/../slash-commands/*/*{.js,.ts}`
 		);
-		
-		commandFiles.forEach(async (cmdFile: string) => {
-			const cmd = (await import(cmdFile)) as Command;
-			this.commands.set(cmd.name, cmd);
-		});
 
 		eventFiles.forEach(async (eventFile: string) => {
 			const event = (await import(eventFile)) as Event;
@@ -70,12 +58,6 @@ class NovaClient extends Client {
 			this.destroy();
 			process.exit();
 		});
-
-    process.on('SIGTERM', () => {
-      Logger.writeLog('SIGTERM Received, destroying client & shutting down.');
-      this.destroy();
-      process.exit();
-    });
 
     await this.login(process.env.TOKEN);
     Logger.writeLog('Logged in');
