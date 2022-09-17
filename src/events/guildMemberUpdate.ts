@@ -16,10 +16,8 @@ const applyText = (canvas: Canvas, text: string, baseSize: number) => {
   let fontSize = baseSize;
 
   do {
-    fontSize--;
+    ctx.font = `${(fontSize -= 1)}px Roboto`;
   } while (ctx.measureText(text).width > canvas.width - 300);
-
-  ctx.font = `${fontSize}px Roboto`;
 
   return ctx.font;
 };
