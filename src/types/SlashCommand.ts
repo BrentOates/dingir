@@ -1,8 +1,13 @@
-import { ChatInputCommandInteraction, SlashCommandBuilder, SlashCommandSubcommandGroupBuilder, SlashCommandSubcommandsOnlyBuilder } from 'discord.js';
+import { 
+    ChatInputCommandInteraction, 
+    SlashCommandBuilder, 
+    SlashCommandSubcommandBuilder, 
+    SlashCommandSubcommandGroupBuilder, 
+    SlashCommandSubcommandsOnlyBuilder} from 'discord.js';
 import { ServerConfig } from '../client/models/ServerConfig';
 
 export interface SlashCommand {
-	commandData: SlashCommandBuilder | SlashCommandSubcommandsOnlyBuilder | SlashCommandSubcommandGroupBuilder;
+	commandData: SlashCommandBuilder | SlashCommandSubcommandsOnlyBuilder;
     execute(interaction: ChatInputCommandInteraction, config: ServerConfig): Promise<any>
 }
 
@@ -12,6 +17,6 @@ export interface SlashSubGroupCommand {
 }
 
 export interface SlashSubCommand {
-    commandData: SlashCommandSubcommandsOnlyBuilder;
+    commandData: SlashCommandSubcommandBuilder;
     execute(interaction: ChatInputCommandInteraction, config: ServerConfig): Promise<any>
 }

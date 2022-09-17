@@ -1,25 +1,31 @@
 import { ChatInputCommandInteraction, SlashCommandBuilder, PermissionFlagsBits } from 'discord.js';
 import { ServerConfig } from '../../client/models/ServerConfig';
-import { SlashCommand, SlashSubGroupCommand } from '../../types/SlashCommand';
+import { SlashCommand, SlashSubCommand, SlashSubGroupCommand } from '../../types/SlashCommand';
 import { AnnouncementsCommand } from './Subcommands/announcements';
 import { AuditCommand } from './Subcommands/audit';
+import { BirthdaysConfigCommand } from './Subcommands/birthdays';
 import { DebugCommand } from './Subcommands/debug';
 import { NewRolesCommand } from './Subcommands/newroles';
 import { SystemMessagesCommand } from './Subcommands/systemMsgs';
 import { WelcomeCommand } from './Subcommands/welcome';
 
-const cmdMap: {[key: string]: SlashSubGroupCommand} = {
+const cmdMap: {[key: string]: SlashSubGroupCommand | SlashSubCommand} = {
 	announcements: AnnouncementsCommand,
 	debug: DebugCommand,
 	sysmsgs: SystemMessagesCommand,
 	audit: AuditCommand,
 	welcome: WelcomeCommand,
-	newroles: NewRolesCommand
+	newroles: NewRolesCommand,
+	birthdays: BirthdaysConfigCommand
 };
 
 const execute = async (cmd: ChatInputCommandInteraction, config: ServerConfig) => {
-	const subCommandGrp = cmd.options.getSubcommandGroup();
-	const subCmd = cmdMap[subCommandGrp];
+	const subCommand = cmd.options.getSubcommandGroup() ?? cmd.options.getSubcommand();
+	const subCmd = cmdMap[subCommand];
+
+	if (!subCommand) {
+		cmd.reply({ content: 'This command is misconfigured', ephemeral: true });
+	}
 
 	subCmd.execute(cmd, config);
 };
@@ -34,7 +40,8 @@ const commandData = new SlashCommandBuilder()
 	.addSubcommandGroup(SystemMessagesCommand.commandData)
 	.addSubcommandGroup(AuditCommand.commandData)
 	.addSubcommandGroup(WelcomeCommand.commandData)
-	.addSubcommandGroup(NewRolesCommand.commandData);
+	.addSubcommandGroup(NewRolesCommand.commandData)
+	.addSubcommandGroup(BirthdaysConfigCommand.commandData);
 
 const slashCommand: SlashCommand = {
 	commandData: commandData,

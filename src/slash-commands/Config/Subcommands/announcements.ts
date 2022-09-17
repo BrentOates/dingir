@@ -10,7 +10,10 @@ const set = async (cmd: ChatInputCommandInteraction, config: ServerConfig) => {
 
 const get = async (cmd: ChatInputCommandInteraction, config: ServerConfig) => {
 	const channel = await ConfigManager.getChannel(cmd, config, 'announcementsChannelId');
-	return cmd.reply(`The announcements channel for this server is: ${channel ? channel.toString() : 'Not Set'}`);
+	return cmd.reply({
+		content: `The announcements channel for this server is: ${channel ? channel.toString() : 'Not Set'}`,
+		ephemeral: true 
+	});
 };
 
 const clear = async (cmd: ChatInputCommandInteraction, config: ServerConfig) => {
@@ -27,7 +30,10 @@ const exec = async(cmd: ChatInputCommandInteraction, config: ServerConfig) => {
 	} else if (subCommand == 'clear') {
 		return clear(cmd, config);
 	} else {
-		return cmd.reply('A valid option was not supplied for this command');
+		return cmd.reply({
+			content: 'A valid option was not supplied for this command',
+			ephemeral: true
+		});
 	}
 };
 

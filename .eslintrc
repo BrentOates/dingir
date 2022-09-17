@@ -17,15 +17,6 @@
     "semi": ["error", "always"],
     "brace-style": "error",
     "curly": ["error", "all"],
-    "object-curly-newline": [
-      "error",
-      {
-        "ObjectExpression": { "multiline": true, "minProperties": 2},
-        "ObjectPattern": "always",
-        "ImportDeclaration": "never",
-        "ExportDeclaration": "never"
-      }
-    ],
     "@typescript-eslint/no-explicit-any": "off"
   }
 }

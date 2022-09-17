@@ -11,9 +11,12 @@ const set = async (cmd: ChatInputCommandInteraction, config: ServerConfig) => {
 };
 
 const get = async (cmd: ChatInputCommandInteraction, config: ServerConfig) => {
-	const value = config.debug;
+	const value = config.systemMessagesEnabled;
 
-	return cmd.reply(`Bot System messages are: ${value ? 'enabled' : 'disabled'}`);
+	return cmd.reply({
+		content: `Bot System messages are: ${value ? 'enabled' : 'disabled'}`,
+		ephemeral: true
+	});
 };
 
 const exec = async(cmd: ChatInputCommandInteraction, config: ServerConfig) => {
@@ -23,7 +26,10 @@ const exec = async(cmd: ChatInputCommandInteraction, config: ServerConfig) => {
 	} else if (subCommand == 'get') {
 		return get(cmd, config);
 	} else {
-		return cmd.reply('A valid option was not supplied for this command');
+		return cmd.reply({
+			content: 'A valid option was not supplied for this command',
+			ephemeral: true
+		});
 	}
 };
 

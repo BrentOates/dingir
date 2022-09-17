@@ -41,7 +41,10 @@ const get = async (cmd: ChatInputCommandInteraction, config: ServerConfig) => {
 	}
 
 	ChannelService.sendAuditMessage(cmd.client, config, audit);
-	cmd.reply(`New user roles ${!config.guestRoleIds ? 'Removed' : 'Updated'}`);
+	cmd.reply({
+		content: `New user roles ${!config.guestRoleIds ? 'Removed' : 'Updated'}`,
+		ephemeral: true
+	});
 };
 
 const clear = async (cmd: ChatInputCommandInteraction, config: ServerConfig) => {
@@ -60,7 +63,10 @@ const exec = async(cmd: ChatInputCommandInteraction, config: ServerConfig) => {
 	} else if (subCommand == 'clear') {
 		return clear(cmd, config);
 	} else {
-		return cmd.reply('A valid option was not supplied for this command');
+		return cmd.reply({
+			content: 'A valid option was not supplied for this command',
+			ephemeral: true
+		});
 	}
 };
 

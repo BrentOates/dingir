@@ -4,6 +4,11 @@ import { Logger } from './Logger';
 
 export class CommandRegistrar {
 	public static async registerGlobalCommands(client: NovaClient) {
+		const enabled = false;
+		if (!enabled) {
+			return;
+		}
+
 		Logger.writeLog('Registering Global Commands...');
 		const cmdData = client.slashCommands.map(v => v.commandData.toJSON());
 

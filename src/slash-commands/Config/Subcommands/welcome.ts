@@ -19,7 +19,10 @@ const set = async (cmd: ChatInputCommandInteraction, config: ServerConfig) => {
 const get = async (cmd: ChatInputCommandInteraction, config: ServerConfig) => {
 	const value = config[cmd.options.getString('content')];
 
-	return cmd.reply(`Current value is: ${value ? value : 'Not Set'}`);
+	return cmd.reply({
+		content: `Current value is: ${value ? value : 'Not Set'}`,
+		ephemeral: true
+	});
 };
 
 const clear = async (cmd: ChatInputCommandInteraction, config: ServerConfig) => {
@@ -38,7 +41,10 @@ const exec = async(cmd: ChatInputCommandInteraction, config: ServerConfig) => {
 	} else if (subCommand == 'clear') {
 		return clear(cmd, config);
 	} else {
-		return cmd.reply('A valid option was not supplied for this command');
+		return cmd.reply({
+			content: 'A valid option was not supplied for this command',
+			ephemeral: true
+		});
 	}
 };
 
