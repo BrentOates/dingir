@@ -16,20 +16,20 @@ const applyText = (canvas: Canvas, text: string, baseSize: number) => {
   let fontSize = baseSize;
 
   do {
-    fontSize--;
+    ctx.font = `${(fontSize -= 1)}px Roboto`;
   } while (ctx.measureText(text).width > canvas.width - 300);
-
-  ctx.font = `${fontSize}px Roboto`;
 
   return ctx.font;
 };
 
-const sendSystemMessage = async (config: ServerConfig, member: GuildMember) => {
-  const welcomeMessage = config.welcomeMessage.replace(
+const getWelcomeMessage = async (config: ServerConfig, member: GuildMember) => {
+ return config.welcomeMessage.replace(
     '{member}',
     `<@${member.id}>`
   );
+};
 
+const getWelcomeImage = async (config: ServerConfig, member: GuildMember) => {
   GlobalFonts.registerFromPath(
     `${__dirname}/../resources/fonts/Roboto-Regular.ttf`,
     'Roboto'
@@ -80,10 +80,55 @@ const sendSystemMessage = async (config: ServerConfig, member: GuildMember) => {
     'welcome-image.png'
   );
 
-  await member.guild.systemChannel.send({
-    content: welcomeMessage,
-    files: [attachment],
-  });
+  return attachment;
+};
+
+const addGuestRoles = async(serverConfig: ServerConfig, newMember: GuildMember, client: NovaClient) => {
+  try {
+    const guestRoleIds = serverConfig.guestRoleIds.split(',');
+    const guildRoles = await newMember.guild.roles.fetch();
+
+    await newMember.roles.add(
+      guildRoles.filter((role) => guestRoleIds.includes(role.id))
+    );
+  } catch (e) {
+    Logger.writeError(
+      `Adding guest roles failed in guildMemberUpdate for server: ${serverConfig.id}.`,
+      e
+    );
+    const audit = new EmbedCompatLayer()
+      .setColor(EmbedColours.negative)
+      .setAuthor({
+        name: newMember.user.tag,
+        iconURL: newMember.displayAvatarURL(),
+      })
+      .setDescription('Unable to provide guest role(s) to user.')
+      .addField('ID', newMember.user.id)
+      .setTimestamp();
+
+    return ChannelService.sendAuditMessage(client, serverConfig, audit);
+  }
+};
+
+const sendScreenAudit = async(serverConfig: ServerConfig, newMember: GuildMember, client: NovaClient) => {
+  try {
+    const audit = new EmbedCompatLayer()
+      .setColor(EmbedColours.neutral)
+      .setAuthor({
+        name: newMember.user.tag,
+        iconURL: newMember.displayAvatarURL(),
+      })
+      .setDescription('Rules accepted by member.')
+      .addField('ID', newMember.user.id)
+      .setTimestamp();
+
+    await ChannelService.sendAuditMessage(client, serverConfig, audit);
+  } catch (e) {
+    return Logger.writeError(
+      `Sending audit failed in guildMemberUpdate for server: ${serverConfig.id}.`,
+      e
+    );
+  }
 };
 
 export const name = 'guildMemberUpdate';
@@ -101,58 +146,33 @@ export const run: RunFunction = async (
     oldMember.pending ||
     (oldMember.pending === null && newMember.roles.cache.size === 1);
 
-  if (notPassedScreen && !newMember.pending && serverConfig.guestRoleIds) {
-    try {
-      const audit = new EmbedCompatLayer()
-        .setColor(EmbedColours.neutral)
-        .setAuthor({
-          name: newMember.user.tag,
-          iconURL: newMember.displayAvatarURL(),
-        })
-        .setDescription('Rules accepted by member.')
-        .addField('ID', newMember.user.id)
-        .setTimestamp();
+  if (notPassedScreen && !newMember.pending) {
+    sendScreenAudit(serverConfig, newMember, client);
 
-      await ChannelService.sendAuditMessage(client, serverConfig, audit);
-    } catch (e) {
-      return Logger.writeError(
-        `Sending audit failed in guildMemberUpdate for server: ${serverConfig.id}.`,
-        e
-      );
-    }
-
-    try {
-      const guestRoleIds = serverConfig.guestRoleIds.split(',');
-      const guildRoles = await newMember.guild.roles.fetch();
-
-      await newMember.roles.add(
-        guildRoles.filter((role) => guestRoleIds.includes(role.id))
-      );
-    } catch (e) {
-      Logger.writeError(
-        `Adding guest roles failed in guildMemberUpdate for server: ${serverConfig.id}.`,
-        e
-      );
-      const audit = new EmbedCompatLayer()
-        .setColor(EmbedColours.negative)
-        .setAuthor({
-          name: newMember.user.tag,
-          iconURL: newMember.displayAvatarURL(),
-        })
-        .setDescription('Unable to provide guest role(s) to user.')
-        .addField('ID', newMember.user.id)
-        .setTimestamp();
-
-      return ChannelService.sendAuditMessage(client, serverConfig, audit);
+    if (serverConfig.guestRoleIds) {
+      addGuestRoles(serverConfig, newMember, client);
     }
 
     if (
-      serverConfig.welcomeMessage &&
       serverConfig.systemMessagesEnabled &&
-      serverConfig.welcomeMessageBackgroundUrl
+      (serverConfig.welcomeMessage || serverConfig.welcomeMessageBackgroundUrl)
     ) {
       try {
-        await sendSystemMessage(serverConfig, newMember);
+        let attachment: AttachmentBuilder;
+        let content: string;
+        if (serverConfig.welcomeMessageBackgroundUrl) {
+          attachment = await getWelcomeImage(serverConfig, newMember);
+        }
+
+        if (serverConfig.welcomeMessage) {
+          content = await getWelcomeMessage(serverConfig, newMember);
+        }
+
+        await newMember.guild.systemChannel.send({
+          content: content ?? undefined,
+          files: attachment ? [attachment] : undefined,
+        });
+        
       } catch (e) {
         Logger.writeError(
           `Sending welcome message failed in guildMemberUpdate for server: ${serverConfig.id}.`,

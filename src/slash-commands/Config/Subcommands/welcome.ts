@@ -3,13 +3,14 @@ import { ServerConfig } from '../../../client/models/ServerConfig';
 import { SlashSubGroupCommand } from '../../../types/SlashCommand';
 
 const imageChoice = {
-	name: 'Welcome Image', value: 'welcomeMessage'
+	name: 'Welcome Image', value: 'welcomeMessageBackgroundUrl'
 };
 const msgChoice = {
-	name: 'Welcome Message', value: 'message'
+	name: 'Welcome Message', value: 'welcomeMessage'
 };
 
 const set = async (cmd: ChatInputCommandInteraction, config: ServerConfig) => {
+	console.log(cmd.options);
     config[cmd.options.getString('content')] = cmd.options.getString('value');
 	config.save();
 
