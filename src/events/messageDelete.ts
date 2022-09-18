@@ -17,9 +17,6 @@ export const run: RunFunction = async (
   }
 
   const serverConfig = await ConfigService.getConfig(message.guild.id);
-  if (message.content.startsWith(serverConfig.prefix)) {
-    return;
-  }
 
   await UserProfileService.decrementActivityScore(
     message.guild.id,
