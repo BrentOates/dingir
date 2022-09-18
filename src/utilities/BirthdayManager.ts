@@ -1,10 +1,12 @@
-import { Client, TextChannel } from 'discord.js';
+import { NovaClient } from '../client/NovaClient';
+import { Guild, GuildMember, TextChannel } from 'discord.js';
 import { DateTime } from 'luxon';
 import _ from 'underscore';
 import { ConfigService } from './ConfigService';
 import { UserProfileService } from './UserProfileService';
 import { Logger } from './Logger';
 import { ServerConfig } from '../client/models/ServerConfig';
+import { UserProfile } from '../client/models/UserProfile';
 
 export class BirthdayManager {
 	public static async populateCalendars (client: Client, serverId?: string): Promise<void> {
@@ -55,7 +57,7 @@ export class BirthdayManager {
       let messageContent = ':tada: ~ Upcoming Birthdays ~ :tada:\n';
 
       const chanToEdit = await client.channels.fetch(channelId);
-      if (!chanToEdit) {
+      if (!chanToEdit || !chanToEdit.isTextBased()) {
         Logger.writeError(
           `Could not find birthday channel for server ${config.serverId}`
         );
@@ -143,41 +145,52 @@ export class BirthdayManager {
     Logger.writeLog('Finished birthday calendar update job.');
   }
 
-	public static async notifyBirthdays(client: Client): Promise<void> {
-		Logger.writeLog('Running birthday notifications job.');
+  public static async notifyServerBirthdays(client: NovaClient, profiles: UserProfile[], config: ServerConfig) {
+    if (config && config.announcementsChannelId) {
+      const server: Guild = client.guilds.cache.get(config.serverId);
+      if (!server) {
+        return Logger.writeError(`Server missing with id ${config.serverId}`);
+      }
+    
+      const announcementsChannel = server.channels.cache.get(config.announcementsChannelId);
+      if (!announcementsChannel) {
+        return Logger.writeError(`Announcements Channel missing for: ${server.toString()}`);
+      }
+
+      if (!announcementsChannel.isTextBased()) {
+        return Logger.writeError(`Channel not text based for ${server.toString()}`);
+      }
+
+      let tags = '';
+
+      for (const user of profiles) {
+        const member: GuildMember = await server.members.fetch(user.userId);
+        if (member) {
+          tags += `${member.toString()}, `;
+        }
+      }
+
+      if (tags) {
+        tags = tags.replace(/,\s*$/, '');
+        const msg = `Happy Birthday to ${tags}!`;
+        announcementsChannel.send(msg).catch((err) => {
+          return Logger.writeError('Error sending Birthday message', err);
+        });
+      }
+    }
+  }
+
+  public static async notifyBirthdays(client: NovaClient): Promise<void> {
+    Logger.writeLog('Running birthday notifications job.');
 
     const profiles = await UserProfileService.getBirthdaysToday();
     const usersWithBirthdaysByServer = _.groupBy(profiles, 'serverId');
 
     for (const server in usersWithBirthdaysByServer) {
       const config = await ConfigService.getConfig(server);
-      if (config && config.announcementsChannelId) {
-        const srv = await client.guilds.fetch(server).catch((err) => {
-          return Logger.writeError('Error getting server.', err);
-        });
-        const chan = await client.channels
-          .fetch(config.announcementsChannelId)
-          .catch((err) => {
-            return Logger.writeError('Error getting channel.', err);
-          });
-        if (!srv || !chan) {
-          return Logger.writeError('Channel or Server object empty');
-        }
-        let tags = '';
-        usersWithBirthdaysByServer[server].forEach((u) => {
-          if (srv.members.resolve(u.userId)) {
-            tags += `<@${u.userId}>, `;
-          }
-        });
-        if (tags) {
-          tags = tags.replace(/,\s*$/, '');
-          const msg = `Happy Birthday to ${tags}!`;
-          (chan as TextChannel).send(msg).catch((err) => {
-            return Logger.writeError('Error sending Birthday message', err);
-          });
-        }
-      }
+      this.notifyServerBirthdays(client, usersWithBirthdaysByServer[server], config);
     }
+
     Logger.writeLog('Finished birthday notifications job.');
   }
 }
