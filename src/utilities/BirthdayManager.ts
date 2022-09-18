@@ -1,5 +1,5 @@
 import { NovaClient } from '../client/NovaClient';
-import { Guild, GuildMember, TextChannel } from 'discord.js';
+import { Client, Guild, GuildMember, TextChannel } from 'discord.js';
 import { DateTime } from 'luxon';
 import _ from 'underscore';
 import { ConfigService } from './ConfigService';
@@ -9,11 +9,8 @@ import { ServerConfig } from '../client/models/ServerConfig';
 import { UserProfile } from '../client/models/UserProfile';
 
 export class BirthdayManager {
-  public static async populateCalendars(
-    client: NovaClient,
-    serverId?: string
-  ): Promise<void> {
-    Logger.writeLog('Running birthday calendar update job.');
+	public static async populateCalendars (client: Client, serverId?: string): Promise<void> {
+		Logger.writeLog('Running birthday calendar update job.');
 
     let parsedConfigs: ServerConfig[];
 
@@ -77,7 +74,7 @@ export class BirthdayManager {
 
       if (profiles.length < 1) {
         messageContent += '-------------';
-        messageContent += `There are no birthdays in this server, set yours with \`${config.prefix}mybirthday\``;
+        messageContent += 'There are no birthdays in this server, set yours with `/birthdays add`';
       } else {
         const mapped = profiles.map((u) => {
           let alteredForLeap = false;
