@@ -74,7 +74,7 @@ export class BirthdayManager {
 
       if (profiles.length < 1) {
         messageContent += '-------------';
-        messageContent += 'There are no birthdays in this server, set yours with `/birthdays add`';
+        messageContent += 'There are no birthdays in this server, set yours with `/mybirthday';
       } else {
         const mapped = profiles.map((u) => {
           let alteredForLeap = false;
