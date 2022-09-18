@@ -56,6 +56,9 @@ export class ConfigManager {
 
 	public static async updateChannelNew(interaction: ChatInputCommandInteraction, serverConfig: ServerConfig, field: string) {
 		const chan = interaction.options.getChannel('channel');
+		if (!chan) {
+			return interaction.reply('Provided channel is not valid');
+		}
 		serverConfig[field] = chan.id;
 		serverConfig.save();
 

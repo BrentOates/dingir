@@ -1,5 +1,5 @@
 import { NovaClient } from '../client/NovaClient';
-import { Guild, GuildMember, TextChannel } from 'discord.js';
+import { Client, Guild, GuildMember, TextChannel } from 'discord.js';
 import { DateTime } from 'luxon';
 import _ from 'underscore';
 import { ConfigService } from './ConfigService';

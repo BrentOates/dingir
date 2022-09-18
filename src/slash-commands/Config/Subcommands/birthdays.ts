@@ -7,8 +7,8 @@ const create = async (cmd: ChatInputCommandInteraction, config: ServerConfig) =>
 	const { id } = cmd.options.getChannel('channel');
 	const channel = cmd.guild.channels.cache.get(id);
 
-	if (!channel.isTextBased()) {
-		return cmd.reply(`${channel.toString()} is not a text channel`);
+	if (!channel || !channel.isTextBased()) {
+		return cmd.reply('Provided channel is not a text channel');
 	}
 
 	const birthdaysCalendar = await channel.send({

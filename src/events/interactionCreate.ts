@@ -9,7 +9,6 @@ import { ServerConfig } from '../client/models/ServerConfig';
 export const name = 'interactionCreate';
 
 const runCommand = async (client: NovaClient, cmd: ChatInputCommandInteraction, config: ServerConfig) => {
-
 	const slashCmd = client.slashCommands.get(cmd.commandName);
 
 	if (!slashCmd) {
@@ -24,8 +23,15 @@ const runCommand = async (client: NovaClient, cmd: ChatInputCommandInteraction, 
 };
 
 export const run: RunFunction = async (client: NovaClient, interaction: Interaction) => {
-	if (!interaction.isChatInputCommand() || !interaction.guild) {
+	if (!interaction.isChatInputCommand()) {
 		return;
+	}
+
+	if (!interaction.guild) {
+		return interaction.reply({
+			content: 'Dingir only supports interactions in Discord Servers.',
+			ephemeral: true
+		});
 	}
 
 	const serverConfig = await ConfigService.getConfigByMessage(interaction);

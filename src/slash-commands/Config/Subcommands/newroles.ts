@@ -9,7 +9,7 @@ const set = async (cmd: ChatInputCommandInteraction, config: ServerConfig) => {
     const role1 = cmd.options.getRole('role-one');
 	const role2 = cmd.options.getRole('role-two');
 
-	const newGuestRoles: string = [role1, role2].filter(Boolean).join(',');
+	const newGuestRoles: string = [role1.id, role2?.id].filter(Boolean).join(',');
 	config.guestRoleIds = newGuestRoles;
 	config.save();
 
