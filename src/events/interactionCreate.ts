@@ -17,7 +17,11 @@ const runCommand = async (client: NovaClient, cmd: ChatInputCommandInteraction, 
 
 	await slashCmd.execute(cmd, config)
 		.catch((err: string) => {
-			cmd.reply('Something went wrong, was this command run in the correct place?');
+			if (cmd.deferred) {
+				cmd.editReply({ content: 'Something went wrong, was this command run in the correct place?' });
+			} else {
+				cmd.reply({ content: 'Something went wrong, was this command run in the correct place?', ephemeral: true });
+			}
 			Logger.writeError(err);
 		});
 };
