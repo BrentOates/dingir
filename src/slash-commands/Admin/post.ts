@@ -24,7 +24,7 @@ const sendAudit = async (cmd: ChatInputCommandInteraction, config: ServerConfig,
 };
 
 const execute = async (cmd: ChatInputCommandInteraction, config: ServerConfig) => {
-  cmd.deferReply({ ephemeral: true });
+  await cmd.deferReply({ ephemeral: true });
   const channel = cmd.options.getChannel('channel');
   const content = cmd.options.getString('content');
   const attachment = cmd.options.getAttachment('attachment');
