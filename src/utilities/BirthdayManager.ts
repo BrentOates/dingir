@@ -74,7 +74,7 @@ export class BirthdayManager {
 
       if (profiles.length < 1) {
         messageContent += '-------------';
-        messageContent += 'There are no birthdays in this server, set yours with `/mybirthday';
+        messageContent += 'There are no birthdays in this server, set yours with `/mybirthday`';
       } else {
         const mapped = profiles.map((u) => {
           let alteredForLeap = false;
@@ -117,7 +117,7 @@ export class BirthdayManager {
         const groupedSort = _.groupBy(sorted, 'birthday');
 
         messageContent += "Here's the next 10 birthdays in this guild!\n";
-        messageContent += `Add your birthday using \`${config.prefix}mybirthday\`\n`;
+        messageContent += 'Add your birthday using `/mybirthday`\n';
         messageContent += '-------------';
 
         for (const group in groupedSort) {
