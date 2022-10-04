@@ -11,4 +11,5 @@ updates:
       interval: "daily"
     labels:
       - "dependencies"
+    target-branch: "dep-updates"
     open-pull-requests-limit: 10
