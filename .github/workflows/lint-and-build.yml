@@ -9,6 +9,7 @@ on:
   pull_request:
     branches:
       - main
+      - dep-updates
 
 permissions:
   checks: write
