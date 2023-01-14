@@ -1,11 +1,11 @@
-import { Message } from 'discord.js';
-import { NovaClient } from '../client/NovaClient';
-import { EmbedColours } from '../resources/EmbedColours';
-import { RunFunction } from '../types/Event';
-import { ChannelService } from '../utilities/ChannelService';
-import { ConfigService } from '../utilities/ConfigService';
-import { EmbedCompatLayer } from '../types/EmbedCompatLayer';
-import { UserProfileService } from '../utilities/UserProfileService';
+import { Message } from 'npm:discord.js';
+import { NovaClient } from '../client/NovaClient.ts';
+import { EmbedColours } from '../resources/EmbedColours.ts';
+import { RunFunction } from '../types/Event.ts';
+import { ChannelService } from '../utilities/ChannelService.ts';
+import { ConfigService } from '../utilities/ConfigService.ts';
+import { EmbedCompatLayer } from '../types/EmbedCompatLayer.ts';
+import { UserProfileService } from '../utilities/UserProfileService.ts';
 
 export const name = 'messageDelete';
 export const run: RunFunction = async (

@@ -7,6 +7,7 @@ import { UserProfileService } from './UserProfileService';
 import { Logger } from './Logger';
 import { ServerConfig } from '../client/models/ServerConfig';
 import { UserProfile } from '../client/models/UserProfile';
+import { UserBirthday } from '../types/UserBirthday.ts';
 
 export class BirthdayManager {
 	public static async populateCalendars (client: Client, serverId?: string): Promise<void> {
@@ -76,7 +77,7 @@ export class BirthdayManager {
         messageContent += '-------------';
         messageContent += 'There are no birthdays in this server, set yours with `/mybirthday`';
       } else {
-        const mapped = profiles.map((u) => {
+        const mapped = profiles.map((u: UserProfile) => {
           let alteredForLeap = false;
 
           const now = DateTime.local();
@@ -94,7 +95,7 @@ export class BirthdayManager {
             now.year,
             u.birthdayMonth,
             u.birthdayDay
-          );
+          );  
 
           if (nextDate <= now) {
             nextDate = nextDate.plus({
@@ -113,7 +114,7 @@ export class BirthdayManager {
           };
         });
 
-        const sorted = _.sortBy(mapped, (o) => o.birthday).slice(0, 10);
+        const sorted = _.sortBy(mapped, (o: UserBirthday) => o.birthday).slice(0, 10);
         const groupedSort = _.groupBy(sorted, 'birthday');
 
         messageContent += "Here's the next 10 birthdays in this guild!\n";
