@@ -1,6 +1,6 @@
-import { NovaClient } from '../client/NovaClient';
+import { NovaClient } from '../client/NovaClient.ts';
 export interface RunFunction {
-  (client: NovaClient, ...params: any[]): Promise<any>;
+  (client: NovaClient, ...params: string[]): Promise<boolean>;
 }
 export interface Event {
   name: string;

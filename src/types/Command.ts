@@ -1,6 +1,6 @@
-import { ChannelType, Message } from 'discord.js';
-import { ServerConfig } from '../client/models/ServerConfig';
-import { NovaClient } from '../client/NovaClient';
+import { ChannelType, Message } from 'npm:discord.js';
+import { ServerConfig } from '../client/models/ServerConfig.ts';
+import { NovaClient } from '../client/NovaClient.ts';
 
 export interface Command {
   name: string;
@@ -8,7 +8,7 @@ export interface Command {
     client: NovaClient,
     message: Message,
     config: ServerConfig,
-    args: any[]
+    args: string[]
   ): Promise<void>;
   title: string;
   description: string;

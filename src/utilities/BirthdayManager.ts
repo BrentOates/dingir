@@ -1,7 +1,7 @@
 import { NovaClient } from '../client/NovaClient';
-import { Client, Guild, GuildMember, TextChannel } from 'discord.js';
-import { DateTime } from 'luxon';
-import _ from 'underscore';
+import { Client, Guild, GuildMember, TextChannel } from 'npm:discord.js';
+import { DateTime } from 'npm:luxon';
+import _ from 'npm:underscore';
 import { ConfigService } from './ConfigService';
 import { UserProfileService } from './UserProfileService';
 import { Logger } from './Logger';
@@ -12,11 +12,11 @@ export class BirthdayManager {
 	public static async populateCalendars (client: Client, serverId?: string): Promise<void> {
 		Logger.writeLog('Running birthday calendar update job.');
 
-    let parsedConfigs: ServerConfig[];
+    let parsedConfigs: ServerConfig[] = [];
 
     if (serverId) {
-      const serverConfig = await ConfigService.getConfig(serverId).catch(
-        (err) => {
+      const serverConfig: ServerConfig = await ConfigService.getConfig(serverId).catch(
+        (err: unknown) => {
           return Logger.writeError(
             'Error fetching server config for single run.',
             err
@@ -27,7 +27,7 @@ export class BirthdayManager {
         parsedConfigs = [serverConfig];
       }
     } else {
-      const serverConfigs = await ConfigService.getConfigs().catch((err) => {
+      const serverConfigs = await ConfigService.getConfigs().catch((err: unknown) => {
         return Logger.writeError(
           'Error fetching server configs for bulk run.',
           err
