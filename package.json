@@ -23,7 +23,7 @@
 		"luxon": "^3.2.1",
 		"node-schedule": "^2.1.1",
 		"reflect-metadata": "^0.1.13",
-		"sequelize": "^6.29.0",
+		"sequelize": "^6.29.1",
 		"sequelize-typescript": "^2.1.5",
 		"sqlite3": "^5.1.4",
 		"tslib": "^2.5.0",
