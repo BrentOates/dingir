@@ -18,6 +18,7 @@
 	"dependencies": {
 		"@discordjs/rest": "^1.6.0",
 		"@napi-rs/canvas": "^0.1.39",
+		"@napi-rs/canvas-linux-x64-gnu": "^0.1.39",
 		"discord.js": "^14.8.0",
 		"dotenv": "^16.0.3",
 		"luxon": "^3.3.0",
