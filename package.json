@@ -36,7 +36,7 @@
 		"@types/node-schedule": "^2.1.0",
 		"@types/underscore": "^1.11.4",
 		"@types/validator": "^13.7.14",
-		"@typescript-eslint/eslint-plugin": "^5.57.0",
+		"@typescript-eslint/eslint-plugin": "^5.57.1",
 		"@typescript-eslint/parser": "^5.57.0",
 		"copyfiles": "^2.4.1",
 		"eslint": "^8.37.0",
