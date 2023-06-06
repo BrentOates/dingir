@@ -47,9 +47,9 @@ const getWelcomeImage = async (config: ServerConfig, member: GuildMember) => {
   ctx.drawImage(background, 0, 0, canvas.width, canvas.height);
 
   // Draw Username
-  ctx.font = applyText(canvas, member.user.tag, 48);
+  ctx.font = applyText(canvas, member.displayName, 48);
   ctx.fillStyle = '#ffffff';
-  ctx.fillText(member.user.tag, 225, 125);
+  ctx.fillText(member.displayName, 225, 125);
 
   // Draw Server name
   ctx.font = applyText(canvas, `Welcome to ${member.guild.name}!`, 34);
@@ -100,7 +100,7 @@ const addGuestRoles = async(serverConfig: ServerConfig, newMember: GuildMember, 
     const audit = new EmbedCompatLayer()
       .setColor(EmbedColours.negative)
       .setAuthor({
-        name: newMember.user.tag,
+        name: newMember.displayName,
         iconURL: newMember.displayAvatarURL(),
       })
       .setDescription('Unable to provide guest role(s) to user.')
@@ -116,7 +116,7 @@ const sendScreenAudit = async(serverConfig: ServerConfig, newMember: GuildMember
     const audit = new EmbedCompatLayer()
       .setColor(EmbedColours.neutral)
       .setAuthor({
-        name: newMember.user.tag,
+        name: newMember.displayName,
         iconURL: newMember.displayAvatarURL(),
       })
       .setDescription('Rules accepted by member.')
@@ -182,7 +182,7 @@ export const run: RunFunction = async (
         const audit = new EmbedCompatLayer()
           .setColor(EmbedColours.negative)
           .setAuthor({
-            name: newMember.user.tag,
+            name: newMember.displayName,
             iconURL: newMember.displayAvatarURL(),
           })
           .setDescription('Unable to send welcome message.')

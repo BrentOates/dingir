@@ -20,7 +20,7 @@ const execute = async (cmd: ChatInputCommandInteraction) => {
 		.setTimestamp()
 		.addField('Member', member.toString())
 		.addField('Nickname', member.nickname ? member.nickname : 'Not set')
-		.addField('User tag', member.user.tag)
+		.addField('Username', member.user.tag.endsWith('#0') ? member.user.username : member.user.tag)
 		.addField('Joined', `<t:${Math.floor(member.joinedTimestamp / 1000)}:R>`)
 		.addField('Screening', member.pending ? 'Not completed' : 'Passed')
 		.addField(

@@ -24,7 +24,7 @@ export const run: RunFunction = async (
   const audit = new EmbedCompatLayer()
     .setColor(EmbedColours.negative)
     .setAuthor({
-      name: member.user.tag,
+      name: member.displayName,
       iconURL: member.displayAvatarURL(),
     })
     .setDescription('Member left')

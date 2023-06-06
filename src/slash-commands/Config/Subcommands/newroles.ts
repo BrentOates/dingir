@@ -23,11 +23,13 @@ const get = async (cmd: ChatInputCommandInteraction, config: ServerConfig) => {
 
 	const roleIds: string[] = config.guestRoleIds.split(',');
 	const roles = cmd.guild.roles.cache.filter(r => roleIds.includes(r.id));
+	const member = cmd.guild.members.cache.get(cmd.user.id);
 
 	const audit = new EmbedCompatLayer()
 	.setColor(EmbedColours.info)
 	.setAuthor({
-		name: cmd.user.tag, iconURL: cmd.user.displayAvatarURL()
+		name: member.displayName,
+		iconURL: cmd.user.displayAvatarURL()
 	})
 	.setDescription(`New user roles ${!config.guestRoleIds ? 'Removed' : 'Updated'}`)
 	.setTimestamp();

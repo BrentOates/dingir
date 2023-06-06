@@ -12,7 +12,7 @@ const sendAudit = async (cmd: ChatInputCommandInteraction, config: ServerConfig,
   embed
     .setColor(EmbedColours.neutral)
     .setAuthor({
-      name: member.user.tag,
+      name: member.displayName,
       iconURL: member.displayAvatarURL(),
     })
     .addField('Content', content ? content : 'No')

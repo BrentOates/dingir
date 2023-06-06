@@ -16,7 +16,7 @@ export const run: RunFunction = async (
   const audit = new EmbedCompatLayer()
     .setColor(EmbedColours.positive)
     .setAuthor({
-      name: member.user.tag,
+      name: member.displayName,
       iconURL: member.displayAvatarURL(),
     })
     .setDescription('New member joined')
