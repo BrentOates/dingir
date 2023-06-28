@@ -176,7 +176,7 @@ export const run: RunFunction = async (
         
       } catch (e) {
         Logger.writeError(
-          `Sending welcome message failed in guildMemberUpdate for server: ${serverConfig.id}.`,
+          `Sending welcome message failed in guildMemberUpdate for server: ${serverConfig.serverId}.`,
           e
         );
         const audit = new EmbedCompatLayer()
