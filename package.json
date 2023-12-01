@@ -24,7 +24,7 @@
 		"node-schedule": "^2.1.1",
 		"reflect-metadata": "^0.1.13",
 		"sequelize": "^6.35.0",
-		"sequelize-typescript": "^2.1.5",
+		"sequelize-typescript": "^2.1.6",
 		"sqlite3": "^5.1.6",
 		"tslib": "^2.6.2",
 		"underscore": "^1.13.6"
