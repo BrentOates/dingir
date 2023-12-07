@@ -42,7 +42,7 @@
 		"eslint": "^8.53.0",
 		"rimraf": "^5.0.5",
 		"tsc-watch": "^6.0.4",
-		"typescript": "^5.2.2"
+		"typescript": "^5.3.3"
 	},
 	"overrides": {
 		"@mapbox/node-pre-gyp": {
