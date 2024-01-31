@@ -1,6 +1,6 @@
 # Stage 1 - Build
 
-FROM node:18 AS build
+FROM node:20 AS build
 WORKDIR /usr/src/app
 COPY package*.json ./
 RUN npm ci
@@ -9,7 +9,7 @@ RUN npm run build
 
 # Stage 2 - Dist Only
 
-FROM node:18 AS dist
+FROM node:20 AS dist
 ARG TARGETARCH
 WORKDIR /usr/src/app
 COPY package*.json ./
