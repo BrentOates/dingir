@@ -19,7 +19,7 @@
 		"@discordjs/rest": "^2.2.0",
 		"@napi-rs/canvas": "^0.1.44",
 		"discord.js": "^14.14.1",
-		"dotenv": "^16.4.1",
+		"dotenv": "^16.4.2",
 		"luxon": "^3.4.4",
 		"node-schedule": "^2.1.1",
 		"reflect-metadata": "^0.2.1",
