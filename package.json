@@ -17,7 +17,7 @@
 	},
 	"dependencies": {
 		"@discordjs/rest": "^2.2.0",
-		"@napi-rs/canvas": "^0.1.44",
+		"@napi-rs/canvas": "^0.1.48",
 		"discord.js": "^14.14.1",
 		"dotenv": "^16.4.1",
 		"luxon": "^3.4.4",
