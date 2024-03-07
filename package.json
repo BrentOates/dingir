@@ -32,7 +32,7 @@
 	"devDependencies": {
 		"@types/glob": "^8.1.0",
 		"@types/luxon": "^3.4.2",
-		"@types/node": "^20.11.21",
+		"@types/node": "^20.11.25",
 		"@types/node-schedule": "^2.1.6",
 		"@types/underscore": "^1.11.15",
 		"@types/validator": "^13.11.9",
