@@ -16,7 +16,7 @@
 		"start": "node dist/src/index.js"
 	},
 	"dependencies": {
-		"@discordjs/rest": "^2.2.0",
+		"@discordjs/rest": "^2.3.0",
 		"@napi-rs/canvas": "^0.1.51",
 		"discord.js": "^14.14.1",
 		"dotenv": "^16.4.5",
