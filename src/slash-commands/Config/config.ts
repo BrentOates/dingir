@@ -1,4 +1,4 @@
-import { ChatInputCommandInteraction, SlashCommandBuilder, PermissionFlagsBits } from 'discord.js';
+import { ChatInputCommandInteraction, SlashCommandBuilder, PermissionFlagsBits, InteractionContextType } from 'discord.js';
 import { ServerConfig } from '../../client/models/ServerConfig';
 import { SlashCommand, SlashSubCommand, SlashSubGroupCommand } from '../../types/SlashCommand';
 import { AnnouncementsCommand } from './Subcommands/announcements';
@@ -34,7 +34,7 @@ const commandData = new SlashCommandBuilder()
 	.setName('config')
 	.setDescription('Manage configuration data for this server')
 	.setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
-	.setDMPermission(false)
+	.setContexts([InteractionContextType.Guild])
 	.addSubcommandGroup(AnnouncementsCommand.commandData)
 	.addSubcommandGroup(DebugCommand.commandData)
 	.addSubcommandGroup(SystemMessagesCommand.commandData)

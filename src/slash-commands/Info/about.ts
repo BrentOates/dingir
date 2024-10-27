@@ -1,4 +1,4 @@
-import { ChatInputCommandInteraction, SlashCommandBuilder } from 'discord.js';
+import { ChatInputCommandInteraction, InteractionContextType, SlashCommandBuilder } from 'discord.js';
 import { EmbedColours } from '../../resources/EmbedColours';
 import { EmbedCompatLayer } from '../../types/EmbedCompatLayer';
 import { SlashCommand } from '../../types/SlashCommand';
@@ -29,7 +29,7 @@ const execute = async (cmd: ChatInputCommandInteraction) => {
 const commandData = new SlashCommandBuilder()
 	.setName('about')
 	.setDescription('Returns info about the bot and server')
-	.setDMPermission(false);
+	.setContexts([InteractionContextType.Guild]);
 
 const slashCommand: SlashCommand = {
 	commandData: commandData,

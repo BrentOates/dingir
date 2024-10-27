@@ -1,4 +1,4 @@
-import { ChatInputCommandInteraction, SlashCommandBuilder, PermissionFlagsBits, SlashCommandRoleOption, SlashCommandNumberOption } from 'discord.js';
+import { ChatInputCommandInteraction, SlashCommandBuilder, PermissionFlagsBits, SlashCommandRoleOption, SlashCommandNumberOption, InteractionContextType } from 'discord.js';
 import { DateTime } from 'luxon';
 import { SlashCommand } from '../../types/SlashCommand';
 
@@ -58,7 +58,7 @@ const commandData = new SlashCommandBuilder()
     .setName('days')
     .setDescription('Minimum number of days in the role'))
   .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
-  .setDMPermission(false);
+  .setContexts([InteractionContextType.Guild]);
 
 const slashCommand: SlashCommand = {
   commandData: commandData,

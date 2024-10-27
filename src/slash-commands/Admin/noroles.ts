@@ -1,4 +1,4 @@
-import { ChatInputCommandInteraction, SlashCommandBuilder, PermissionFlagsBits } from 'discord.js';
+import { ChatInputCommandInteraction, SlashCommandBuilder, PermissionFlagsBits, InteractionContextType } from 'discord.js';
 import { SlashCommand } from '../../types/SlashCommand';
 
 const execute = async (cmd: ChatInputCommandInteraction) => {
@@ -35,7 +35,7 @@ const commandData = new SlashCommandBuilder()
 	.setName('noroles')
 	.setDescription('Returns members of this guild with no roles assigned')
 	.setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
-	.setDMPermission(false);
+	.setContexts([InteractionContextType.Guild]);
 
 const slashCommand: SlashCommand = {
 	commandData: commandData,

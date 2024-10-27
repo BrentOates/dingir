@@ -1,4 +1,4 @@
-import { ChatInputCommandInteraction, PermissionFlagsBits, SlashCommandBuilder, SlashCommandUserOption } from 'discord.js';
+import { ChatInputCommandInteraction, InteractionContextType, PermissionFlagsBits, SlashCommandBuilder, SlashCommandUserOption } from 'discord.js';
 import { EmbedColours } from '../../resources/EmbedColours';
 import { EmbedCompatLayer } from '../../types/EmbedCompatLayer';
 import { SlashCommand } from '../../types/SlashCommand';
@@ -43,7 +43,7 @@ const commandData = new SlashCommandBuilder()
 		.setDescription('Member to fetch profile for')
 		.setRequired(true))
 	.setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
-	.setDMPermission(false);
+	.setContexts([InteractionContextType.Guild]);
 
 const slashCommand: SlashCommand = {
 	commandData: commandData,

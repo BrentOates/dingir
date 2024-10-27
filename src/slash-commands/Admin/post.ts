@@ -1,4 +1,4 @@
-import { ChatInputCommandInteraction, SlashCommandBuilder, PermissionFlagsBits, SlashCommandChannelOption, SlashCommandStringOption, SlashCommandAttachmentOption, Attachment } from 'discord.js';
+import { ChatInputCommandInteraction, SlashCommandBuilder, PermissionFlagsBits, SlashCommandChannelOption, SlashCommandStringOption, SlashCommandAttachmentOption, Attachment, InteractionContextType } from 'discord.js';
 import { ServerConfig } from '../../client/models/ServerConfig';
 import { EmbedColours } from '../../resources/EmbedColours';
 import { EmbedCompatLayer } from '../../types/EmbedCompatLayer';
@@ -72,7 +72,7 @@ const commandData = new SlashCommandBuilder()
     .setName('attachment')
     .setDescription('Optional attachment to send'))
   .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
-  .setDMPermission(false);
+  .setContexts([InteractionContextType.Guild]);
 
 const slashCommand: SlashCommand = {
   commandData: commandData,

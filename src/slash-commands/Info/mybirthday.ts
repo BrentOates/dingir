@@ -1,4 +1,4 @@
-import { ChatInputCommandInteraction, SlashCommandBuilder, SlashCommandNumberOption } from 'discord.js';
+import { ChatInputCommandInteraction, InteractionContextType, SlashCommandBuilder, SlashCommandNumberOption } from 'discord.js';
 import { DateTime } from 'luxon';
 import { SlashCommand } from '../../types/SlashCommand';
 import { BirthdayManager } from '../../utilities/BirthdayManager';
@@ -69,7 +69,7 @@ const commandData = new SlashCommandBuilder()
 		.setRequired(true)
 		.setMinValue(1)
 		.setMaxValue(12))
-	.setDMPermission(false);
+	.setContexts([InteractionContextType.Guild]);
 
 const slashCommand: SlashCommand = {
 	commandData: commandData,

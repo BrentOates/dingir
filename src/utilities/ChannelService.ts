@@ -13,7 +13,7 @@ export class ChannelService {
     }
 
     const auditChannel = client.channels.cache.get(serverConfig.auditChannelId);
-    if (!auditChannel || !auditChannel.isTextBased()) {
+    if (!auditChannel || !auditChannel.isSendable()) {
       return;
     }
 

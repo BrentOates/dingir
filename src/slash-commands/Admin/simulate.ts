@@ -1,4 +1,4 @@
-import { ChatInputCommandInteraction, SlashCommandBuilder, PermissionFlagsBits, SlashCommandSubcommandBuilder, SlashCommandUserOption } from 'discord.js';
+import { ChatInputCommandInteraction, SlashCommandBuilder, PermissionFlagsBits, SlashCommandSubcommandBuilder, SlashCommandUserOption, InteractionContextType } from 'discord.js';
 import { SlashCommand } from '../../types/SlashCommand';
 
 const testJoin = async (cmd: ChatInputCommandInteraction) => {
@@ -49,7 +49,7 @@ const commandData = new SlashCommandBuilder()
 	.setName('simulate')
 	.setDescription('Simulate events in this server')
 	.setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
-	.setDMPermission(false)
+	.setContexts([InteractionContextType.Guild])
 	.addSubcommand((sub: SlashCommandSubcommandBuilder) => sub
 		.setName('join')
 		.setDescription('Simulate someone joining this server')

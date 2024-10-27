@@ -1,4 +1,4 @@
-import { ChatInputCommandInteraction, SlashCommandBuilder } from 'discord.js';
+import { ChatInputCommandInteraction, InteractionContextType, SlashCommandBuilder } from 'discord.js';
 import { SlashCommand } from '../../types/SlashCommand';
 
 const execute = async (cmd: ChatInputCommandInteraction) => {
@@ -11,7 +11,7 @@ const execute = async (cmd: ChatInputCommandInteraction) => {
 const commandData = new SlashCommandBuilder()
 	.setName('ping')
 	.setDescription('Pings Dingir')
-	.setDMPermission(false);
+	.setContexts([InteractionContextType.Guild]);
 
 const slashCommand: SlashCommand = {
 	commandData: commandData,
