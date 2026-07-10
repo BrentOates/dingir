@@ -1,6 +1,6 @@
 # Stage 1 - Build
 
-FROM node:24-trixie-slim AS build
+FROM node:26-trixie-slim AS build
 WORKDIR /usr/src/app
 COPY package*.json ./
 RUN npm ci
@@ -9,7 +9,7 @@ RUN npm run build
 
 # Stage 2 - Dist Only
 
-FROM node:24-trixie-slim AS dist
+FROM node:26-trixie-slim AS dist
 WORKDIR /usr/src/app
 COPY package*.json ./
 RUN npm ci --omit=dev
