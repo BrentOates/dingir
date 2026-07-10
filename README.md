@@ -1,6 +1,6 @@
 # Dingir
 Dingir is a Discord.js bot written in TypeScript, with some of the basic functions that we use in the Irkallu discord server.
-Requires > Node 16 to run.
+Requires Node 24 or newer to run.
 
 ## Getting started
 To run bot, all you need to do is...
