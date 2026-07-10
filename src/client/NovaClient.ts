@@ -1,13 +1,10 @@
 import { glob } from 'glob';
 import { Client, Collection, Partials, GatewayIntentBits } from 'discord.js';
-import { promisify } from 'util';
 import { Event } from '../types/Event';
 import { Logger } from '../utilities/Logger';
 import 'dotenv/config';
 import { sequelize } from './database/sequelize';
 import { SlashCommand } from '../types/SlashCommand';
-
-const globPromise = promisify(glob);
 
 class NovaClient extends Client {
 	public events: Collection<string, Event> = new Collection();
@@ -35,21 +32,23 @@ class NovaClient extends Client {
   public async start(): Promise<void> {
     await sequelize.sync({alter: true,});
 
-		const eventFiles: string[] = await globPromise(
+		const eventFiles: string[] = await glob(
 			`${__dirname}/../events/**/*{.js,.ts}`
 		);
-		const slashCommandFiles: string[] = await globPromise(
+		const slashCommandFiles: string[] = await glob(
 			`${__dirname}/../slash-commands/*/*{.js,.ts}`
 		);
 
 		eventFiles.forEach(async (eventFile: string) => {
-			const event = (await import(eventFile)) as Event;
+			const importedEvent = await import(eventFile);
+			const event = (importedEvent.default ?? importedEvent) as Event;
 			this.events.set(event.name, event);
 			this.on(event.name, event.run.bind(null, this));
 		});
 
 		slashCommandFiles.forEach(async (slashCommandFile: string) => {
-			const cmd = (await import(slashCommandFile)) as SlashCommand;
+			const importedCommand = await import(slashCommandFile);
+			const cmd = (importedCommand.default ?? importedCommand) as SlashCommand;
 			this.slashCommands.set(cmd.commandData.name, cmd);
 		});
 

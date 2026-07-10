@@ -1,9 +1,10 @@
 {
 	"compilerOptions": {
 		"lib": ["ESNext"],
-		"module": "commonjs",
-		"moduleResolution": "node",
-		"target": "ESNext",
+		"module": "NodeNext",
+		"moduleResolution": "NodeNext",
+		"target": "ES2024",
+		"strict": false,
 		"outDir": "dist",
 		"sourceMap": true,
 		"esModuleInterop": true,
