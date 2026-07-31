@@ -6,6 +6,7 @@ import { ChannelService } from '../utilities/ChannelService';
 import { ConfigService } from '../utilities/ConfigService';
 import { EmbedCompatLayer } from '../types/EmbedCompatLayer';
 import { UserProfileService } from '../utilities/UserProfileService';
+import { HoneyPotEnforcementService } from '../utilities/HoneyPotEnforcementService';
 
 export const name = 'guildMemberRemove';
 export const run: RunFunction = async (
@@ -13,6 +14,11 @@ export const run: RunFunction = async (
   member: GuildMember
 ) => {
   if (member.user.bot) {
+    return;
+  }
+
+  if (HoneyPotEnforcementService.isActive(member.guild.id, member.user.id)) {
+    await UserProfileService.deleteUser(member.guild.id, member.user.id);
     return;
   }
 
@@ -29,7 +35,10 @@ export const run: RunFunction = async (
     })
     .setDescription('Member left')
     .addField('ID', member.user.id)
-    .addField('Member data deleted', dataDeleted ? 'Successful' : 'Failed')
+    .addField(
+      'Member data cleanup',
+      dataDeleted ? 'Deleted' : 'No stored member data'
+    )
     .setTimestamp();
 
   const serverConfig = await ConfigService.getConfig(member.guild.id);

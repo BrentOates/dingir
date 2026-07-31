@@ -6,6 +6,7 @@ import { ChannelService } from '../utilities/ChannelService';
 import { ConfigService } from '../utilities/ConfigService';
 import { EmbedCompatLayer } from '../types/EmbedCompatLayer';
 import { UserProfileService } from '../utilities/UserProfileService';
+import { HoneyPotEnforcementService } from '../utilities/HoneyPotEnforcementService';
 
 export const name = 'messageDelete';
 export const run: RunFunction = async (
@@ -13,6 +14,10 @@ export const run: RunFunction = async (
   message: Message
 ) => {
   if (!message.author || !message.guild) {
+    return;
+  }
+
+  if (HoneyPotEnforcementService.isActive(message.guild.id, message.author.id)) {
     return;
   }
 

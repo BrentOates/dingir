@@ -5,6 +5,7 @@ import { AnnouncementsCommand } from './Subcommands/announcements';
 import { AuditCommand } from './Subcommands/audit';
 import { BirthdaysConfigCommand } from './Subcommands/birthdays';
 import { DebugCommand } from './Subcommands/debug';
+import { HoneyPotCommand } from './Subcommands/honeypot';
 import { NewRolesCommand } from './Subcommands/newroles';
 import { SystemMessagesCommand } from './Subcommands/systemMsgs';
 import { WelcomeCommand } from './Subcommands/welcome';
@@ -16,7 +17,8 @@ const cmdMap: {[key: string]: SlashSubGroupCommand | SlashSubCommand} = {
 	audit: AuditCommand,
 	welcome: WelcomeCommand,
 	newroles: NewRolesCommand,
-	birthdays: BirthdaysConfigCommand
+	birthdays: BirthdaysConfigCommand,
+	honeypot: HoneyPotCommand
 };
 
 const execute = async (cmd: ChatInputCommandInteraction, config: ServerConfig) => {
@@ -41,7 +43,8 @@ const commandData = new SlashCommandBuilder()
 	.addSubcommandGroup(AuditCommand.commandData)
 	.addSubcommandGroup(WelcomeCommand.commandData)
 	.addSubcommandGroup(NewRolesCommand.commandData)
-	.addSubcommandGroup(BirthdaysConfigCommand.commandData);
+	.addSubcommandGroup(BirthdaysConfigCommand.commandData)
+	.addSubcommandGroup(HoneyPotCommand.commandData);
 
 const slashCommand: SlashCommand = {
 	commandData: commandData,

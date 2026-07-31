@@ -44,4 +44,7 @@ export class ServerConfig extends Model {
 
   @Column
   declare birthdayCalendarMessagePath: string;
+
+  @Column
+  declare honeyPotChannelId: string;
 }
