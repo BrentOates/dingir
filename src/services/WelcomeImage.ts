@@ -2,7 +2,7 @@ import path from 'node:path';
 import { AttachmentBuilder, GuildMember } from 'discord.js';
 import { DateTime } from 'luxon';
 import { Canvas, createCanvas, GlobalFonts, loadImage } from '@napi-rs/canvas';
-import { env } from '../config/env.ts';
+import type { App } from '../app.ts';
 
 const FONT_FAMILY = 'Roboto';
 const FONT_PATH = path.join(import.meta.dirname, '..', 'resources', 'fonts', 'Roboto-Regular.ttf');
@@ -67,11 +67,12 @@ const downloadImage = async (url: string): Promise<Buffer> => {
 };
 
 export type WelcomeImageRenderer = (
+  app: App,
   member: GuildMember,
   backgroundUrl: string
 ) => Promise<AttachmentBuilder>;
 
-export const render: WelcomeImageRenderer = async (member, backgroundUrl) => {
+export const render: WelcomeImageRenderer = async (app, member, backgroundUrl) => {
   ensureFont();
   if (member.joinedTimestamp === null) {
     throw new Error(`Join date unavailable for member ${member.id}`);
@@ -87,7 +88,7 @@ export const render: WelcomeImageRenderer = async (member, backgroundUrl) => {
 
   const canvas = createCanvas(700, 250);
   const ctx = canvas.getContext('2d');
-  const joined = DateTime.fromMillis(member.joinedTimestamp, { zone: env.timezone }).toLocaleString(
+  const joined = DateTime.fromMillis(member.joinedTimestamp, { zone: app.env.timezone }).toLocaleString(
     DateTime.DATE_FULL
   );
   const name = member.displayName;

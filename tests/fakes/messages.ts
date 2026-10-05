@@ -1,4 +1,5 @@
 import { Collection, User } from 'discord.js';
+import type { App } from '../../src/app.ts';
 import type { DingirClient } from '../../src/client/DingirClient.ts';
 import type { Command } from '../../src/framework/command.ts';
 import interactionCreate from '../../src/events/interactionCreate.ts';
@@ -76,10 +77,11 @@ export function fakeMessage(overrides: Record<string, unknown> = {}) {
 }
 
 export async function runSlash(
+  app: App,
   client: DingirClient,
   fake: FakeInteraction,
   extra: Record<string, unknown> = {}
 ): Promise<void> {
   Object.assign(fake.interaction, { client, ...extra });
-  await interactionCreate.run(client, fake.interaction);
+  await interactionCreate.run(app, client, fake.interaction);
 }

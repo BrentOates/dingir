@@ -1,10 +1,9 @@
 import { ChannelType, Message, PermissionFlagsBits } from 'discord.js';
 import { defineCommand } from '../../framework/command.ts';
 import { EmbedColours } from '../../resources/EmbedColours.ts';
-import { AuditEmbed } from '../../services/AuditEmbed.ts';
+import { memberAuditEmbed } from '../../services/AuditEmbed.ts';
 import { sendAudit } from '../../services/AuditService.ts';
 import { resolveTextChannel } from '../../services/MemberResolver.ts';
-import { Logger } from '../../utilities/Logger.ts';
 
 export default defineCommand({
   name: 'post',
@@ -65,17 +64,21 @@ export default defineCommand({
         allowedMentions: { parse: ['users', 'roles'] },
       });
     } catch (error) {
-      Logger.warn('Failed to send /post message', { guildId: ctx.guild.id, channelId: channel.id }, error);
+      ctx.app.logger.warn(
+        'Failed to send /post message',
+        { guildId: ctx.guild.id, channelId: channel.id },
+        error
+      );
       await ctx.reply('An error was encountered sending this message.');
       return;
     }
 
-    const audit = AuditEmbed.forMember(ctx.member, EmbedColours.neutral, 'Post created via Dingir')
+    const audit = memberAuditEmbed(ctx.member, EmbedColours.neutral, 'Post created via Dingir')
       .addField('Channel', channel.toString())
       .addField('Content', content ?? 'No text')
       .addField('Attachment', attachment ? attachment.name : 'No')
       .addField('Message', sent.url);
-    await sendAudit(ctx.interaction.client, ctx.config, audit);
+    await sendAudit(ctx.app, ctx.interaction.client, ctx.config, audit);
 
     await ctx.reply(`Posted in ${channel.toString()}: ${sent.url}`);
   },

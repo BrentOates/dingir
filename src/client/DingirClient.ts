@@ -1,20 +1,17 @@
-import { env } from '../config/env.ts';
 import { Client, Collection, Partials, GatewayIntentBits } from 'discord.js';
+import type { App } from '../app.ts';
 import type { Command } from '../framework/command.ts';
 import { bindEvent } from '../framework/event.ts';
 import { validateRegistry } from '../framework/registry.ts';
 import { commands } from '../commands/index.ts';
 import { events } from '../events/index.ts';
-import { registerShutdownHook, runShutdownHooks } from '../framework/shutdown.ts';
-import { Logger } from '../utilities/Logger.ts';
-import { getDatabase } from '../db/db.ts';
-import { migrate } from '../db/migrator.ts';
 
 class DingirClient extends Client {
   public slashCommands: Collection<string, Command> = new Collection();
+  private readonly app: App;
   private shuttingDown = false;
 
-  public constructor() {
+  public constructor(app: App) {
     super({
       partials: [Partials.Message, Partials.Channel, Partials.GuildMember],
       intents: [
@@ -24,15 +21,11 @@ class DingirClient extends Client {
         GatewayIntentBits.MessageContent,
       ],
     });
+    this.app = app;
   }
 
   public async start(): Promise<void> {
-    const { sqlite } = getDatabase();
-    const applied = migrate(sqlite);
-    Logger.info('Database migrations complete', { applied: applied.length ? applied : 'none' });
-    registerShutdownHook(() => {
-      sqlite.close();
-    });
+    const { env, logger } = this.app;
 
     validateRegistry('command', commands);
     validateRegistry('event', events);
@@ -41,13 +34,13 @@ class DingirClient extends Client {
       this.slashCommands.set(command.name, command);
     }
     for (const event of events) {
-      bindEvent(this, event);
+      bindEvent(this.app, this, event);
     }
 
-    this.on('error', (error) => Logger.error('Discord client error', undefined, error));
-    this.on('warn', (message) => Logger.warn(message));
+    this.on('error', (error) => logger.error('Discord client error', undefined, error));
+    this.on('warn', (message) => logger.warn(message));
     process.on('unhandledRejection', (reason) =>
-      Logger.error('Unhandled promise rejection', undefined, reason)
+      logger.error('Unhandled promise rejection', undefined, reason)
     );
     for (const signal of ['SIGTERM', 'SIGINT'] as const) {
       process.on(signal, () => {
@@ -56,21 +49,22 @@ class DingirClient extends Client {
     }
 
     await this.login(env.token);
-    Logger.info('Logged in');
+    logger.info('Logged in');
   }
 
   private async shutdown(signal: string): Promise<void> {
+    const { logger } = this.app;
     if (this.shuttingDown) {
       return;
     }
     this.shuttingDown = true;
-    Logger.info(`${signal} received, shutting down`);
+    logger.info(`${signal} received, shutting down`);
     try {
       await this.destroy();
     } catch (error) {
-      Logger.error('Error destroying client', undefined, error);
+      logger.error('Error destroying client', undefined, error);
     }
-    await runShutdownHooks();
+    await this.app.shutdown.run();
     process.exit(0);
   }
 }

@@ -3,7 +3,7 @@ import { DateTime } from 'luxon';
 import { defineCommand } from '../../framework/command.ts';
 import { EmbedColours } from '../../resources/EmbedColours.ts';
 import { resolveMember } from '../../services/MemberResolver.ts';
-import { UserProfileService } from '../../services/UserProfileService.ts';
+import { findUserProfile } from '../../services/UserProfileService.ts';
 
 export default defineCommand({
   name: 'profile',
@@ -21,7 +21,7 @@ export default defineCommand({
       return;
     }
 
-    const profile = await UserProfileService.findUserProfile(ctx.guild.id, member.id);
+    const profile = await findUserProfile(ctx.app.db, ctx.guild.id, member.id);
     const birthday =
       profile?.birthdayMonth && profile.birthdayDay
         ? DateTime.utc(2024, profile.birthdayMonth, profile.birthdayDay)

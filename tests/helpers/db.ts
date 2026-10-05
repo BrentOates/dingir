@@ -1,6 +1,5 @@
 import { eq } from 'drizzle-orm';
-import { createDatabase, getDb, setDatabase, type DatabaseHandle } from '../../src/db/db.ts';
-import { migrate } from '../../src/db/migrator.ts';
+import type { Db } from '../../src/db/db.ts';
 import {
   serverConfigs,
   userProfiles,
@@ -8,48 +7,36 @@ import {
   type UserProfile,
 } from '../../src/db/schema.ts';
 
-/** An in-memory, fully migrated database that the services use until it is closed. */
-export function createTestDb(): DatabaseHandle {
-  const handle = createDatabase(':memory:');
-  migrate(handle.sqlite);
-  setDatabase(handle);
-  return handle;
-}
-
-export function closeTestDb(handle: DatabaseHandle): void {
-  setDatabase(undefined);
-  handle.sqlite.close();
-}
-
 type ConfigInsert = typeof serverConfigs.$inferInsert;
 type ProfileInsert = typeof userProfiles.$inferInsert;
 
-export const clearConfigs = (): void => {
-  getDb().delete(serverConfigs).run();
-};
+/** Direct table access for arranging and asserting database state in tests. */
+export function dbFixtures(db: Db) {
+  const allProfiles = (): UserProfile[] => db.select().from(userProfiles).all();
+  return {
+    clearConfigs: (): void => {
+      db.delete(serverConfigs).run();
+    },
+    clearProfiles: (): void => {
+      db.delete(userProfiles).run();
+    },
+    createConfig: (values: ConfigInsert): ServerConfig =>
+      db.insert(serverConfigs).values(values).returning().get(),
+    createConfigs: (values: ConfigInsert[]): void => {
+      db.insert(serverConfigs).values(values).run();
+    },
+    findConfig: (serverId: string): ServerConfig | null =>
+      db.select().from(serverConfigs).where(eq(serverConfigs.serverId, serverId)).get() ?? null,
+    createProfiles: (values: ProfileInsert[]): void => {
+      db.insert(userProfiles).values(values).run();
+    },
+    allProfiles,
+    countProfiles: (): number => allProfiles().length,
+    findProfile: (userId: string, serverId?: string): UserProfile | null =>
+      allProfiles().find(
+        (p) => p.userId === userId && (serverId === undefined || p.serverId === serverId)
+      ) ?? null,
+  };
+}
 
-export const clearProfiles = (): void => {
-  getDb().delete(userProfiles).run();
-};
-
-export const createConfig = (values: ConfigInsert): ServerConfig =>
-  getDb().insert(serverConfigs).values(values).returning().get();
-
-export const createConfigs = (values: ConfigInsert[]): void => {
-  getDb().insert(serverConfigs).values(values).run();
-};
-
-export const findConfig = (serverId: string): ServerConfig | null =>
-  getDb().select().from(serverConfigs).where(eq(serverConfigs.serverId, serverId)).get() ?? null;
-
-export const createProfiles = (values: ProfileInsert[]): void => {
-  getDb().insert(userProfiles).values(values).run();
-};
-
-export const allProfiles = (): UserProfile[] => getDb().select().from(userProfiles).all();
-
-export const countProfiles = (): number => allProfiles().length;
-
-export const findProfile = (userId: string, serverId?: string): UserProfile | null =>
-  allProfiles().find((p) => p.userId === userId && (serverId === undefined || p.serverId === serverId)) ??
-  null;
+export type DbFixtures = ReturnType<typeof dbFixtures>;

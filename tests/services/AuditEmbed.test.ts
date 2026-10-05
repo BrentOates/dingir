@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { GuildMember } from 'discord.js';
-import { AuditEmbed } from '../../src/services/AuditEmbed.ts';
+import { AuditEmbed, memberAuditEmbed } from '../../src/services/AuditEmbed.ts';
 import { EmbedColours } from '../../src/resources/EmbedColours.ts';
 
 const total = (json: ReturnType<AuditEmbed['toJSON']>): number =>
@@ -92,13 +92,13 @@ test('toJSON does not mutate the builder', () => {
   assert.equal(embed.data.fields?.length, 8);
 });
 
-test('forMember sets author, colour, description and timestamp', () => {
+test('memberAuditEmbed sets author, colour, description and timestamp', () => {
   const member = {
     displayName: 'Alice',
     user: { tag: 'alice#0' },
     displayAvatarURL: () => 'https://cdn.example/a.png',
   } as unknown as GuildMember;
-  const json = AuditEmbed.forMember(member, EmbedColours.info, 'hello').toJSON();
+  const json = memberAuditEmbed(member, EmbedColours.info, 'hello').toJSON();
   assert.equal(json.author?.name, 'Alice');
   assert.equal(json.author?.icon_url, 'https://cdn.example/a.png');
   assert.equal(json.description, 'hello');

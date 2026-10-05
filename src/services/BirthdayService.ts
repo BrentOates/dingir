@@ -1,10 +1,9 @@
-import { Client } from 'discord.js';
+import { Client, type Snowflake } from 'discord.js';
 import { DateTime } from 'luxon';
 import type { ServerConfig } from '../db/schema.ts';
-import { env } from '../config/env.ts';
-import { ConfigService } from '../services/ConfigService.ts';
-import { Logger } from '../utilities/Logger.ts';
-import { UserProfileService } from '../services/UserProfileService.ts';
+import type { App } from '../app.ts';
+import { getConfigs } from './ConfigService.ts';
+import { getServerBirthdays } from './UserProfileService.ts';
 import { type BirthdayProfile, isBirthdayToday, upcoming } from './BirthdayDates.ts';
 import { resolveMember, resolveTextChannel } from './MemberResolver.ts';
 
@@ -15,23 +14,18 @@ export type CalendarStatus =
   | 'message-missing'
   | 'failed';
 
-export interface BirthdayOptions {
-  now?: DateTime;
-  zone?: string;
-}
-
 const MESSAGE_LIMIT = 2000;
 const SEPARATOR = '-------------';
 const LOCALE = 'en-GB';
 
 export const parseCalendarPath = (
   path: string | null | undefined
-): { channelId: string; messageId: string } | null => {
+): { channelId: Snowflake; messageId: Snowflake } | null => {
   const [channelId, messageId, ...rest] = (path ?? '').split('/');
   return channelId && messageId && rest.length === 0 ? { channelId, messageId } : null;
 };
 
-export const calendarMessageUrl = (guildId: string, path: string): string =>
+export const calendarMessageUrl = (guildId: Snowflake, path: string): string =>
   `https://discord.com/channels/${guildId}/${path}`;
 
 export const buildCalendarContent = (
@@ -58,11 +52,14 @@ export const buildCalendarContent = (
   return content;
 };
 
+const nowOf = (app: App): DateTime => DateTime.fromJSDate(app.clock());
+
 export const refreshCalendar = async (
+  app: App,
   client: Client,
-  config: ServerConfig,
-  opts: BirthdayOptions = {}
+  config: ServerConfig
 ): Promise<CalendarStatus> => {
+  const { logger } = app;
   const guild = config.serverId;
   const target = parseCalendarPath(config.birthdayCalendarMessagePath);
   if (!target) {
@@ -70,33 +67,29 @@ export const refreshCalendar = async (
   }
   try {
     const channel = await client.channels.fetch(target.channelId).catch((error: unknown) => {
-      Logger.warn('Birthday calendar channel fetch failed', { guild }, error);
+      logger.warn('Birthday calendar channel fetch failed', { guild }, error);
       return null;
     });
     if (!channel || !channel.isTextBased()) {
       return 'channel-missing';
     }
     const message = await channel.messages.fetch(target.messageId).catch((error: unknown) => {
-      Logger.warn('Birthday calendar message fetch failed', { guild }, error);
+      logger.warn('Birthday calendar message fetch failed', { guild }, error);
       return null;
     });
     if (!message) {
       return 'message-missing';
     }
-    const profiles = (await UserProfileService.getServerBirthdays(guild)).map((p) => ({
+    const profiles = (await getServerBirthdays(app.db, guild)).map((p) => ({
       userId: p.userId,
       month: p.birthdayMonth!,
       day: p.birthdayDay!,
     }));
-    const content = buildCalendarContent(
-      profiles,
-      opts.now ?? DateTime.now(),
-      opts.zone ?? env.timezone
-    );
+    const content = buildCalendarContent(profiles, nowOf(app), app.env.timezone);
     await message.edit({ content, allowedMentions: { parse: [] } });
     return 'updated';
   } catch (error) {
-    Logger.error('Birthday calendar refresh failed', { guild }, error);
+    logger.error('Birthday calendar refresh failed', { guild }, error);
     return 'failed';
   }
 };
@@ -120,41 +113,41 @@ export const deleteCalendarMessage = async (
   }
 };
 
-export const refreshAllCalendars = async (
-  client: Client,
-  opts: BirthdayOptions = {}
-): Promise<void> => {
-  Logger.info('Refreshing birthday calendars');
-  const configs = await ConfigService.getConfigs();
+export const refreshAllCalendars = async (app: App, client: Client): Promise<void> => {
+  const { logger } = app;
+  logger.info('Refreshing birthday calendars');
+  const configs = await getConfigs(app.db);
   for (const config of configs) {
     if (!config.birthdayCalendarMessagePath) {
       continue;
     }
     try {
-      const status = await refreshCalendar(client, config, opts);
+      const status = await refreshCalendar(app, client, config);
       if (status !== 'updated') {
-        Logger.warn('Birthday calendar not updated', { guild: config.serverId, status });
+        logger.warn('Birthday calendar not updated', { guild: config.serverId, status });
       }
     } catch (error) {
-      Logger.error('Birthday calendar refresh crashed', { guild: config.serverId }, error);
+      logger.error('Birthday calendar refresh crashed', { guild: config.serverId }, error);
     }
   }
 };
 
 const notifyGuild = async (
+  app: App,
   client: Client,
   config: ServerConfig,
-  now: DateTime,
-  zone: string
+  now: DateTime
 ): Promise<void> => {
+  const { logger } = app;
+  const zone = app.env.timezone;
   const guild =
     client.guilds.cache.get(config.serverId) ?? (await client.guilds.fetch(config.serverId));
   const channel = await resolveTextChannel(guild, config.announcementsChannelId!);
   if (!channel) {
-    Logger.warn('Announcements channel unavailable', { guild: config.serverId });
+    logger.warn('Announcements channel unavailable', { guild: config.serverId });
     return;
   }
-  const profiles = await UserProfileService.getServerBirthdays(config.serverId);
+  const profiles = await getServerBirthdays(app.db, config.serverId);
   const ids: string[] = [];
   for (const profile of profiles) {
     if (!isBirthdayToday(profile.birthdayMonth!, profile.birthdayDay!, now, zone)) {
@@ -165,7 +158,7 @@ const notifyGuild = async (
         ids.push(profile.userId);
       }
     } catch (error) {
-      Logger.warn(
+      logger.warn(
         'Could not resolve birthday member',
         { guild: config.serverId, user: profile.userId },
         error
@@ -181,22 +174,18 @@ const notifyGuild = async (
   });
 };
 
-export const notifyBirthdays = async (
-  client: Client,
-  opts: BirthdayOptions = {}
-): Promise<void> => {
-  Logger.info('Sending birthday notifications');
-  const now = opts.now ?? DateTime.now();
-  const zone = opts.zone ?? env.timezone;
-  const configs = await ConfigService.getConfigs();
+export const notifyBirthdays = async (app: App, client: Client): Promise<void> => {
+  app.logger.info('Sending birthday notifications');
+  const now = nowOf(app);
+  const configs = await getConfigs(app.db);
   for (const config of configs) {
     if (!config.announcementsChannelId) {
       continue;
     }
     try {
-      await notifyGuild(client, config, now, zone);
+      await notifyGuild(app, client, config, now);
     } catch (error) {
-      Logger.error('Birthday notification failed', { guild: config.serverId }, error);
+      app.logger.error('Birthday notification failed', { guild: config.serverId }, error);
     }
   }
 };

@@ -1,12 +1,11 @@
 import { defineEvent } from '../framework/event.ts';
-import { ConfigService } from '../services/ConfigService.ts';
-import { Logger } from '../utilities/Logger.ts';
+import { getConfig, resetAccessFailures } from '../services/ConfigService.ts';
 
 export default defineEvent({
   name: 'guildCreate',
-  run: async (client, guild) => {
-    const config = await ConfigService.getConfig(guild.id);
-    await ConfigService.resetAccessFailures(config);
-    Logger.info('Bot added to guild', { guild: guild.id, name: guild.name });
+  run: async (app, _client, guild) => {
+    const config = await getConfig(app.db, guild.id);
+    await resetAccessFailures(app.db, config);
+    app.logger.info('Bot added to guild', { guild: guild.id, name: guild.name });
   },
 });

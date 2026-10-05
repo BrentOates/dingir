@@ -1,5 +1,3 @@
-import fs from 'node:fs';
-import path from 'node:path';
 import { IANAZone } from 'luxon';
 
 export interface Env {
@@ -97,20 +95,3 @@ export function loadEnv(source: Source = process.env): Readonly<Env> {
     devGuildId,
   });
 }
-
-let cached: Readonly<Env> | undefined;
-
-/** Loads and validates process.env, ensures the DB directory exists, and caches the result. */
-export function initEnv(source: Source = process.env): Readonly<Env> {
-  const loaded = loadEnv(source);
-  if (loaded.dbPath !== ':memory:') {
-    fs.mkdirSync(path.dirname(loaded.dbPath), { recursive: true });
-  }
-  cached = loaded;
-  return loaded;
-}
-
-/** Typed accessor for the validated environment; initialises lazily from process.env. */
-export const env: Readonly<Env> = new Proxy({} as Env, {
-  get: (_target, prop) => (cached ?? initEnv())[prop as keyof Env],
-});

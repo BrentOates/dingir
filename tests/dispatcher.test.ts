@@ -1,36 +1,16 @@
 import assert from 'node:assert/strict';
-import { after, afterEach, before, beforeEach, test } from 'node:test';
+import { after, test } from 'node:test';
 import { Collection, MessageFlags } from 'discord.js';
-import type { DatabaseHandle } from '../src/db/db.ts';
-import { closeTestDb, createTestDb } from './helpers/db.ts';
 import type { DingirClient } from '../src/client/DingirClient.ts';
 import { type Command, defineCommand } from '../src/framework/command.ts';
 import interactionCreate from '../src/events/interactionCreate.ts';
 import { fakeInteraction } from './fakes/interaction.ts';
+import { createTestApp } from './helpers/app.ts';
 
-let db: DatabaseHandle;
-const original = { log: console.log, warn: console.warn, error: console.error };
-let errors: string[];
+const app = createTestApp();
 
-before(async () => {
-  db = createTestDb();
-});
-
-after(async () => {
-  closeTestDb(db);
-});
-
-beforeEach(() => {
-  errors = [];
-  console.log = () => {};
-  console.warn = () => {};
-  console.error = (msg: unknown) => {
-    errors.push(String(msg));
-  };
-});
-
-afterEach(() => {
-  Object.assign(console, original);
+after(() => {
+  app.close();
 });
 
 const clientWith = (...commands: Command[]) =>
@@ -39,7 +19,7 @@ const clientWith = (...commands: Command[]) =>
   }) as unknown as DingirClient;
 
 const dispatch = (client: DingirClient, interaction: unknown) =>
-  interactionCreate.run(client, interaction as never);
+  interactionCreate.run(app, client, interaction as never);
 
 test('ignores interactions that are not chat input commands', async () => {
   const { interaction, calls } = fakeInteraction({ chatInput: false });
@@ -134,7 +114,8 @@ test('a throwing handler produces exactly one ephemeral error reply', async () =
       payload: { content: 'Something went wrong running this command.', flags: MessageFlags.Ephemeral },
     },
   ]);
-  assert.ok(errors.some((line) => line.includes('Command failed') && line.includes('command=test')));
+  const failure = app.logsAt('error').find((entry) => entry.message === 'Command failed');
+  assert.equal(failure?.context?.command, 'test');
 });
 
 test('a handler that throws after replying results in a single follow-up error message', async () => {
@@ -169,5 +150,5 @@ test('a failing error reply is logged and does not throw', async () => {
     throw new Error('reply failed');
   };
   await dispatch(clientWith(cmd), interaction);
-  assert.ok(errors.some((line) => line.includes('Could not send command error reply')));
+  assert.ok(app.logsAt('error').some((entry) => entry.message === 'Could not send command error reply'));
 });

@@ -20,22 +20,6 @@ export class AuditEmbed extends EmbedBuilder {
   private cut = false;
   private storedFields = 0;
 
-  public static forMember(
-    member: GuildMember | User,
-    colour: ColorResolvable,
-    description: string
-  ): AuditEmbed {
-    const user = member instanceof User ? member : member.user;
-    const name = member.displayName || user.tag;
-    const embed = new AuditEmbed();
-    embed
-      .setColor(colour)
-      .setAuthor({ name: truncate(name, LIMITS.fieldName), iconURL: member.displayAvatarURL() })
-      .setDescription(description)
-      .setTimestamp();
-    return embed;
-  }
-
   public setTitle(title: string | null): this {
     return super.setTitle(title === null ? null : this.limit(title, LIMITS.title));
   }
@@ -95,4 +79,18 @@ export class AuditEmbed extends EmbedBuilder {
     }
     return truncate(text, max);
   }
+}
+
+export function memberAuditEmbed(
+  member: GuildMember | User,
+  colour: ColorResolvable,
+  description: string
+): AuditEmbed {
+  const user = member instanceof User ? member : member.user;
+  const name = member.displayName || user.tag;
+  return new AuditEmbed()
+    .setColor(colour)
+    .setAuthor({ name: truncate(name, LIMITS.fieldName), iconURL: member.displayAvatarURL() })
+    .setDescription(description)
+    .setTimestamp();
 }

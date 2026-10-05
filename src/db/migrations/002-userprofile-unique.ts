@@ -1,5 +1,5 @@
 import type { Database } from 'better-sqlite3';
-import { Logger } from '../../utilities/Logger.ts';
+import type { Logger } from '../../utilities/Logger.ts';
 
 const INDEX_NAME = 'user_profiles_server_user_unique';
 
@@ -28,7 +28,7 @@ const birthdayKey = (row: ProfileRow): string =>
 const newestFirst = (a: ProfileRow, b: ProfileRow): number =>
   toTime(b.updatedAt) - toTime(a.updatedAt) || b.id - a.id;
 
-export function up(db: Database): void {
+export function up(db: Database, logger: Logger): void {
   const rows = db
     .prepare(
       'SELECT id, serverId, userId, birthdayYear, birthdayMonth, birthdayDay, activityScore, updatedAt FROM `UserProfiles` WHERE serverId IS NOT NULL AND userId IS NOT NULL'
@@ -58,7 +58,7 @@ export function up(db: Database): void {
     const keep = withBirthday.length > 0 ? withBirthday[0] : [...group].sort(newestFirst)[0];
 
     if (new Set(withBirthday.map(birthdayKey)).size > 1) {
-      Logger.warn('Conflicting birthdays while deduplicating UserProfiles; keeping most recent', {
+      logger.warn('Conflicting birthdays while deduplicating UserProfiles; keeping most recent', {
         serverId: keep.serverId,
         userId: keep.userId,
         keptId: keep.id,

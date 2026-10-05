@@ -1,5 +1,5 @@
 import { Cron } from 'croner';
-import { Logger } from '../utilities/Logger.ts';
+import type { Logger } from '../utilities/Logger.ts';
 
 export interface SchedulerTask {
   name: string;
@@ -27,6 +27,7 @@ const defaultScheduleFn: ScheduleFn = (spec, callback) => {
 
 export class Scheduler {
   private job: ScheduledJobLike | null = null;
+  private readonly logger: Logger;
   private current: Promise<void> | null = null;
   private readonly cron: string;
   private readonly timezone: string;
@@ -34,11 +35,13 @@ export class Scheduler {
   private readonly scheduleFn: ScheduleFn;
 
   public constructor(
+    logger: Logger,
     cron: string,
     timezone: string,
     tasks: SchedulerTask[],
     scheduleFn: ScheduleFn = defaultScheduleFn
   ) {
+    this.logger = logger;
     this.cron = cron;
     this.timezone = timezone;
     this.tasks = tasks;
@@ -47,7 +50,7 @@ export class Scheduler {
 
   public start(): void {
     if (this.job) {
-      Logger.warn('Scheduler already started', { cron: this.cron });
+      this.logger.warn('Scheduler already started', { cron: this.cron });
       return;
     }
     const job = this.scheduleFn({ rule: this.cron, tz: this.timezone }, () => {
@@ -68,7 +71,7 @@ export class Scheduler {
 
   public async runNow(): Promise<void> {
     if (this.current) {
-      Logger.warn('Scheduled run skipped; previous run still in progress');
+      this.logger.warn('Scheduled run skipped; previous run still in progress');
       return;
     }
     const run = this.runTasks();
@@ -85,7 +88,7 @@ export class Scheduler {
       try {
         await task.run();
       } catch (error) {
-        Logger.error('Scheduled task failed', { task: task.name }, error);
+        this.logger.error('Scheduled task failed', { task: task.name }, error);
       }
     }
   }

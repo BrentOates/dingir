@@ -3,8 +3,9 @@ import { test } from 'node:test';
 import { Client, EmbedBuilder } from 'discord.js';
 import type { ServerConfig } from '../../src/db/schema.ts';
 import { sendAudit } from '../../src/services/AuditService.ts';
+import { createTestApp } from '../helpers/app.ts';
 
-console.warn = (): void => undefined;
+const app = createTestApp();
 
 const config = (auditChannelId: string | null): ServerConfig =>
   ({ serverId: 'g1', auditChannelId }) as unknown as ServerConfig;
@@ -18,7 +19,7 @@ test('returns false without fetching when no audit channel configured', async ()
     fetched = true;
     return null;
   });
-  assert.equal(await sendAudit(client, config(null), embed), false);
+  assert.equal(await sendAudit(app, client, config(null), embed), false);
   assert.equal(fetched, false);
 });
 
@@ -26,13 +27,13 @@ test('returns false when fetch rejects', async () => {
   const client = clientWith(async () => {
     throw new Error('Missing Access');
   });
-  assert.equal(await sendAudit(client, config('c1'), embed), false);
+  assert.equal(await sendAudit(app, client, config('c1'), embed), false);
 });
 
 test('returns false when channel is missing or not sendable', async () => {
-  assert.equal(await sendAudit(clientWith(async () => null), config('c1'), embed), false);
+  assert.equal(await sendAudit(app, clientWith(async () => null), config('c1'), embed), false);
   const unsendable = clientWith(async () => ({ isSendable: () => false }));
-  assert.equal(await sendAudit(unsendable, config('c1'), embed), false);
+  assert.equal(await sendAudit(app, unsendable, config('c1'), embed), false);
 });
 
 test('returns false when send rejects', async () => {
@@ -42,7 +43,7 @@ test('returns false when send rejects', async () => {
       throw new Error('Missing Permissions');
     },
   }));
-  assert.equal(await sendAudit(client, config('c1'), embed), false);
+  assert.equal(await sendAudit(app, client, config('c1'), embed), false);
 });
 
 test('sends embed and files, returns true', async () => {
@@ -51,6 +52,6 @@ test('sends embed and files, returns true', async () => {
     isSendable: () => true,
     send: async (payload: unknown) => void sent.push(payload),
   }));
-  assert.equal(await sendAudit(client, config('c1'), embed), true);
+  assert.equal(await sendAudit(app, client, config('c1'), embed), true);
   assert.deepEqual(sent, [{ embeds: [embed], files: undefined }]);
 });

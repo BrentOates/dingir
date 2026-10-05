@@ -1,12 +1,11 @@
 import { MessageFlags } from 'discord.js';
 import { type CommandContext, createReply } from '../framework/command.ts';
 import { defineEvent } from '../framework/event.ts';
-import { ConfigService } from '../services/ConfigService.ts';
-import { Logger } from '../utilities/Logger.ts';
+import { getConfig } from '../services/ConfigService.ts';
 
 export default defineEvent({
   name: 'interactionCreate',
-  run: async (client, interaction) => {
+  run: async (app, client, interaction) => {
     if (!interaction.isChatInputCommand()) {
       return;
     }
@@ -22,7 +21,7 @@ export default defineEvent({
     const command = client.slashCommands.get(interaction.commandName);
     const resolved = command?.resolve(interaction);
     if (!resolved) {
-      Logger.warn('Unknown command', {
+      app.logger.warn('Unknown command', {
         command: interaction.commandName,
         subcommand: interaction.options.getSubcommand(false),
         guild: interaction.guildId,
@@ -34,13 +33,14 @@ export default defineEvent({
 
     const reply = createReply(interaction);
     try {
-      const config = await ConfigService.getConfig(interaction.guildId);
+      const config = await getConfig(app.db, interaction.guildId);
       if (resolved.defer) {
         await interaction.deferReply(
           resolved.defer === 'ephemeral' ? { flags: MessageFlags.Ephemeral } : {}
         );
       }
       const ctx: CommandContext = {
+        app,
         interaction,
         guild: interaction.guild,
         member: interaction.member,
@@ -49,20 +49,17 @@ export default defineEvent({
       };
       await resolved.run(ctx);
     } catch (error) {
-      Logger.error(
-        'Command failed',
-        {
-          command: interaction.commandName,
-          path: resolved.path,
-          guild: interaction.guildId,
-          user: interaction.user.id,
-        },
-        error
-      );
+      const context = {
+        command: interaction.commandName,
+        path: resolved.path,
+        guild: interaction.guildId,
+        user: interaction.user.id,
+      };
+      app.logger.error('Command failed', context, error);
       try {
         await reply('Something went wrong running this command.');
       } catch (replyError) {
-        Logger.error('Could not send command error reply', { path: resolved.path }, replyError);
+        app.logger.error('Could not send command error reply', { path: resolved.path }, replyError);
       }
     }
   },

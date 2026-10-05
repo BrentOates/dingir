@@ -21,12 +21,13 @@ export default defineCommand({
     const role = ctx.interaction.options.getRole('role', true);
     const days = ctx.interaction.options.getInteger('days') ?? 0;
 
+    const now = ctx.app.clock().getTime();
     await ctx.guild.members.fetch();
     const members = [...role.members.values()].filter((member) => {
       if (member.user.bot) {
         return false;
       }
-      const joinedDays = wholeDaysSinceJoin(member);
+      const joinedDays = wholeDaysSinceJoin(member, now);
       return joinedDays === null ? days === 0 : joinedDays >= days;
     });
 

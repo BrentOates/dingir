@@ -1,14 +1,13 @@
-import { GuildMember, Message, PermissionFlagsBits } from 'discord.js';
+import { GuildMember, Message, PermissionFlagsBits, type Snowflake } from 'discord.js';
+import type { App } from '../app.ts';
 import type { DingirClient } from '../client/DingirClient.ts';
 import type { ServerConfig } from '../db/schema.ts';
 import { defineEvent } from '../framework/event.ts';
 import { EmbedColours } from '../resources/EmbedColours.ts';
-import { AuditEmbed } from '../services/AuditEmbed.ts';
+import { memberAuditEmbed } from '../services/AuditEmbed.ts';
 import { sendAudit } from '../services/AuditService.ts';
-import { ConfigService } from '../services/ConfigService.ts';
-import { HoneyPotEnforcementService } from '../services/HoneyPotEnforcementService.ts';
-import { Logger } from '../utilities/Logger.ts';
-import { UserProfileService } from '../services/UserProfileService.ts';
+import { getConfig } from '../services/ConfigService.ts';
+import { deleteUser, incrementActivityScore } from '../services/UserProfileService.ts';
 
 const DELETE_MESSAGE_SECONDS = 7 * 24 * 60 * 60;
 
@@ -16,22 +15,24 @@ const formatError = (error: unknown): string =>
   error instanceof Error ? error.message : String(error);
 
 const auditHoneypot = async (
+  app: App,
   client: DingirClient,
   config: ServerConfig,
   member: GuildMember,
-  channelId: string,
+  channelId: Snowflake,
   description: string,
   action: string
 ): Promise<void> => {
-  const audit = AuditEmbed.forMember(member, EmbedColours.negative, description)
+  const audit = memberAuditEmbed(member, EmbedColours.negative, description)
     .addField('Member ID', member.id)
     .addField('Channel', `<#${channelId}>`)
     .addField('Action', action);
-  await sendAudit(client, config, audit);
+  await sendAudit(app, client, config, audit);
 };
 
 /** Returns true when the message was posted in the honeypot channel and has been dealt with. */
 export const handleHoneypot = async (
+  app: App,
   client: DingirClient,
   message: Message<true>,
   config: ServerConfig
@@ -47,15 +48,15 @@ export const handleHoneypot = async (
     return true;
   }
 
-  if (!HoneyPotEnforcementService.begin(message.guild.id, member.id)) {
+  if (!app.honeypot.begin(message.guild.id, member.id)) {
     return true;
   }
 
   if (!member.bannable) {
-    HoneyPotEnforcementService.cancel(message.guild.id, member.id);
+    app.honeypot.cancel(message.guild.id, member.id);
     const error = 'The bot cannot ban this member because of its permissions or role hierarchy.';
-    Logger.writeError(`Honey-pot ban failed for ${member.id}.`, error);
-    await auditHoneypot(client, config, member, message.channelId, 'Honey-pot ban failed', error);
+    app.logger.error(`Honey-pot ban failed for ${member.id}.`, undefined, error);
+    await auditHoneypot(app, client, config, member, message.channelId, 'Honey-pot ban failed', error);
     return true;
   }
 
@@ -65,17 +66,22 @@ export const handleHoneypot = async (
       reason: `Posted in honey-pot channel ${message.channelId}`,
     });
   } catch (error) {
-    HoneyPotEnforcementService.cancel(message.guild.id, member.id);
+    app.honeypot.cancel(message.guild.id, member.id);
     const errorMessage = formatError(error);
-    Logger.writeError(`Honey-pot ban failed for ${member.id}.`, errorMessage);
-    await auditHoneypot(client, config, member, message.channelId, 'Honey-pot ban failed', errorMessage);
+    app.logger.error(`Honey-pot ban failed for ${member.id}.`, undefined, errorMessage);
+    await auditHoneypot(app, client, config, member, message.channelId, 'Honey-pot ban failed', errorMessage);
     return true;
   }
 
-  await UserProfileService.deleteUser(message.guild.id, member.id).catch((error) => {
-    Logger.writeError(`Could not delete profile data for honey-pot ban ${member.id}.`, formatError(error));
+  await deleteUser(app.db, message.guild.id, member.id).catch((error) => {
+    app.logger.error(
+      `Could not delete profile data for honey-pot ban ${member.id}.`,
+      undefined,
+      formatError(error)
+    );
   });
   await auditHoneypot(
+    app,
     client,
     config,
     member,
@@ -88,16 +94,16 @@ export const handleHoneypot = async (
 
 export default defineEvent({
   name: 'messageCreate',
-  run: async (client, message) => {
+  run: async (app, client, message) => {
     if (!message.inGuild() || message.author.bot || message.webhookId || message.system) {
       return;
     }
 
-    const config = await ConfigService.getConfig(message.guildId);
-    if (await handleHoneypot(client, message, config)) {
+    const config = await getConfig(app.db, message.guildId);
+    if (await handleHoneypot(app, client, message, config)) {
       return;
     }
 
-    await UserProfileService.incrementActivityScore(message.guildId, message.author.id);
+    await incrementActivityScore(app.db, message.guildId, message.author.id);
   },
 });

@@ -35,7 +35,7 @@ export default defineCommand({
         if (!target) {
           return;
         }
-        const sent = await auditJoin(ctx.interaction.client, target, ctx.config);
+        const sent = await auditJoin(ctx.app, ctx.interaction.client, target, ctx.config);
         await ctx.reply({
           content: sent
             ? `Sent the "member joined" audit for ${target.toString()}. No roles or welcome message were applied.`
@@ -54,7 +54,9 @@ export default defineCommand({
         if (!target) {
           return;
         }
-        const result = await complete(ctx.interaction.client, target, ctx.config, { dryRun: true });
+        const result = await complete(ctx.app, ctx.interaction.client, target, ctx.config, {
+          dryRun: true,
+        });
         const payload = result.welcomePayload;
         const welcome = payload
           ? `\n\nWelcome preview:\n${payload.content ?? '*(no text)*'}${

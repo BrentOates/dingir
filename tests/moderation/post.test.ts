@@ -1,33 +1,20 @@
 import assert from 'node:assert/strict';
-import { after, before, beforeEach, test } from 'node:test';
+import { after, before, test } from 'node:test';
 import { Collection, PermissionFlagsBits } from 'discord.js';
-import type { DatabaseHandle } from '../../src/db/db.ts';
 import post from '../../src/commands/admin/post.ts';
-import { ConfigService } from '../../src/services/ConfigService.ts';
-import { closeTestDb, createTestDb } from '../helpers/db.ts';
+import { updateConfig } from '../../src/services/ConfigService.ts';
+import { createTestApp } from '../helpers/app.ts';
 import { fakeInteraction } from '../fakes/interaction.ts';
 import { auditJson, fakeAuditClient, fakeMember, runSlash } from '../fakes/messages.ts';
 
-let db: DatabaseHandle;
-const original = { log: console.log, warn: console.warn, error: console.error };
+const app = createTestApp();
 
 before(async () => {
-  db = createTestDb();
-  await ConfigService.updateConfig('guild-1', { auditChannelId: 'audit-1' });
-});
-
-after(async () => {
-  closeTestDb(db);
-});
-
-beforeEach(() => {
-  console.log = () => {};
-  console.warn = () => {};
-  console.error = () => {};
+  await updateConfig(app.db, 'guild-1', { auditChannelId: 'audit-1' });
 });
 
 after(() => {
-  Object.assign(console, original);
+  app.close();
 });
 
 const target = (send: () => Promise<unknown>, granted: bigint[]) => ({
@@ -72,7 +59,7 @@ test('send failure replies with an error and neither succeeds nor audits', async
     }, allPerms),
     { content: 'hi' }
   );
-  await runSlash(sink.client, fake, { member: fakeMember('user-1') });
+  await runSlash(app, sink.client, fake, { member: fakeMember('user-1') });
   const reply = fake.calls.at(-1)!;
   assert.equal(reply.method, 'editReply');
   assert.match(reply.payload.content, /error was encountered/);
@@ -89,7 +76,7 @@ test('success audits then replies with the jump link', async () => {
     }, allPerms),
     { content: 'hello world', attachment: { name: 'pic.png' } }
   );
-  await runSlash(sink.client, fake, { member: fakeMember('user-1') });
+  await runSlash(app, sink.client, fake, { member: fakeMember('user-1') });
   assert.equal(sentPayloads.length, 1);
   assert.equal(sink.sent.length, 1);
   const embed = auditJson(sink.sent);
@@ -112,7 +99,7 @@ test('missing permission replies clearly and does not send', async () => {
     }, [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages]),
     { attachment: { name: 'pic.png' } }
   );
-  await runSlash(sink.client, fake, { member: fakeMember('user-1') });
+  await runSlash(app, sink.client, fake, { member: fakeMember('user-1') });
   assert.equal(sends, 0);
   assert.equal(sink.sent.length, 0);
   assert.match(fake.calls.at(-1)!.payload.content, /AttachFiles/);
@@ -121,7 +108,7 @@ test('missing permission replies clearly and does not send', async () => {
 test('requires content or attachment and limits content length', async () => {
   const sink = fakeAuditClient('audit-1', [post]);
   const fake = setup(target(async () => ({ url: 'x' }), allPerms), {});
-  await runSlash(sink.client, fake, { member: fakeMember('user-1') });
+  await runSlash(app, sink.client, fake, { member: fakeMember('user-1') });
   assert.match(fake.calls.at(-1)!.payload.content, /at least text or an attachment/);
 
   const content = post.toJSON().options!.find((o: any) => o.name === 'content') as any;

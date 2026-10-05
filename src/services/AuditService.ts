@@ -1,8 +1,9 @@
 import { Attachment, Client, EmbedBuilder } from 'discord.js';
+import type { App } from '../app.ts';
 import type { ServerConfig } from '../db/schema.ts';
-import { Logger } from '../utilities/Logger.ts';
 
 export const sendAudit = async (
+  app: App,
   client: Client,
   config: ServerConfig,
   embed: EmbedBuilder,
@@ -17,13 +18,13 @@ export const sendAudit = async (
   try {
     const channel = await client.channels.fetch(channelId);
     if (!channel || !channel.isSendable()) {
-      Logger.warn('Audit channel missing or not sendable', context);
+      app.logger.warn('Audit channel missing or not sendable', context);
       return false;
     }
     await channel.send({ embeds: [embed], files: files?.length ? files : undefined });
     return true;
   } catch (error) {
-    Logger.warn('Failed to send audit message', context, error);
+    app.logger.warn('Failed to send audit message', context, error);
     return false;
   }
 };

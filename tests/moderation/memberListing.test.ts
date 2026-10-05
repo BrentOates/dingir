@@ -1,20 +1,16 @@
 import assert from 'node:assert/strict';
-import { after, before, test } from 'node:test';
+import { after, test } from 'node:test';
 import { Collection } from 'discord.js';
-import type { DatabaseHandle } from '../../src/db/db.ts';
 import noroles from '../../src/commands/admin/noroles.ts';
 import rolesince from '../../src/commands/admin/rolesince.ts';
 import { buildMemberListing, INLINE_LIMIT } from '../../src/services/MemberListing.ts';
-import { closeTestDb, createTestDb } from '../helpers/db.ts';
+import { createTestApp, FIXED_NOW } from '../helpers/app.ts';
 import { fakeInteraction } from '../fakes/interaction.ts';
 import { fakeAuditClient, fakeMember, fakeUser, runSlash } from '../fakes/messages.ts';
 
-let db: DatabaseHandle;
-before(async () => {
-  db = createTestDb();
-});
-after(async () => {
-  closeTestDb(db);
+const app = createTestApp();
+after(() => {
+  app.close();
 });
 
 const DAY = 24 * 60 * 60 * 1000;
@@ -53,7 +49,7 @@ test('empty listing returns the empty message', () => {
 });
 
 test('rolesince filters by days in server and excludes bots', async () => {
-  const now = Date.now();
+  const now = FIXED_NOW.getTime();
   const old = fakeMember('1', { joinedTimestamp: now - 40 * DAY });
   const recent = fakeMember('2', { joinedTimestamp: now - 2 * DAY });
   const bot = fakeMember('3', { joinedTimestamp: now - 90 * DAY, user: fakeUser('3', { bot: true }) });
@@ -67,7 +63,7 @@ test('rolesince filters by days in server and excludes bots', async () => {
 
   const fake = fakeInteraction({ commandName: 'rolesince', options: { role }, guild });
   Object.assign(fake.interaction.options, { getInteger: () => 30 });
-  await runSlash(sink.client, fake);
+  await runSlash(app, sink.client, fake);
   assert.equal(fetched, true);
   assert.equal(fake.calls[0].method, 'deferReply');
   const content = fake.calls.at(-1)!.payload.content as string;
@@ -78,7 +74,7 @@ test('rolesince filters by days in server and excludes bots', async () => {
 
   const all = fakeInteraction({ commandName: 'rolesince', options: { role }, guild });
   Object.assign(all.interaction.options, { getInteger: () => null });
-  await runSlash(sink.client, all);
+  await runSlash(app, sink.client, all);
   const everyone = all.calls.at(-1)!.payload.content as string;
   assert.match(everyone, /<@1>/);
   assert.match(everyone, /<@2>/);
@@ -96,7 +92,7 @@ test('noroles lists only non-bot members with just the everyone role', async () 
   };
   const sink = fakeAuditClient('a', [noroles]);
   const fake = fakeInteraction({ commandName: 'noroles', guild });
-  await runSlash(sink.client, fake);
+  await runSlash(app, sink.client, fake);
   assert.equal(fake.calls[0].method, 'deferReply');
   const content = fake.calls.at(-1)!.payload.content as string;
   assert.match(content, /<@1>/);

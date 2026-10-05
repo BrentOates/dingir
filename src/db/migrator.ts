@@ -1,11 +1,12 @@
 import type { Database } from 'better-sqlite3';
+import type { Logger } from '../utilities/Logger.ts';
 import * as baseline from './migrations/001-baseline.ts';
 import * as userProfileUnique from './migrations/002-userprofile-unique.ts';
 import * as serverConfigAccessTracking from './migrations/003-serverconfig-access-tracking.ts';
 
 export interface Migration {
   name: string;
-  up: (db: Database) => void;
+  up: (db: Database, logger: Logger) => void;
 }
 
 export const migrations: Migration[] = [
@@ -15,7 +16,7 @@ export const migrations: Migration[] = [
 ];
 
 /** Applies pending migrations in order, each in its own transaction, and returns their names. */
-export function migrate(db: Database, list: Migration[] = migrations): string[] {
+export function migrate(db: Database, logger: Logger, list: Migration[] = migrations): string[] {
   db.exec('CREATE TABLE IF NOT EXISTS `SequelizeMeta` (`name` VARCHAR(255) PRIMARY KEY)');
 
   const done = new Set(
@@ -29,7 +30,7 @@ export function migrate(db: Database, list: Migration[] = migrations): string[] 
       continue;
     }
     db.transaction(() => {
-      migration.up(db);
+      migration.up(db, logger);
       record.run(migration.name);
     })();
     applied.push(migration.name);

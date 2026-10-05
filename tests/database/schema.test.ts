@@ -3,31 +3,31 @@ import { test } from 'node:test';
 import { getTableColumns, getTableName } from 'drizzle-orm';
 import type { SQLiteTable } from 'drizzle-orm/sqlite-core';
 import { serverConfigs, userProfiles } from '../../src/db/schema.ts';
-import { closeTestDb, createTestDb } from '../helpers/db.ts';
+import { createTestApp } from '../helpers/app.ts';
 
 const columnNames = (table: SQLiteTable): string[] =>
   Object.values(getTableColumns(table)).map((column) => column.name);
 
 test('Drizzle schema columns exist in the migrated database', () => {
-  const handle = createTestDb();
+  const app = createTestApp();
   try {
     for (const table of [serverConfigs, userProfiles]) {
       const actual = (
-        handle.sqlite.pragma(`table_info(\`${getTableName(table)}\`)`) as { name: string }[]
+        app.db.$client.pragma(`table_info(\`${getTableName(table)}\`)`) as { name: string }[]
       ).map((column) => column.name);
       for (const name of columnNames(table)) {
         assert.ok(actual.includes(name), `${getTableName(table)}.${name} missing from database`);
       }
     }
   } finally {
-    closeTestDb(handle);
+    app.close();
   }
 });
 
 test('migrated database applies column defaults and round-trips dates', () => {
-  const handle = createTestDb();
+  const app = createTestApp();
   try {
-    const { db } = handle;
+    const { db } = app;
     db.insert(serverConfigs).values({ serverId: 's1' }).run();
     const config = db.select().from(serverConfigs).get()!;
     assert.equal(config.systemMessagesEnabled, false);
@@ -38,7 +38,7 @@ test('migrated database applies column defaults and round-trips dates', () => {
 
     const when = new Date('2024-01-01T12:00:00.000Z');
     db.update(serverConfigs).set({ firstAccessFailureAt: when }).run();
-    const raw = handle.sqlite.prepare('SELECT firstAccessFailureAt AS v FROM `ServerConfigs`').get() as {
+    const raw = app.db.$client.prepare('SELECT firstAccessFailureAt AS v FROM `ServerConfigs`').get() as {
       v: string;
     };
     assert.equal(raw.v, '2024-01-01 12:00:00.000 +00:00');
@@ -47,6 +47,6 @@ test('migrated database applies column defaults and round-trips dates', () => {
     db.insert(userProfiles).values({ serverId: 's1', userId: 'u1' }).run();
     assert.equal(db.select().from(userProfiles).get()!.activityScore, 0);
   } finally {
-    closeTestDb(handle);
+    app.close();
   }
 });

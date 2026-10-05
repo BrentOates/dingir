@@ -1,40 +1,22 @@
 import assert from 'node:assert/strict';
-import { after, before, beforeEach, test } from 'node:test';
-import type { DatabaseHandle } from '../../src/db/db.ts';
-import { initEnv } from '../../src/config/env.ts';
+import { after, beforeEach, test } from 'node:test';
 import { type CommandContext, createReply } from '../../src/framework/command.ts';
 import mybirthday from '../../src/commands/info/mybirthday.ts';
 import profile from '../../src/commands/info/profile.ts';
 import { fakeClient, fakeGuildWithMembers } from '../fakes/guild.ts';
 import { fakeInteraction } from '../fakes/interaction.ts';
-import {
-  clearConfigs,
-  clearProfiles,
-  closeTestDb,
-  countProfiles,
-  createConfig,
-  createProfiles,
-  createTestDb,
-  findProfile,
-} from '../helpers/db.ts';
+import { createTestApp } from '../helpers/app.ts';
+import { dbFixtures } from '../helpers/db.ts';
 
-initEnv({ TOKEN: 't', CLIENT_ID: 'c', DB_PATH: ':memory:', BOT_TIMEZONE: 'Europe/London' });
+const app = createTestApp();
+const { clearConfigs, clearProfiles, countProfiles, createConfig, createProfiles, findProfile } =
+  dbFixtures(app.db);
 
-console.warn = (): void => undefined;
-console.error = (): void => undefined;
-console.log = (): void => undefined;
-
-let db: DatabaseHandle;
-
-before(async () => {
-  db = createTestDb();
+after(() => {
+  app.close();
 });
 
-after(async () => {
-  closeTestDb(db);
-});
-
-beforeEach(async () => {
+beforeEach(() => {
   clearProfiles();
   clearConfigs();
 });
@@ -52,6 +34,7 @@ const exec = async (
   raw.guild = guild;
   const resolved = command.resolve(fake.interaction)!;
   const ctx = {
+    app,
     interaction: fake.interaction,
     guild,
     member: raw.member,

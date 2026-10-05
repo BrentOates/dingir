@@ -20,7 +20,7 @@ const fileLine = (member: GuildMember): string =>
       : `joined ${DateTime.fromMillis(member.joinedTimestamp, { zone: 'utc' }).toISODate()}`
   }`;
 
-export const wholeDaysSinceJoin = (member: GuildMember, now: number = Date.now()): number | null => {
+export const wholeDaysSinceJoin = (member: GuildMember, now: number): number | null => {
   if (member.joinedTimestamp === null) {
     return null;
   }

@@ -1,12 +1,9 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { type ScheduleFn, Scheduler } from '../../src/services/Scheduler.ts';
+import { fakeLogger } from '../helpers/app.ts';
 
-const silence = (): void => {
-  console.warn = (): void => undefined;
-  console.error = (): void => undefined;
-};
-silence();
+const { logger } = fakeLogger();
 
 const fakeSchedule = (): { fn: ScheduleFn; calls: unknown[]; cancelled: () => number; fire: () => void } => {
   const calls: unknown[] = [];
@@ -22,7 +19,7 @@ const fakeSchedule = (): { fn: ScheduleFn; calls: unknown[]; cancelled: () => nu
 
 test('tasks run sequentially in order with error isolation', async () => {
   const order: string[] = [];
-  const scheduler = new Scheduler('0 0 * * *', 'utc', [
+  const scheduler = new Scheduler(logger, '0 0 * * *', 'utc', [
     { name: 'a', run: async () => void order.push('a') },
     {
       name: 'boom',
@@ -43,7 +40,7 @@ test('overlapping runNow is skipped, then allowed again', async () => {
   const gate = new Promise<void>((resolve) => {
     release = resolve;
   });
-  const scheduler = new Scheduler('0 0 * * *', 'utc', [
+  const scheduler = new Scheduler(logger, '0 0 * * *', 'utc', [
     {
       name: 'slow',
       run: async () => {
@@ -63,7 +60,7 @@ test('overlapping runNow is skipped, then allowed again', async () => {
 
 test('start schedules with cron and tz; second start is a no-op', () => {
   const fake = fakeSchedule();
-  const scheduler = new Scheduler('0 9 * * *', 'Europe/London', [], fake.fn);
+  const scheduler = new Scheduler(logger, '0 9 * * *', 'Europe/London', [], fake.fn);
   scheduler.start();
   scheduler.start();
   assert.deepEqual(fake.calls, [{ rule: '0 9 * * *', tz: 'Europe/London' }]);
@@ -73,7 +70,7 @@ test('start schedules with cron and tz; second start is a no-op', () => {
 test('fired job triggers tasks', async () => {
   const fake = fakeSchedule();
   let ran = 0;
-  const scheduler = new Scheduler('* * * * *', 'utc', [{ name: 't', run: async () => void (ran += 1) }], fake.fn);
+  const scheduler = new Scheduler(logger, '* * * * *', 'utc', [{ name: 't', run: async () => void (ran += 1) }], fake.fn);
   scheduler.start();
   fake.fire();
   await new Promise((resolve) => setImmediate(resolve));
@@ -81,13 +78,13 @@ test('fired job triggers tasks', async () => {
 });
 
 test('start throws when the schedule is invalid', () => {
-  const scheduler = new Scheduler('nope', 'utc', [], () => null);
+  const scheduler = new Scheduler(logger, 'nope', 'utc', [], () => null);
   assert.throws(() => scheduler.start(), /Invalid cron/);
 });
 
 test('stop cancels the job and clears nextInvocation', async () => {
   const fake = fakeSchedule();
-  const scheduler = new Scheduler('* * * * *', 'utc', [], fake.fn);
+  const scheduler = new Scheduler(logger, '* * * * *', 'utc', [], fake.fn);
   scheduler.start();
   await scheduler.stop();
   assert.equal(fake.cancelled(), 1);
@@ -97,7 +94,7 @@ test('stop cancels the job and clears nextInvocation', async () => {
 });
 
 test('real croner schedule rejects an invalid cron string', () => {
-  const scheduler = new Scheduler('not a cron', 'utc', []);
+  const scheduler = new Scheduler(logger, 'not a cron', 'utc', []);
   assert.throws(() => scheduler.start());
 });
 
@@ -107,7 +104,7 @@ test('stop during a run waits for it to finish', async () => {
     release = resolve;
   });
   let finished = false;
-  const scheduler = new Scheduler('* * * * *', 'utc', [
+  const scheduler = new Scheduler(logger, '* * * * *', 'utc', [
     {
       name: 'slow',
       run: async () => {
@@ -132,7 +129,7 @@ test('stop during a run waits for it to finish', async () => {
 });
 
 test('real croner schedule accepts a valid cron and reports the next run', async () => {
-  const scheduler = new Scheduler('0 9 * * *', 'Europe/London', []);
+  const scheduler = new Scheduler(logger, '0 9 * * *', 'Europe/London', []);
   scheduler.start();
   assert.ok(scheduler.nextInvocation() instanceof Date);
   await scheduler.stop();

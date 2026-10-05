@@ -1,12 +1,12 @@
 import { defineEvent } from '../framework/event.ts';
 import { EmbedColours } from '../resources/EmbedColours.ts';
-import { AuditEmbed } from '../services/AuditEmbed.ts';
+import { memberAuditEmbed } from '../services/AuditEmbed.ts';
 import { sendAudit } from '../services/AuditService.ts';
-import { ConfigService } from '../services/ConfigService.ts';
+import { getConfig } from '../services/ConfigService.ts';
 
 export default defineEvent({
   name: 'messageUpdate',
-  run: async (client, oldMessage, partialNew) => {
+  run: async (app, client, oldMessage, partialNew) => {
     if (!partialNew.guildId) {
       return;
     }
@@ -29,13 +29,13 @@ export default defineEvent({
       return;
     }
 
-    const audit = AuditEmbed.forMember(newMessage.author, EmbedColours.neutral, 'A message was edited')
+    const audit = memberAuditEmbed(newMessage.author, EmbedColours.neutral, 'A message was edited')
       .addField('Channel', `<#${newMessage.channelId}>`)
       .addField('Previous', previous === null ? '*(not cached)*' : previous)
       .addField('Current', newMessage.content)
       .addField('Jump to message', newMessage.url);
 
-    const config = await ConfigService.getConfig(newMessage.guildId);
-    await sendAudit(client, config, audit);
+    const config = await getConfig(app.db, newMessage.guildId);
+    await sendAudit(app, client, config, audit);
   },
 });

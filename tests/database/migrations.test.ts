@@ -2,7 +2,9 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import Database from 'better-sqlite3';
 import { migrate, migrations, type Migration } from '../../src/db/migrator.ts';
-import { Logger } from '../../src/utilities/Logger.ts';
+import { fakeLogger } from '../helpers/app.ts';
+
+const { logger, logs } = fakeLogger();
 
 type Db = Database.Database;
 
@@ -48,13 +50,13 @@ const insertProfiles = (db: Db, rows: ReturnType<typeof profileRow>[]): void => 
 };
 
 const runUpTo = (db: Db, to: string): string[] =>
-  migrate(db, migrations.slice(0, migrations.findIndex((m) => m.name === to) + 1));
+  migrate(db, logger, migrations.slice(0, migrations.findIndex((m) => m.name === to) + 1));
 
 const allRows = (db: Db, sql: string): unknown[] => db.prepare(sql).all();
 
 test('migrations on an empty database create the expected schema', () => {
   withDb((db) => {
-    assert.deepEqual(migrate(db), ALL);
+    assert.deepEqual(migrate(db, logger), ALL);
 
     const serverColumns = columnsOf(db, 'ServerConfigs');
     for (const column of [
@@ -94,9 +96,9 @@ test('migrations on an empty database create the expected schema', () => {
 
 test('running migrations twice is a no-op', () => {
   withDb((db) => {
-    migrate(db);
+    migrate(db, logger);
     insertProfiles(db, [profileRow('s1', 'u1', null, null, 4, '2024-01-01 00:00:00.000 +00:00')]);
-    assert.deepEqual(migrate(db), []);
+    assert.deepEqual(migrate(db, logger), []);
     assert.equal(allRows(db, 'SELECT * FROM `UserProfiles`').length, 1);
   });
 });
@@ -118,7 +120,7 @@ test('baseline is a no-op on a legacy sync() database and later migrations prese
     assert.deepEqual(allRows(db, 'SELECT * FROM `UserProfiles` ORDER BY id'), before);
     assert.ok(!columnsOf(db, 'ServerConfigs').includes('accessFailureCount'));
 
-    assert.deepEqual(migrate(db), ALL.slice(1));
+    assert.deepEqual(migrate(db, logger), ALL.slice(1));
 
     const config = db.prepare('SELECT * FROM `ServerConfigs` WHERE serverId = ?').get('s1') as Record<
       string,
@@ -144,7 +146,7 @@ test('baseline is a no-op on a legacy sync() database and later migrations prese
 
 test('a database already migrated by the previous umzug setup runs nothing and keeps its data', () => {
   withDb((db) => {
-    migrate(db);
+    migrate(db, logger);
     insertProfiles(db, [profileRow('s1', 'u1', 5, 6, 3, '2024-01-01 00:00:00.000 +00:00')]);
     db.exec(
       "INSERT INTO `ServerConfigs` (serverId, accessFailureCount, createdAt, updatedAt) VALUES ('s1', 2, '2024-01-01 00:00:00.000 +00:00', '2024-01-01 00:00:00.000 +00:00')"
@@ -158,7 +160,7 @@ test('a database already migrated by the previous umzug setup runs nothing and k
       },
     }));
 
-    assert.deepEqual(migrate(db, spies), []);
+    assert.deepEqual(migrate(db, logger, spies), []);
     assert.deepEqual(ran, []);
     assert.deepEqual(allRows(db, 'SELECT userId, activityScore FROM `UserProfiles`'), [
       { userId: 'u1', activityScore: 3 },
@@ -174,7 +176,7 @@ test('baseline adds missing nullable columns to an older schema', () => {
     db.exec(
       'CREATE TABLE `ServerConfigs` (`serverId` VARCHAR(255) PRIMARY KEY, `createdAt` DATETIME NOT NULL, `updatedAt` DATETIME NOT NULL)'
     );
-    migrate(db);
+    migrate(db, logger);
     assert.ok(columnsOf(db, 'ServerConfigs').includes('honeyPotChannelId'));
     assert.ok(columnsOf(db, 'UserProfiles').includes('activityScore'));
   });
@@ -199,19 +201,11 @@ test('002 dedupes UserProfiles and enforces uniqueness afterwards', () => {
       profileRow('s1', 'd', 4, 4, 0, '2024-01-01 00:00:00.000 +00:00'),
     ]);
 
-    const warnings: string[] = [];
-    const originalWarn = Logger.warn;
-    Logger.warn = (message: string) => {
-      warnings.push(message);
-    };
-    try {
-      runUpTo(db, '002-userprofile-unique');
-    } finally {
-      Logger.warn = originalWarn;
-    }
+    runUpTo(db, '002-userprofile-unique');
 
+    const warnings = logs.filter((entry) => entry.level === 'warn');
     assert.equal(warnings.length, 1);
-    assert.match(warnings[0], /Conflicting birthdays/);
+    assert.match(warnings[0].message, /Conflicting birthdays/);
 
     const rows = db
       .prepare(

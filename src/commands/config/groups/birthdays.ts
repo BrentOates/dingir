@@ -5,7 +5,7 @@ import {
   deleteCalendarMessage,
   refreshCalendar,
 } from '../../../services/BirthdayService.ts';
-import { ConfigService } from '../../../services/ConfigService.ts';
+import { updateConfig } from '../../../services/ConfigService.ts';
 import { resolveTextChannel } from '../../../services/MemberResolver.ts';
 
 export const BirthdaysGroup = defineSubcommandGroup({
@@ -49,11 +49,11 @@ export const BirthdaysGroup = defineSubcommandGroup({
           allowedMentions: { parse: [] },
         });
         const path = `${message.channelId}/${message.id}`;
-        ctx.config = await ConfigService.updateConfig(ctx.config.serverId, {
+        ctx.config = await updateConfig(ctx.app.db, ctx.config.serverId, {
           birthdayCalendarMessagePath: path,
         });
 
-        const status = await refreshCalendar(client, ctx.config);
+        const status = await refreshCalendar(ctx.app, client, ctx.config);
         const link = calendarMessageUrl(ctx.guild.id, path);
         await ctx.reply(
           status === 'updated'
@@ -67,7 +67,7 @@ export const BirthdaysGroup = defineSubcommandGroup({
       description: 'Sync the birthday calendar for this server',
       defer: 'ephemeral',
       run: async (ctx) => {
-        const status = await refreshCalendar(ctx.interaction.client, ctx.config);
+        const status = await refreshCalendar(ctx.app, ctx.interaction.client, ctx.config);
         const replies = {
           updated: `Calendar successfully synchronised for ${ctx.guild.name}.`,
           'not-configured':
@@ -91,7 +91,7 @@ export const BirthdaysGroup = defineSubcommandGroup({
           return;
         }
         await deleteCalendarMessage(ctx.interaction.client, ctx.config.birthdayCalendarMessagePath);
-        ctx.config = await ConfigService.updateConfig(ctx.config.serverId, {
+        ctx.config = await updateConfig(ctx.app.db, ctx.config.serverId, {
           birthdayCalendarMessagePath: null,
         });
         await ctx.reply('Birthday calendar removed.');

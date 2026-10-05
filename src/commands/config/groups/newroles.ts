@@ -1,20 +1,20 @@
 import { Role } from 'discord.js';
 import { type CommandContext, defineSubcommandGroup } from '../../../framework/command.ts';
 import { EmbedColours } from '../../../resources/EmbedColours.ts';
-import { AuditEmbed } from '../../../services/AuditEmbed.ts';
+import { memberAuditEmbed } from '../../../services/AuditEmbed.ts';
 import { sendAudit } from '../../../services/AuditService.ts';
-import { ConfigService } from '../../../services/ConfigService.ts';
+import { updateConfig } from '../../../services/ConfigService.ts';
 import { parseRoleIds, roleProblem } from '../../../services/OnboardingService.ts';
 
 const ROLE_OPTIONS = ['role-one', 'role-two', 'role-three'] as const;
 const NO_MENTIONS = { parse: [] };
 
 const auditChange = (ctx: CommandContext, description: string, roleIds: string[]) => {
-  const embed = AuditEmbed.forMember(ctx.member, EmbedColours.info, description);
+  const embed = memberAuditEmbed(ctx.member, EmbedColours.info, description);
   if (roleIds.length > 0) {
     embed.addField('New member roles', roleIds.map((id) => `<@&${id}>`).join('\n'));
   }
-  return sendAudit(ctx.interaction.client, ctx.config, embed);
+  return sendAudit(ctx.app, ctx.interaction.client, ctx.config, embed);
 };
 
 const get = async (ctx: CommandContext) => {
@@ -80,7 +80,7 @@ export const NewRolesGroup = defineSubcommandGroup({
         }
 
         const ids = [...roles.keys()];
-        ctx.config = await ConfigService.updateConfig(ctx.config.serverId, {
+        ctx.config = await updateConfig(ctx.app.db, ctx.config.serverId, {
           guestRoleIds: ids.join(','),
         });
         await auditChange(ctx, 'New member roles updated', ids);
@@ -94,7 +94,7 @@ export const NewRolesGroup = defineSubcommandGroup({
       name: 'clear',
       description: 'Clear the roles given to members when they complete onboarding',
       run: async (ctx) => {
-        ctx.config = await ConfigService.updateConfig(ctx.config.serverId, { guestRoleIds: null });
+        ctx.config = await updateConfig(ctx.app.db, ctx.config.serverId, { guestRoleIds: null });
         await auditChange(ctx, 'New member roles cleared', []);
         await ctx.reply('New-member roles cleared.');
       },

@@ -1,112 +1,115 @@
+import type { Snowflake } from 'discord.js';
 import { and, eq, inArray, isNotNull, sql } from 'drizzle-orm';
-import { getDb } from '../db/db.ts';
+import type { Db } from '../db/db.ts';
 import { userProfiles, type UserProfile } from '../db/schema.ts';
 
-export class UserProfileService {
-  public static async getServerBirthdays(serverId: string): Promise<UserProfile[]> {
-    return getDb()
-      .select()
-      .from(userProfiles)
-      .where(
-        and(
-          eq(userProfiles.serverId, serverId),
-          isNotNull(userProfiles.birthdayDay),
-          isNotNull(userProfiles.birthdayMonth)
-        )
+const forUser = (serverId: Snowflake, userId: Snowflake) =>
+  and(eq(userProfiles.serverId, serverId), eq(userProfiles.userId, userId));
+
+export async function getServerBirthdays(db: Db, serverId: Snowflake): Promise<UserProfile[]> {
+  return db
+    .select()
+    .from(userProfiles)
+    .where(
+      and(
+        eq(userProfiles.serverId, serverId),
+        isNotNull(userProfiles.birthdayDay),
+        isNotNull(userProfiles.birthdayMonth)
       )
-      .all();
-  }
+    )
+    .all();
+}
 
-  public static async getServerProfiles(serverId: string): Promise<UserProfile[]> {
-    return getDb().select().from(userProfiles).where(eq(userProfiles.serverId, serverId)).all();
-  }
+export async function getServerProfiles(db: Db, serverId: Snowflake): Promise<UserProfile[]> {
+  return db.select().from(userProfiles).where(eq(userProfiles.serverId, serverId)).all();
+}
 
-  public static async setBirthday(
-    serverId: string,
-    userId: string,
-    month: number,
-    day: number
-  ): Promise<void> {
-    getDb()
-      .insert(userProfiles)
-      .values({ serverId, userId, birthdayMonth: month, birthdayDay: day })
-      .onConflictDoUpdate({
-        target: [userProfiles.serverId, userProfiles.userId],
-        set: { birthdayMonth: month, birthdayDay: day, updatedAt: new Date() },
-      })
-      .run();
-  }
+export async function setBirthday(
+  db: Db,
+  serverId: Snowflake,
+  userId: Snowflake,
+  month: number,
+  day: number
+): Promise<void> {
+  db.insert(userProfiles)
+    .values({ serverId, userId, birthdayMonth: month, birthdayDay: day })
+    .onConflictDoUpdate({
+      target: [userProfiles.serverId, userProfiles.userId],
+      set: { birthdayMonth: month, birthdayDay: day, updatedAt: new Date() },
+    })
+    .run();
+}
 
-  public static async clearBirthday(serverId: string, userId: string): Promise<boolean> {
-    const result = getDb()
-      .update(userProfiles)
-      .set({ birthdayYear: null, birthdayMonth: null, birthdayDay: null, updatedAt: new Date() })
-      .where(and(eq(userProfiles.serverId, serverId), eq(userProfiles.userId, userId)))
-      .run();
-    return result.changes > 0;
-  }
+export async function clearBirthday(
+  db: Db,
+  serverId: Snowflake,
+  userId: Snowflake
+): Promise<boolean> {
+  const result = db
+    .update(userProfiles)
+    .set({ birthdayYear: null, birthdayMonth: null, birthdayDay: null, updatedAt: new Date() })
+    .where(forUser(serverId, userId))
+    .run();
+  return result.changes > 0;
+}
 
-  public static async deleteUsers(serverId: string, userIds: string[]): Promise<number> {
-    const db = getDb();
-    let removed = 0;
-    for (let i = 0; i < userIds.length; i += 500) {
-      removed += db
-        .delete(userProfiles)
-        .where(
-          and(eq(userProfiles.serverId, serverId), inArray(userProfiles.userId, userIds.slice(i, i + 500)))
-        )
-        .run().changes;
-    }
-    return removed;
-  }
-
-  public static async getUserProfile(serverId: string, userId: string): Promise<UserProfile> {
-    const db = getDb();
-    db.insert(userProfiles).values({ serverId, userId }).onConflictDoNothing().run();
-    return db
-      .select()
-      .from(userProfiles)
-      .where(and(eq(userProfiles.serverId, serverId), eq(userProfiles.userId, userId)))
-      .get()!;
-  }
-
-  public static async findUserProfile(
-    serverId: string,
-    userId: string
-  ): Promise<UserProfile | null> {
-    return (
-      getDb()
-        .select()
-        .from(userProfiles)
-        .where(and(eq(userProfiles.serverId, serverId), eq(userProfiles.userId, userId)))
-        .get() ?? null
-    );
-  }
-
-  public static async incrementActivityScore(serverId: string, userId: string): Promise<void> {
-    getDb()
-      .insert(userProfiles)
-      .values({ serverId, userId, activityScore: 1 })
-      .onConflictDoUpdate({
-        target: [userProfiles.serverId, userProfiles.userId],
-        set: {
-          activityScore: sql`coalesce(${userProfiles.activityScore}, 0) + 1`,
-          updatedAt: new Date(),
-        },
-      })
-      .run();
-  }
-
-  public static async deleteUser(serverId: string, userId: string): Promise<boolean> {
-    const result = getDb()
+export async function deleteUsers(
+  db: Db,
+  serverId: Snowflake,
+  userIds: Snowflake[]
+): Promise<number> {
+  let removed = 0;
+  for (let i = 0; i < userIds.length; i += 500) {
+    removed += db
       .delete(userProfiles)
-      .where(and(eq(userProfiles.serverId, serverId), eq(userProfiles.userId, userId)))
-      .run();
-    return result.changes > 0;
+      .where(
+        and(eq(userProfiles.serverId, serverId), inArray(userProfiles.userId, userIds.slice(i, i + 500)))
+      )
+      .run().changes;
   }
+  return removed;
+}
 
-  public static async deleteUsersByServer(serverId: string): Promise<boolean> {
-    const result = getDb().delete(userProfiles).where(eq(userProfiles.serverId, serverId)).run();
-    return result.changes > 0;
-  }
+export async function getUserProfile(
+  db: Db,
+  serverId: Snowflake,
+  userId: Snowflake
+): Promise<UserProfile> {
+  db.insert(userProfiles).values({ serverId, userId }).onConflictDoNothing().run();
+  return db.select().from(userProfiles).where(forUser(serverId, userId)).get()!;
+}
+
+export async function findUserProfile(
+  db: Db,
+  serverId: Snowflake,
+  userId: Snowflake
+): Promise<UserProfile | null> {
+  return db.select().from(userProfiles).where(forUser(serverId, userId)).get() ?? null;
+}
+
+export async function incrementActivityScore(
+  db: Db,
+  serverId: Snowflake,
+  userId: Snowflake
+): Promise<void> {
+  db.insert(userProfiles)
+    .values({ serverId, userId, activityScore: 1 })
+    .onConflictDoUpdate({
+      target: [userProfiles.serverId, userProfiles.userId],
+      set: {
+        activityScore: sql`coalesce(${userProfiles.activityScore}, 0) + 1`,
+        updatedAt: new Date(),
+      },
+    })
+    .run();
+}
+
+export async function deleteUser(db: Db, serverId: Snowflake, userId: Snowflake): Promise<boolean> {
+  const result = db.delete(userProfiles).where(forUser(serverId, userId)).run();
+  return result.changes > 0;
+}
+
+export async function deleteUsersByServer(db: Db, serverId: Snowflake): Promise<boolean> {
+  const result = db.delete(userProfiles).where(eq(userProfiles.serverId, serverId)).run();
+  return result.changes > 0;
 }

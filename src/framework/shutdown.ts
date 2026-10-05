@@ -1,20 +1,27 @@
-import { Logger } from '../utilities/Logger.ts';
+import type { Logger } from '../utilities/Logger.ts';
 
-type ShutdownHook = () => Promise<void> | void;
+export type ShutdownHook = () => Promise<void> | void;
 
-const hooks: ShutdownHook[] = [];
-
-export function registerShutdownHook(hook: ShutdownHook): void {
-  hooks.push(hook);
+export interface ShutdownRegistry {
+  register(hook: ShutdownHook): void;
+  /** Runs hooks in reverse registration order; a failing hook never blocks the rest. */
+  run(): Promise<void>;
 }
 
-/** Runs hooks in reverse registration order; a failing hook never blocks the rest. */
-export async function runShutdownHooks(): Promise<void> {
-  for (const hook of [...hooks].reverse()) {
-    try {
-      await hook();
-    } catch (error) {
-      Logger.error('Shutdown hook failed', undefined, error);
-    }
-  }
+export function createShutdownRegistry(logger: Logger): ShutdownRegistry {
+  const hooks: ShutdownHook[] = [];
+  return {
+    register: (hook) => {
+      hooks.push(hook);
+    },
+    run: async () => {
+      for (const hook of [...hooks].reverse()) {
+        try {
+          await hook();
+        } catch (error) {
+          logger.error('Shutdown hook failed', undefined, error);
+        }
+      }
+    },
+  };
 }

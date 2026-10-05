@@ -1,43 +1,34 @@
-import { env } from '../config/env.ts';
 import { defineEvent } from '../framework/event.ts';
-import { registerShutdownHook } from '../framework/shutdown.ts';
+import { registerCommands } from '../framework/registrar.ts';
 import { notifyBirthdays, refreshAllCalendars } from '../services/BirthdayService.ts';
-import { run as runDataCheck } from '../services/DataCheckService.ts';
+import { runDataCheck } from '../services/DataCheckService.ts';
 import { Scheduler } from '../services/Scheduler.ts';
-import { CommandRegistrar } from '../framework/CommandRegistrar.ts';
-import { Logger } from '../utilities/Logger.ts';
-
-let schedulerInstalled = false;
 
 export default defineEvent({
   name: 'clientReady',
   once: true,
-  run: async (client) => {
+  run: async (app, client) => {
+    const { env, logger } = app;
     client.user!.setPresence({ status: 'online' });
 
-    Logger.info('Online');
-    await CommandRegistrar.register([...client.slashCommands.values()]);
-
-    if (schedulerInstalled) {
-      return;
-    }
-    schedulerInstalled = true;
+    logger.info('Online');
+    await registerCommands(app, [...client.slashCommands.values()]);
 
     try {
-      const scheduler = new Scheduler(env.jobSchedule, env.timezone, [
-        { name: 'data-check', run: () => runDataCheck(client) },
-        { name: 'birthday-notifications', run: () => notifyBirthdays(client) },
-        { name: 'birthday-calendars', run: () => refreshAllCalendars(client) },
+      const scheduler = new Scheduler(logger, env.jobSchedule, env.timezone, [
+        { name: 'data-check', run: () => runDataCheck(app, client) },
+        { name: 'birthday-notifications', run: () => notifyBirthdays(app, client) },
+        { name: 'birthday-calendars', run: () => refreshAllCalendars(app, client) },
       ]);
       scheduler.start();
-      registerShutdownHook(() => scheduler.stop());
-      Logger.info('Scheduler started', {
+      app.shutdown.register(() => scheduler.stop());
+      logger.info('Scheduler started', {
         schedule: env.jobSchedule,
         timezone: env.timezone,
         next: scheduler.nextInvocation()?.toISOString(),
       });
     } catch (error) {
-      Logger.error('Could not start scheduler; scheduled jobs are disabled', undefined, error);
+      logger.error('Could not start scheduler; scheduled jobs are disabled', undefined, error);
     }
   },
 });

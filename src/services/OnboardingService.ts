@@ -1,8 +1,16 @@
-import { AttachmentBuilder, Client, Guild, GuildMember, type PartialGuildMember, Role } from 'discord.js';
+import {
+  AttachmentBuilder,
+  Client,
+  Guild,
+  GuildMember,
+  type PartialGuildMember,
+  Role,
+  type Snowflake,
+} from 'discord.js';
+import type { App } from '../app.ts';
 import type { ServerConfig } from '../db/schema.ts';
 import { EmbedColours } from '../resources/EmbedColours.ts';
-import { Logger } from '../utilities/Logger.ts';
-import { AuditEmbed } from './AuditEmbed.ts';
+import { memberAuditEmbed } from './AuditEmbed.ts';
 import { sendAudit } from './AuditService.ts';
 import { WelcomeImage, type WelcomeImageRenderer } from './WelcomeImage.ts';
 
@@ -16,7 +24,7 @@ export interface WelcomePayload {
 }
 
 export interface RoleSkip {
-  id: string;
+  id: Snowflake;
   reason: string;
 }
 
@@ -26,7 +34,7 @@ export interface OnboardingResult {
   roles: StepResult;
   welcome: StepResult;
   debug: StepResult;
-  rolesAdded: string[];
+  rolesAdded: Snowflake[];
   rolesSkipped: RoleSkip[];
   welcomePayload?: WelcomePayload;
 }
@@ -64,7 +72,7 @@ export const roleProblem = (guild: Guild, role: Role): string | null => {
   return null;
 };
 
-export const parseRoleIds = (raw: string | null | undefined): string[] =>
+export const parseRoleIds = (raw: string | null | undefined): Snowflake[] =>
   (raw ?? '')
     .split(',')
     .map((id) => id.trim())
@@ -91,14 +99,21 @@ export const formatOnboardingSummary = (result: OnboardingResult): string => {
   return lines.join('\n');
 };
 
-export const auditJoin = (client: Client, member: GuildMember, config: ServerConfig): Promise<boolean> =>
+export const auditJoin = (
+  app: App,
+  client: Client,
+  member: GuildMember,
+  config: ServerConfig
+): Promise<boolean> =>
   sendAudit(
+    app,
     client,
     config,
-    AuditEmbed.forMember(member, EmbedColours.positive, 'New member joined').addField('ID', member.id)
+    memberAuditEmbed(member, EmbedColours.positive, 'New member joined').addField('ID', member.id)
   );
 
 const auditFailure = (
+  app: App,
   client: Client,
   member: GuildMember,
   config: ServerConfig,
@@ -106,14 +121,16 @@ const auditFailure = (
   detail: string
 ): Promise<boolean> =>
   sendAudit(
+    app,
     client,
     config,
-    AuditEmbed.forMember(member, EmbedColours.negative, description)
+    memberAuditEmbed(member, EmbedColours.negative, description)
       .addField('ID', member.id)
       .addField('Reason', detail)
   );
 
 async function runStep(
+  app: App,
   name: string,
   member: GuildMember,
   step: () => Promise<StepResult>
@@ -121,12 +138,17 @@ async function runStep(
   try {
     return await step();
   } catch (error) {
-    Logger.error(`Onboarding step failed: ${name}`, { guild: member.guild.id, member: member.id }, error);
+    app.logger.error(
+      `Onboarding step failed: ${name}`,
+      { guild: member.guild.id, member: member.id },
+      error
+    );
     return `failed:${messageOf(error)}`;
   }
 }
 
 async function addGuestRoles(
+  app: App,
   client: Client,
   member: GuildMember,
   config: ServerConfig,
@@ -164,6 +186,7 @@ async function addGuestRoles(
   } catch (error) {
     result.rolesAdded = [];
     await auditFailure(
+      app,
       client,
       member,
       config,
@@ -176,6 +199,7 @@ async function addGuestRoles(
 }
 
 async function sendWelcome(
+  app: App,
   client: Client,
   member: GuildMember,
   config: ServerConfig,
@@ -202,12 +226,19 @@ async function sendWelcome(
   }
   if (url) {
     try {
-      payload.image = await renderImage(member, url);
+      payload.image = await renderImage(app, member, url);
     } catch (error) {
       payload.imageError = messageOf(error);
-      Logger.warn('Welcome image failed', { guild: member.guild.id, member: member.id }, error);
+      app.logger.warn('Welcome image failed', { guild: member.guild.id, member: member.id }, error);
       if (!dryRun) {
-        await auditFailure(client, member, config, 'Unable to generate welcome image.', payload.imageError);
+        await auditFailure(
+          app,
+          client,
+          member,
+          config,
+          'Unable to generate welcome image.',
+          payload.imageError
+        );
       }
     }
   }
@@ -226,13 +257,21 @@ async function sendWelcome(
       allowedMentions: { users: [member.id] },
     });
   } catch (error) {
-    await auditFailure(client, member, config, 'Unable to send welcome message.', messageOf(error));
+    await auditFailure(
+      app,
+      client,
+      member,
+      config,
+      'Unable to send welcome message.',
+      messageOf(error)
+    );
     throw error;
   }
   return 'done';
 }
 
 export async function complete(
+  app: App,
   client: Client,
   member: GuildMember,
   config: ServerConfig,
@@ -252,11 +291,12 @@ export async function complete(
   };
 
   if (!dryRun) {
-    result.audit = await runStep('audit', member, async () => {
+    result.audit = await runStep(app, 'audit', member, async () => {
       const sent = await sendAudit(
+        app,
         client,
         config,
-        AuditEmbed.forMember(member, EmbedColours.neutral, 'Member completed onboarding').addField(
+        memberAuditEmbed(member, EmbedColours.neutral, 'Member completed onboarding').addField(
           'ID',
           member.id
         )
@@ -265,19 +305,20 @@ export async function complete(
     });
   }
 
-  result.roles = await runStep('roles', member, () =>
-    addGuestRoles(client, member, config, dryRun, result)
+  result.roles = await runStep(app, 'roles', member, () =>
+    addGuestRoles(app, client, member, config, dryRun, result)
   );
-  result.welcome = await runStep('welcome', member, () =>
-    sendWelcome(client, member, config, dryRun, result, renderImage)
+  result.welcome = await runStep(app, 'welcome', member, () =>
+    sendWelcome(app, client, member, config, dryRun, result, renderImage)
   );
 
   if (config.debug && !dryRun) {
-    result.debug = await runStep('debug', member, async () => {
+    result.debug = await runStep(app, 'debug', member, async () => {
       const sent = await sendAudit(
+        app,
         client,
         config,
-        AuditEmbed.forMember(member, EmbedColours.info, 'Onboarding diagnostics')
+        memberAuditEmbed(member, EmbedColours.info, 'Onboarding diagnostics')
           .addField('ID', member.id)
           .addField('Steps', formatOnboardingSummary(result))
       );

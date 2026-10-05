@@ -1,19 +1,16 @@
 import assert from 'node:assert/strict';
-import { after, before, beforeEach, test } from 'node:test';
-import type { DatabaseHandle } from '../../src/db/db.ts';
+import { after, beforeEach, test } from 'node:test';
 import guildMemberAdd from '../../src/events/guildMemberAdd.ts';
 import guildMemberUpdate from '../../src/events/guildMemberUpdate.ts';
-import { clearConfigs, closeTestDb, createConfig, createTestDb } from '../helpers/db.ts';
 import { fakeOnboarding, role } from '../fakes/onboarding.ts';
+import { createTestApp } from '../helpers/app.ts';
+import { dbFixtures } from '../helpers/db.ts';
 
-let db: DatabaseHandle;
+const app = createTestApp();
+const { clearConfigs, createConfig } = dbFixtures(app.db);
 
-before(async () => {
-  db = createTestDb();
-});
-
-after(async () => {
-  closeTestDb(db);
+after(() => {
+  app.close();
 });
 
 beforeEach(async () => {
@@ -25,7 +22,7 @@ const update = async (oldState: Record<string, unknown>, newPending: boolean | n
   const env = fakeOnboarding({ roles: [role('r1')] });
   const newMember = Object.assign(env.member, { pending: newPending });
   const oldMember = { guild: env.guild, id: 'member-1', ...oldState } as any;
-  await guildMemberUpdate.run(env.client as any, oldMember, newMember);
+  await guildMemberUpdate.run(app, env.client as any, oldMember, newMember);
   return env.roleAdds.length;
 };
 
@@ -44,7 +41,7 @@ test('guildMemberUpdate skips when the old member is partial', async () => {
 test('guildMemberAdd audits the join and onboards immediately when not pending', async () => {
   const env = fakeOnboarding({ roles: [role('r1')] });
   Object.assign(env.member, { pending: false });
-  await guildMemberAdd.run(env.client as any, env.member);
+  await guildMemberAdd.run(app, env.client as any, env.member);
   assert.equal(env.roleAdds.length, 1);
   assert.match(JSON.stringify(env.auditSends[0].embeds[0]), /New member joined/);
 });
@@ -52,7 +49,7 @@ test('guildMemberAdd audits the join and onboards immediately when not pending',
 test('guildMemberAdd waits for screening when the member is pending', async () => {
   const env = fakeOnboarding({ roles: [role('r1')] });
   Object.assign(env.member, { pending: true });
-  await guildMemberAdd.run(env.client as any, env.member);
+  await guildMemberAdd.run(app, env.client as any, env.member);
   assert.equal(env.roleAdds.length, 0);
   assert.equal(env.auditSends.length, 1);
 });

@@ -1,21 +1,25 @@
-import { initEnv } from './config/env.ts';
-import { Logger } from './utilities/Logger.ts';
+import { createApp } from './app.ts';
+import { DingirClient } from './client/DingirClient.ts';
+import { type Env, loadEnv } from './config/env.ts';
+import { createConsoleLogger } from './utilities/Logger.ts';
+
+const logger = createConsoleLogger();
 
 async function main(): Promise<void> {
+  let env: Env;
   try {
-    initEnv();
+    env = loadEnv();
   } catch (error) {
-    Logger.writeError(error instanceof Error ? error.message : String(error));
-    Logger.writeError('Invalid configuration, shutting down.');
+    logger.error(error instanceof Error ? error.message : String(error));
+    logger.error('Invalid configuration, shutting down.');
     process.exit(1);
   }
 
-  const { DingirClient } = await import('./client/DingirClient.ts');
-  const dingirClient = new DingirClient();
-  await dingirClient.start();
+  const app = createApp({ env, logger });
+  await new DingirClient(app).start();
 }
 
 main().catch((error: unknown) => {
-  Logger.writeError('Fatal error during startup.', error);
+  logger.error('Fatal error during startup.', undefined, error);
   process.exit(1);
 });

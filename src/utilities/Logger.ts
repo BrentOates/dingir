@@ -30,41 +30,26 @@ export const formatContext = (context?: Context): string =>
         .join(' ')
     : '';
 
-export class Logger {
-  public static writeLog(log: string): void {
-    console.log(`[${timestamp()}]: ${log}`);
-  }
-
-  public static writeError(log: string, error?: unknown): void {
-    console.error(`[${timestamp()}]: ${log}`);
-    if (error !== undefined && error !== null && error !== '') {
-      console.error(`[${timestamp()}]: ${formatError(error)}`);
-    }
-  }
-
-  public static debug(message: string, context?: Context, error?: unknown): void {
-    Logger.emit('DEBUG', message, context, error);
-  }
-
-  public static info(message: string, context?: Context, error?: unknown): void {
-    Logger.emit('INFO', message, context, error);
-  }
-
-  public static warn(message: string, context?: Context, error?: unknown): void {
-    Logger.emit('WARN', message, context, error);
-  }
-
-  public static error(message: string, context?: Context, error?: unknown): void {
-    Logger.emit('ERROR', message, context, error);
-  }
-
-  private static emit(level: Level, message: string, context?: Context, error?: unknown): void {
-    const ctx = formatContext(context);
-    const line = `[${timestamp()}] ${level}: ${message}${ctx ? ` ${ctx}` : ''}`;
-    const write = level === 'ERROR' ? console.error : level === 'WARN' ? console.warn : console.log;
-    write(line);
-    if (error !== undefined && error !== null) {
-      write(`[${timestamp()}] ${level}: ${formatError(error)}`);
-    }
-  }
+export interface Logger {
+  debug(message: string, context?: Context, error?: unknown): void;
+  info(message: string, context?: Context, error?: unknown): void;
+  warn(message: string, context?: Context, error?: unknown): void;
+  error(message: string, context?: Context, error?: unknown): void;
 }
+
+const emit = (level: Level, message: string, context?: Context, error?: unknown): void => {
+  const ctx = formatContext(context);
+  const line = `[${timestamp()}] ${level}: ${message}${ctx ? ` ${ctx}` : ''}`;
+  const write = level === 'ERROR' ? console.error : level === 'WARN' ? console.warn : console.log;
+  write(line);
+  if (error !== undefined && error !== null) {
+    write(`[${timestamp()}] ${level}: ${formatError(error)}`);
+  }
+};
+
+export const createConsoleLogger = (): Logger => ({
+  debug: (message, context, error) => emit('DEBUG', message, context, error),
+  info: (message, context, error) => emit('INFO', message, context, error),
+  warn: (message, context, error) => emit('WARN', message, context, error),
+  error: (message, context, error) => emit('ERROR', message, context, error),
+});

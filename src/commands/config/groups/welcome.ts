@@ -1,7 +1,7 @@
 import { type CommandContext, defineSubcommandGroup } from '../../../framework/command.ts';
-import { ConfigService, type ServerConfigPatch } from '../../../services/ConfigService.ts';
+import { type ServerConfigPatch, updateConfig } from '../../../services/ConfigService.ts';
 import { complete } from '../../../services/OnboardingService.ts';
-import { isHttpUrl, WelcomeImage } from '../../../services/WelcomeImage.ts';
+import { isHttpUrl, render } from '../../../services/WelcomeImage.ts';
 
 export const MAX_WELCOME_MESSAGE_LENGTH = 1500;
 
@@ -24,7 +24,7 @@ const setMessage = async (ctx: CommandContext) => {
     await ctx.reply(problem);
     return;
   }
-  ctx.config = await ConfigService.updateConfig(ctx.config.serverId, { welcomeMessage: text });
+  ctx.config = await updateConfig(ctx.app.db, ctx.config.serverId, { welcomeMessage: text });
   await ctx.reply({
     content: 'Welcome message saved. Use `{member}` in the text to mention the new member.',
     allowedMentions: NO_MENTIONS,
@@ -39,14 +39,14 @@ const setImage = async (ctx: CommandContext) => {
     return;
   }
   try {
-    await WelcomeImage.render(ctx.member, url);
+    await render(ctx.app, ctx.member, url);
   } catch (error) {
     await ctx.reply(
       `That image could not be used: ${error instanceof Error ? error.message : String(error)}`
     );
     return;
   }
-  ctx.config = await ConfigService.updateConfig(ctx.config.serverId, {
+  ctx.config = await updateConfig(ctx.app.db, ctx.config.serverId, {
     welcomeMessageBackgroundUrl: url,
   });
   await ctx.reply('Welcome image saved. Use /config welcome preview to see how it looks.');
@@ -72,12 +72,12 @@ const clear = async (ctx: CommandContext) => {
   if (which === 'image' || which === 'all') {
     patch.welcomeMessageBackgroundUrl = null;
   }
-  ctx.config = await ConfigService.updateConfig(ctx.config.serverId, patch);
+  ctx.config = await updateConfig(ctx.app.db, ctx.config.serverId, patch);
   await ctx.reply(`Cleared welcome ${which === 'all' ? 'message and image' : which}.`);
 };
 
 const preview = async (ctx: CommandContext) => {
-  const result = await complete(ctx.interaction.client, ctx.member, ctx.config, { dryRun: true });
+  const result = await complete(ctx.app, ctx.interaction.client, ctx.member, ctx.config, { dryRun: true });
   const payload = result.welcomePayload;
   if (!payload) {
     await ctx.reply(`Nothing would be sent: ${result.welcome.replace(/^(skipped|failed):/, '')}.`);

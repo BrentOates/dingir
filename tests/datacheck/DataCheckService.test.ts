@@ -1,30 +1,26 @@
 import assert from 'node:assert/strict';
-import { after, before, beforeEach, test } from 'node:test';
-import type { DatabaseHandle } from '../../src/db/db.ts';
+import { after, beforeEach, test } from 'node:test';
 import type { ServerConfig } from '../../src/db/schema.ts';
-import { run } from '../../src/services/DataCheckService.ts';
+import { runDataCheck } from '../../src/services/DataCheckService.ts';
 import { apiError, fakeClient, fakeGuildWithMembers } from '../fakes/guild.ts';
-import { clearConfigs, clearProfiles, closeTestDb, allProfiles, countProfiles, createConfig, createConfigs, createProfiles, createTestDb, findConfig } from '../helpers/db.ts';
-
-console.warn = (): void => undefined;
-console.error = (): void => undefined;
-console.log = (): void => undefined;
+import { createTestApp } from '../helpers/app.ts';
+import { dbFixtures } from '../helpers/db.ts';
 
 const policy = { minFailures: 3, graceDays: 7 };
 const DAY = 24 * 60 * 60 * 1000;
 const t0 = new Date('2027-01-01T00:00:00Z');
 
-let db: DatabaseHandle;
+const base = createTestApp();
+const { allProfiles, clearConfigs, clearProfiles, countProfiles, createConfig, createConfigs, createProfiles, findConfig } =
+  dbFixtures(base.db);
+const run = (client: ReturnType<typeof fakeClient>, now: Date, p = policy): Promise<void> =>
+  runDataCheck(createTestApp({ db: base.db, clock: () => now }), client, p);
 
-before(async () => {
-  db = createTestDb();
+after(() => {
+  base.close();
 });
 
-after(async () => {
-  closeTestDb(db);
-});
-
-beforeEach(async () => {
+beforeEach(() => {
   clearProfiles();
   clearConfigs();
 });

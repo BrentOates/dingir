@@ -1,4 +1,4 @@
-import { Guild, GuildMember, type GuildTextBasedChannel, User } from 'discord.js';
+import { Guild, GuildMember, type GuildTextBasedChannel, type Snowflake, User } from 'discord.js';
 
 const UNKNOWN_MEMBER = 10007;
 const UNKNOWN_USER = 10013;
@@ -8,7 +8,7 @@ const errorCode = (error: unknown): unknown =>
 
 export const resolveMember = async (
   guild: Guild,
-  userOrId: User | string
+  userOrId: User | Snowflake
 ): Promise<GuildMember | null> => {
   const id = typeof userOrId === 'string' ? userOrId : userOrId.id;
   const cached = guild.members.cache.get(id);
@@ -28,7 +28,7 @@ export const resolveMember = async (
 
 export const resolveTextChannel = async (
   guild: Guild,
-  id: string
+  id: Snowflake
 ): Promise<GuildTextBasedChannel | null> => {
   const channel = guild.channels.cache.get(id) ?? (await guild.channels.fetch(id).catch(() => null));
   if (!channel || !channel.isTextBased() || channel.isDMBased() || !channel.isSendable()) {

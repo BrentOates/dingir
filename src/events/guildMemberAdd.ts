@@ -1,16 +1,16 @@
 import { defineEvent } from '../framework/event.ts';
+import { getConfig } from '../services/ConfigService.ts';
 import { auditJoin, complete } from '../services/OnboardingService.ts';
-import { ConfigService } from '../services/ConfigService.ts';
 
 export default defineEvent({
   name: 'guildMemberAdd',
-  run: async (client, member) => {
-    const config = await ConfigService.getConfig(member.guild.id);
+  run: async (app, client, member) => {
+    const config = await getConfig(app.db, member.guild.id);
 
-    await auditJoin(client, member, config);
+    await auditJoin(app, client, member, config);
 
     if (!member.pending) {
-      await complete(client, member, config);
+      await complete(app, client, member, config);
     }
   },
 });

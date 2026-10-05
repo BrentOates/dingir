@@ -1,19 +1,17 @@
 import { DateTime } from 'luxon';
-import { env } from '../../config/env.ts';
 import { type CommandContext, defineCommand } from '../../framework/command.ts';
 import { isValidBirthday, nextOccurrence } from '../../services/BirthdayDates.ts';
 import { refreshCalendar } from '../../services/BirthdayService.ts';
-import { Logger } from '../../utilities/Logger.ts';
-import { UserProfileService } from '../../services/UserProfileService.ts';
+import { clearBirthday, setBirthday } from '../../services/UserProfileService.ts';
 
 const refresh = async (ctx: CommandContext): Promise<void> => {
   try {
-    const status = await refreshCalendar(ctx.interaction.client, ctx.config);
+    const status = await refreshCalendar(ctx.app, ctx.interaction.client, ctx.config);
     if (status !== 'updated' && status !== 'not-configured') {
-      Logger.warn('Birthday calendar not refreshed', { guild: ctx.guild.id, status });
+      ctx.app.logger.warn('Birthday calendar not refreshed', { guild: ctx.guild.id, status });
     }
   } catch (error) {
-    Logger.error('Birthday calendar refresh failed', { guild: ctx.guild.id }, error);
+    ctx.app.logger.error('Birthday calendar refresh failed', { guild: ctx.guild.id }, error);
   }
 };
 
@@ -51,11 +49,12 @@ export default defineCommand({
           return;
         }
 
-        await UserProfileService.setBirthday(ctx.guild.id, ctx.interaction.user.id, month, day);
+        await setBirthday(ctx.app.db, ctx.guild.id, ctx.interaction.user.id, month, day);
 
-        const now = DateTime.now();
-        const next = nextOccurrence(month, day, now, env.timezone);
-        const isToday = next.hasSame(now.setZone(env.timezone), 'day');
+        const zone = ctx.app.env.timezone;
+        const now = DateTime.fromJSDate(ctx.app.clock());
+        const next = nextOccurrence(month, day, now, zone);
+        const isToday = next.hasSame(now.setZone(zone), 'day');
         const text = isToday
           ? 'today 🎉'
           : next.setLocale('en-GB').toLocaleString(DateTime.DATE_FULL);
@@ -67,7 +66,8 @@ export default defineCommand({
       name: 'clear',
       description: 'Remove your birthday from this server',
       run: async (ctx) => {
-        const cleared = await UserProfileService.clearBirthday(
+        const cleared = await clearBirthday(
+          ctx.app.db,
           ctx.guild.id,
           ctx.interaction.user.id
         );

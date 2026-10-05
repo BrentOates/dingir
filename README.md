@@ -273,6 +273,7 @@ src/
     info/
     admin/
     config/groups/      #   /config subcommand groups
+  app.ts                # Composition root: the App (env, db, logger, clock, ...)
   config/
     env.ts              # Environment loading and validation
   db/                   # Drizzle schema, better-sqlite3 setup, migrations
@@ -308,7 +309,7 @@ export default defineCommand({
 });
 ```
 
-Commands are auto-loaded from the directory. Set `adminOnly: true` to require Administrator permission. Use `defer: 'ephemeral'` for private replies.
+Command handlers receive the shared `App` as `ctx.app` (database, logger, clock, env). Register new commands in `src/commands/index.ts`. Set `adminOnly: true` to require Administrator permission. Use `defer: 'ephemeral'` for private replies.
 
 ### Adding a Config Setting
 
@@ -327,7 +328,7 @@ channelSetting({
 
 Then ensure the field is defined in `src/db/schema.ts` and add a migration to add the column if needed. For a boolean setting, use `booleanSetting()` instead.
 
-**Migrations**: If adding a new config field, add a column to `serverConfigs` in `src/db/schema.ts` and a migration (see [Adding a Migration](#adding-a-migration)). Update settings with `ConfigService.updateConfig(serverId, { field: value })`.
+**Migrations**: If adding a new config field, add a column to `serverConfigs` in `src/db/schema.ts` and a migration (see [Adding a Migration](#adding-a-migration)). Update settings with `updateConfig(ctx.app.db, serverId, { field: value })`.
 
 ### Adding an Event
 
@@ -339,13 +340,13 @@ import { defineEvent } from '../framework/event';
 
 export default defineEvent({
   name: 'messageCreate',  // discord.js event name
-  run: async (client, message) => {
-    // Handle the event
+  run: async (app, client, message) => {
+    // `app` carries env, db, logger, clock, honeypot and shutdown; see src/app.ts
   },
 });
 ```
 
-Set `once: true` to only listen once (useful for `clientReady`).
+Register new events in `src/events/index.ts`. Set `once: true` to only listen once (useful for `clientReady`).
 
 ### Adding a Migration
 

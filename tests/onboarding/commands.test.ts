@@ -1,6 +1,5 @@
 import assert from 'node:assert/strict';
-import { after, before, beforeEach, test } from 'node:test';
-import type { DatabaseHandle } from '../../src/db/db.ts';
+import { after, beforeEach, test } from 'node:test';
 import type { Handler } from '../../src/framework/command.ts';
 import NewRolesGroup from '../../src/commands/config/groups/newroles.ts';
 import WelcomeGroup, {
@@ -9,16 +8,14 @@ import WelcomeGroup, {
   validateWelcomeMessage,
 } from '../../src/commands/config/groups/welcome.ts';
 import { fakeCommandContext, fakeOnboarding, role } from '../fakes/onboarding.ts';
-import { clearConfigs, closeTestDb, createConfig, createTestDb } from '../helpers/db.ts';
+import { createTestApp } from '../helpers/app.ts';
+import { dbFixtures } from '../helpers/db.ts';
 
-let db: DatabaseHandle;
-
-before(() => {
-  db = createTestDb();
-});
+const app = createTestApp();
+const { clearConfigs, createConfig } = dbFixtures(app.db);
 
 after(() => {
-  closeTestDb(db);
+  app.close();
 });
 
 beforeEach(() => {
@@ -31,7 +28,7 @@ const handler = (group: typeof NewRolesGroup, name: string): Handler =>
 test('newroles set rejects @everyone, managed and too-high roles and saves nothing', async () => {
   const env = fakeOnboarding({ roles: [role('ok', 1), role('m', 1, true), role('hi', 10)] });
   const { ctx, replies } = fakeCommandContext(
-    {
+    app, {
       'role-one': env.guild.roles.cache.get('ok'),
       'role-two': env.guild.roles.cache.get('m'),
       'role-three': env.guild.roles.cache.get('hi'),
@@ -43,7 +40,7 @@ test('newroles set rejects @everyone, managed and too-high roles and saves nothi
   assert.match(replies[0].content, /managed/);
   assert.match(replies[0].content, /highest role/);
 
-  const everyone = fakeCommandContext({ 'role-one': { id: 'guild-1', name: '@everyone', position: 0 } }, env);
+  const everyone = fakeCommandContext(app, { 'role-one': { id: 'guild-1', name: '@everyone', position: 0 } }, env);
   await handler(NewRolesGroup, 'set')(everyone.ctx);
   assert.match(everyone.replies[0].content, /everyone/);
   assert.equal(everyone.ctx.config, env.config);
@@ -54,7 +51,7 @@ test('newroles set saves valid roles, dedupes, and audits', async () => {
   createConfig({ serverId: 'guild-1', auditChannelId: 'audit-1' });
   const a = env.guild.roles.cache.get('a');
   const { ctx, replies } = fakeCommandContext(
-    { 'role-one': a, 'role-two': env.guild.roles.cache.get('b'), 'role-three': a },
+    app, { 'role-one': a, 'role-two': env.guild.roles.cache.get('b'), 'role-three': a },
     env
   );
   await handler(NewRolesGroup, 'set')(ctx);
@@ -65,14 +62,14 @@ test('newroles set saves valid roles, dedupes, and audits', async () => {
 
 test('newroles get is read-only: no audit, marks missing roles', async () => {
   const env = fakeOnboarding({ roles: [role('a')], config: { guestRoleIds: 'a,gone' } });
-  const { ctx, replies } = fakeCommandContext({}, env);
+  const { ctx, replies } = fakeCommandContext(app, {}, env);
   await handler(NewRolesGroup, 'get')(ctx);
   assert.equal(env.auditSends.length, 0);
   assert.match(replies[0].content, /<@&a>/);
   assert.match(replies[0].content, /gone \(this role no longer exists\)/);
 
   const empty = fakeOnboarding();
-  const e = fakeCommandContext({}, empty);
+  const e = fakeCommandContext(app, {}, empty);
   await handler(NewRolesGroup, 'get')(e.ctx);
   assert.equal(e.replies[0].content, 'No new-member roles are configured.');
 });
@@ -80,7 +77,7 @@ test('newroles get is read-only: no audit, marks missing roles', async () => {
 test('newroles clear nulls roles and audits', async () => {
   const env = fakeOnboarding({ config: { guestRoleIds: 'a' } });
   createConfig({ serverId: 'guild-1', auditChannelId: 'audit-1', guestRoleIds: 'a' });
-  const { ctx } = fakeCommandContext({}, env);
+  const { ctx } = fakeCommandContext(app, {}, env);
   await handler(NewRolesGroup, 'clear')(ctx);
   assert.equal(ctx.config.guestRoleIds, null);
   assert.equal(env.auditSends.length, 1);
@@ -99,7 +96,7 @@ test('welcome validators', () => {
 
 test('welcome set-image rejects non-http URLs without saving', async () => {
   const env = fakeOnboarding();
-  const { ctx, replies } = fakeCommandContext({ url: 'ftp://example.com/a.png' }, env);
+  const { ctx, replies } = fakeCommandContext(app, { url: 'ftp://example.com/a.png' }, env);
   await handler(WelcomeGroup as never, 'set-image')(ctx);
   assert.match(replies[0].content, /http/);
   assert.equal(env.config.welcomeMessageBackgroundUrl, null);
@@ -107,7 +104,7 @@ test('welcome set-image rejects non-http URLs without saving', async () => {
 
 test('welcome set-image rejects an unreachable image and does not save', async () => {
   const env = fakeOnboarding();
-  const { ctx, replies } = fakeCommandContext({ url: 'http://127.0.0.1:1/bg.png' }, env);
+  const { ctx, replies } = fakeCommandContext(app, { url: 'http://127.0.0.1:1/bg.png' }, env);
   await handler(WelcomeGroup as never, 'set-image')(ctx);
   assert.match(replies[0].content, /could not be used/);
   assert.equal(env.config.welcomeMessageBackgroundUrl, null);
@@ -115,23 +112,23 @@ test('welcome set-image rejects an unreachable image and does not save', async (
 
 test('welcome set-message, get and clear', async () => {
   const env = fakeOnboarding();
-  const set = fakeCommandContext({ text: 'Hi {member}' }, env);
+  const set = fakeCommandContext(app, { text: 'Hi {member}' }, env);
   await handler(WelcomeGroup as never, 'set-message')(set.ctx);
   assert.equal(set.ctx.config.welcomeMessage, 'Hi {member}');
 
-  const get = fakeCommandContext({}, { ...env, config: set.ctx.config });
+  const get = fakeCommandContext(app, {}, { ...env, config: set.ctx.config });
   await handler(WelcomeGroup as never, 'get')(get.ctx);
   assert.match(get.replies[0].content, /Hi \{member\}/);
   assert.match(get.replies[0].content, /Welcome image: Not set/);
 
-  const clear = fakeCommandContext({ which: 'all' }, { ...env, config: set.ctx.config });
+  const clear = fakeCommandContext(app, { which: 'all' }, { ...env, config: set.ctx.config });
   await handler(WelcomeGroup as never, 'clear')(clear.ctx);
   assert.equal(clear.ctx.config.welcomeMessage, null);
 });
 
 test('welcome preview explains why nothing would be sent', async () => {
   const env = fakeOnboarding({ config: { welcomeMessage: 'hi' } });
-  const { ctx, replies } = fakeCommandContext({}, env);
+  const { ctx, replies } = fakeCommandContext(app, {}, env);
   await handler(WelcomeGroup as never, 'preview')(ctx);
   assert.match(replies[0].content, /disabled/);
   assert.equal(env.systemSends.length, 0);
@@ -139,7 +136,7 @@ test('welcome preview explains why nothing would be sent', async () => {
 
 test('welcome preview shows the text without sending', async () => {
   const env = fakeOnboarding({ config: { welcomeMessage: 'hi {member} {member}', systemMessagesEnabled: true } });
-  const { ctx, replies } = fakeCommandContext({}, env);
+  const { ctx, replies } = fakeCommandContext(app, {}, env);
   await handler(WelcomeGroup as never, 'preview')(ctx);
   assert.match(replies[0].content, /hi <@member-1> <@member-1>/);
   assert.equal(env.systemSends.length, 0);

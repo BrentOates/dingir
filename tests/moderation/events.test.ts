@@ -1,38 +1,29 @@
 import assert from 'node:assert/strict';
-import { after, afterEach, before, beforeEach, test } from 'node:test';
+import { after, beforeEach, afterEach, test } from 'node:test';
 import { Collection } from 'discord.js';
-import type { DatabaseHandle } from '../../src/db/db.ts';
 import guildMemberRemove from '../../src/events/guildMemberRemove.ts';
 import messageCreate from '../../src/events/messageCreate.ts';
 import messageDelete from '../../src/events/messageDelete.ts';
 import messageUpdate from '../../src/events/messageUpdate.ts';
-import { ConfigService } from '../../src/services/ConfigService.ts';
-import { HoneyPotEnforcementService } from '../../src/services/HoneyPotEnforcementService.ts';
-import { UserProfileService } from '../../src/services/UserProfileService.ts';
-import { clearProfiles, closeTestDb, createTestDb, findProfile } from '../helpers/db.ts';
+import { updateConfig } from '../../src/services/ConfigService.ts';
+import { incrementActivityScore } from '../../src/services/UserProfileService.ts';
+import { createTestApp } from '../helpers/app.ts';
+import { dbFixtures } from '../helpers/db.ts';
 import { auditJson, fakeAuditClient, fakeMember, fakeMessage, fakeUser } from '../fakes/messages.ts';
 
-let db: DatabaseHandle;
-const original = { log: console.log, warn: console.warn, error: console.error };
+const app = createTestApp();
+const { clearProfiles, findProfile } = dbFixtures(app.db);
 
-before(async () => {
-  db = createTestDb();
-  await ConfigService.updateConfig('guild-1', { auditChannelId: 'audit-1', honeyPotChannelId: 'honey-1' });
+after(() => {
+  app.close();
 });
 
-after(async () => {
-  closeTestDb(db);
+beforeEach(async () => {
+  await updateConfig(app.db, 'guild-1', { auditChannelId: 'audit-1', honeyPotChannelId: 'honey-1' });
 });
 
-beforeEach(() => {
-  console.log = () => {};
-  console.warn = () => {};
-  console.error = () => {};
-});
-
-afterEach(async () => {
-  Object.assign(console, original);
-  HoneyPotEnforcementService.cancel('guild-1', 'u1');
+afterEach(() => {
+  app.honeypot.cancel('guild-1', 'u1');
   clearProfiles();
 });
 
@@ -50,7 +41,7 @@ test('honeypot message bans the member and does not count activity', async () =>
       },
     }),
   });
-  await messageCreate.run(sink.client, message);
+  await messageCreate.run(app, sink.client, message);
   assert.ok(banned);
   assert.equal(await score(), null);
   assert.equal(sink.sent.length, 1);
@@ -59,25 +50,25 @@ test('honeypot message bans the member and does not count activity', async () =>
 
 test('normal messages increment activity once', async () => {
   const sink = fakeAuditClient();
-  await messageCreate.run(sink.client, fakeMessage());
-  await messageCreate.run(sink.client, fakeMessage());
+  await messageCreate.run(app, sink.client, fakeMessage());
+  await messageCreate.run(app, sink.client, fakeMessage());
   assert.equal(await score(), 2);
   assert.equal(sink.sent.length, 0);
 });
 
 test('bot, webhook, system and DM messages do not count', async () => {
   const sink = fakeAuditClient();
-  await messageCreate.run(sink.client, fakeMessage({ author: fakeUser('u1', { bot: true }) }));
-  await messageCreate.run(sink.client, fakeMessage({ webhookId: 'w1' }));
-  await messageCreate.run(sink.client, fakeMessage({ system: true }));
-  await messageCreate.run(sink.client, fakeMessage({ guildId: null }));
+  await messageCreate.run(app, sink.client, fakeMessage({ author: fakeUser('u1', { bot: true }) }));
+  await messageCreate.run(app, sink.client, fakeMessage({ webhookId: 'w1' }));
+  await messageCreate.run(app, sink.client, fakeMessage({ system: true }));
+  await messageCreate.run(app, sink.client, fakeMessage({ guildId: null }));
   assert.equal(await score(), null);
 });
 
 test('messageDelete never changes the activity score', async () => {
   const sink = fakeAuditClient();
-  await UserProfileService.incrementActivityScore('guild-1', 'u1');
-  await messageDelete.run(sink.client, fakeMessage());
+  await incrementActivityScore(app.db, 'guild-1', 'u1');
+  await messageDelete.run(app, sink.client, fakeMessage());
   assert.equal(await score(), 1);
   assert.equal(sink.sent.length, 1);
 });
@@ -86,7 +77,7 @@ test('messageDelete audits uncached messages without content', async () => {
   const sink = fakeAuditClient();
   const message = fakeMessage({ partial: true, author: null, id: 'm42', channelId: 'chan-7' });
   message.author = null;
-  await messageDelete.run(sink.client, message);
+  await messageDelete.run(app, sink.client, message);
   const embed = auditJson(sink.sent);
   assert.match(embed.description, /not cached/);
   assert.deepEqual(
@@ -102,7 +93,7 @@ test('messageDelete handles very long content and attachments', async () => {
     attachments: new Collection([['a', { name: 'a.png' }], ['b', { name: 'b.png' }]]),
     embeds: [{}],
   });
-  await messageDelete.run(sink.client, message);
+  await messageDelete.run(app, sink.client, message);
   const embed = auditJson(sink.sent);
   const text = embed.fields.find((f: any) => f.name === 'Message');
   assert.ok(text.value.length <= 1024);
@@ -112,15 +103,16 @@ test('messageDelete handles very long content and attachments', async () => {
 
 test('messageDelete skips bots and active honeypot enforcement', async () => {
   const sink = fakeAuditClient();
-  await messageDelete.run(sink.client, fakeMessage({ author: fakeUser('u1', { bot: true }) }));
-  HoneyPotEnforcementService.begin('guild-1', 'u1');
-  await messageDelete.run(sink.client, fakeMessage());
+  await messageDelete.run(app, sink.client, fakeMessage({ author: fakeUser('u1', { bot: true }) }));
+  app.honeypot.begin('guild-1', 'u1');
+  await messageDelete.run(app, sink.client, fakeMessage());
   assert.equal(sink.sent.length, 0);
 });
 
 test('messageUpdate notes an uncached previous message', async () => {
   const sink = fakeAuditClient();
   await messageUpdate.run(
+    app,
     sink.client,
     fakeMessage({ partial: true, content: null }),
     fakeMessage({ content: 'edited' })
@@ -140,19 +132,20 @@ test('messageUpdate fetches partial new messages and returns when fetching fails
       throw new Error('Unknown Message');
     },
   });
-  await messageUpdate.run(sink.client, fakeMessage({ content: 'old' }), failing);
+  await messageUpdate.run(app, sink.client, fakeMessage({ content: 'old' }), failing);
   assert.equal(sink.sent.length, 0);
 
   const fetched = fakeMessage({ content: 'new' });
   const partial = fakeMessage({ partial: true, fetch: async () => fetched });
-  await messageUpdate.run(sink.client, fakeMessage({ content: 'old' }), partial);
+  await messageUpdate.run(app, sink.client, fakeMessage({ content: 'old' }), partial);
   assert.equal(sink.sent.length, 1);
 });
 
 test('messageUpdate skips unchanged content and bots', async () => {
   const sink = fakeAuditClient();
-  await messageUpdate.run(sink.client, fakeMessage(), fakeMessage());
+  await messageUpdate.run(app, sink.client, fakeMessage(), fakeMessage());
   await messageUpdate.run(
+    app,
     sink.client,
     fakeMessage({ content: 'a' }),
     fakeMessage({ content: 'b', author: fakeUser('u1', { bot: true }) })
@@ -163,6 +156,7 @@ test('messageUpdate skips unchanged content and bots', async () => {
 test('messageUpdate truncates long content', async () => {
   const sink = fakeAuditClient();
   await messageUpdate.run(
+    app,
     sink.client,
     fakeMessage({ content: 'a'.repeat(4000) }),
     fakeMessage({ content: 'b'.repeat(4000) })
@@ -173,9 +167,9 @@ test('messageUpdate truncates long content', async () => {
 
 test('guildMemberRemove handles partial members and deletes profile data', async () => {
   const sink = fakeAuditClient();
-  await UserProfileService.incrementActivityScore('guild-1', 'u1');
+  await incrementActivityScore(app.db, 'guild-1', 'u1');
   const partial = { partial: true, guild: { id: 'guild-1' }, user: fakeUser('u1') } as any;
-  await guildMemberRemove.run(sink.client, partial);
+  await guildMemberRemove.run(app, sink.client, partial);
   assert.equal(await score(), null);
   const embed = auditJson(sink.sent);
   assert.equal(embed.description, 'Member left');
@@ -185,10 +179,10 @@ test('guildMemberRemove handles partial members and deletes profile data', async
 
 test('guildMemberRemove during honeypot enforcement only deletes data', async () => {
   const sink = fakeAuditClient();
-  await UserProfileService.incrementActivityScore('guild-1', 'u1');
-  HoneyPotEnforcementService.begin('guild-1', 'u1');
+  await incrementActivityScore(app.db, 'guild-1', 'u1');
+  app.honeypot.begin('guild-1', 'u1');
   const member = fakeMember('u1', { guild: { id: 'guild-1' } }) as any;
-  await guildMemberRemove.run(sink.client, member);
+  await guildMemberRemove.run(app, sink.client, member);
   assert.equal(await score(), null);
   assert.equal(sink.sent.length, 0);
 });

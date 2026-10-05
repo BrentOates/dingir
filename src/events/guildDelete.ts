@@ -1,12 +1,11 @@
 import { defineEvent } from '../framework/event.ts';
-import { ConfigService } from '../services/ConfigService.ts';
-import { Logger } from '../utilities/Logger.ts';
+import { purgeGuild } from '../services/ConfigService.ts';
 
 export default defineEvent({
   name: 'guildDelete',
-  run: async (client, guild) => {
-    const result = await ConfigService.purgeGuild(guild.id);
-    Logger.info('Bot removed from guild', {
+  run: async (app, _client, guild) => {
+    const result = await purgeGuild(app.db, guild.id);
+    app.logger.info('Bot removed from guild', {
       guild: guild.id,
       name: guild.name,
       config: result.config,

@@ -1,4 +1,5 @@
 import type { Client, GuildMember } from 'discord.js';
+import type { App } from '../../src/app.ts';
 import type { ServerConfig } from '../../src/db/schema.ts';
 import type { CommandContext } from '../../src/framework/command.ts';
 import { fakeInteraction } from './interaction.ts';
@@ -97,6 +98,7 @@ export function fakeOnboarding(opts: FakeOnboardingOptions = {}) {
 }
 
 export function fakeCommandContext(
+  app: App,
   options: Record<string, unknown>,
   env: ReturnType<typeof fakeOnboarding>
 ) {
@@ -104,6 +106,7 @@ export function fakeCommandContext(
   (interaction as any).client = env.client;
   const replies: any[] = [];
   const ctx = {
+    app,
     interaction,
     guild: env.guild,
     member: env.member,

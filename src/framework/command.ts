@@ -19,6 +19,7 @@ import {
   SlashCommandSubcommandBuilder,
   SlashCommandSubcommandGroupBuilder,
 } from 'discord.js';
+import type { App } from '../app.ts';
 import type { ServerConfig } from '../db/schema.ts';
 
 export type DeferMode = 'ephemeral' | 'public' | false;
@@ -32,6 +33,7 @@ export interface ReplyOptions {
 }
 
 export interface CommandContext {
+  app: App;
   interaction: ChatInputCommandInteraction<'cached'>;
   guild: Guild;
   member: GuildMember;
@@ -159,18 +161,18 @@ export function defineCommand(def: CommandDefinition): Command {
   const routes = new Map<string, ResolvedCommand>();
   let json: RESTPostAPIChatInputApplicationCommandsJSONBody;
   try {
-    let builder = new SlashCommandBuilder()
+    const builder = new SlashCommandBuilder()
       .setName(def.name)
       .setDescription(def.description)
       .setContexts([InteractionContextType.Guild]);
 
     if (def.adminOnly) {
-      builder = builder.setDefaultMemberPermissions(PermissionFlagsBits.Administrator);
+      builder.setDefaultMemberPermissions(PermissionFlagsBits.Administrator);
     }
 
     if (def.run) {
       if (def.options) {
-        builder = def.options(builder) as unknown as SlashCommandBuilder;
+        def.options(builder);
       }
       routes.set(routeKey(null, null), { run: def.run, defer: def.defer ?? false, path: def.name });
     }
