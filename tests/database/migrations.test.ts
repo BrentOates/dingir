@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import Database from 'better-sqlite3';
-import { migrate, migrations, type Migration } from '../../src/client/database/migrator.ts';
+import { migrate, migrations, type Migration } from '../../src/db/migrator.ts';
 import { Logger } from '../../src/utilities/Logger.ts';
 
 type Db = Database.Database;

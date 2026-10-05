@@ -3,14 +3,14 @@ import { Client, Collection, Partials, GatewayIntentBits } from 'discord.js';
 import type { Command } from '../framework/command.ts';
 import { bindEvent } from '../framework/event.ts';
 import { validateRegistry } from '../framework/registry.ts';
-import { commands } from '../slash-commands/index.ts';
+import { commands } from '../commands/index.ts';
 import { events } from '../events/index.ts';
 import { registerShutdownHook, runShutdownHooks } from '../framework/shutdown.ts';
 import { Logger } from '../utilities/Logger.ts';
-import { getDatabase } from './database/db.ts';
-import { migrate } from './database/migrator.ts';
+import { getDatabase } from '../db/db.ts';
+import { migrate } from '../db/migrator.ts';
 
-class NovaClient extends Client {
+class DingirClient extends Client {
   public slashCommands: Collection<string, Command> = new Collection();
   private shuttingDown = false;
 
@@ -75,4 +75,4 @@ class NovaClient extends Client {
   }
 }
 
-export { NovaClient };
+export { DingirClient };

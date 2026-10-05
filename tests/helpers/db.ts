@@ -1,12 +1,12 @@
 import { eq } from 'drizzle-orm';
-import { createDatabase, getDb, setDatabase, type DatabaseHandle } from '../../src/client/database/db.ts';
-import { migrate } from '../../src/client/database/migrator.ts';
+import { createDatabase, getDb, setDatabase, type DatabaseHandle } from '../../src/db/db.ts';
+import { migrate } from '../../src/db/migrator.ts';
 import {
   serverConfigs,
   userProfiles,
   type ServerConfig,
   type UserProfile,
-} from '../../src/client/database/schema.ts';
+} from '../../src/db/schema.ts';
 
 /** An in-memory, fully migrated database that the services use until it is closed. */
 export function createTestDb(): DatabaseHandle {

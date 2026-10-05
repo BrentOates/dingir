@@ -10,9 +10,9 @@ async function main(): Promise<void> {
     process.exit(1);
   }
 
-  const { NovaClient } = await import('./client/NovaClient.ts');
-  const novaClient = new NovaClient();
-  await novaClient.start();
+  const { DingirClient } = await import('./client/DingirClient.ts');
+  const dingirClient = new DingirClient();
+  await dingirClient.start();
 }
 
 main().catch((error: unknown) => {

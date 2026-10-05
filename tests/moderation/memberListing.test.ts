@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import { after, before, test } from 'node:test';
 import { Collection } from 'discord.js';
-import type { DatabaseHandle } from '../../src/client/database/db.ts';
-import noroles from '../../src/slash-commands/Admin/noroles.ts';
-import rolesince from '../../src/slash-commands/Admin/rolesince.ts';
+import type { DatabaseHandle } from '../../src/db/db.ts';
+import noroles from '../../src/commands/admin/noroles.ts';
+import rolesince from '../../src/commands/admin/rolesince.ts';
 import { buildMemberListing, INLINE_LIMIT } from '../../src/services/MemberListing.ts';
 import { closeTestDb, createTestDb } from '../helpers/db.ts';
 import { fakeInteraction } from '../fakes/interaction.ts';

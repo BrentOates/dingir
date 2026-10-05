@@ -1,5 +1,5 @@
 import { AttachmentBuilder, Client, Guild, GuildMember, type PartialGuildMember, Role } from 'discord.js';
-import type { ServerConfig } from '../client/database/schema.ts';
+import type { ServerConfig } from '../db/schema.ts';
 import { EmbedColours } from '../resources/EmbedColours.ts';
 import { Logger } from '../utilities/Logger.ts';
 import { AuditEmbed } from './AuditEmbed.ts';

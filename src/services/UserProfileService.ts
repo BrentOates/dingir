@@ -1,6 +1,6 @@
 import { and, eq, inArray, isNotNull, sql } from 'drizzle-orm';
-import { getDb } from '../client/database/db.ts';
-import { userProfiles, type UserProfile } from '../client/database/schema.ts';
+import { getDb } from '../db/db.ts';
+import { userProfiles, type UserProfile } from '../db/schema.ts';
 
 export class UserProfileService {
   public static async getServerBirthdays(serverId: string): Promise<UserProfile[]> {

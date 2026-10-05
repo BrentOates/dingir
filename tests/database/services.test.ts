@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { after, before, beforeEach, test } from 'node:test';
-import type { DatabaseHandle } from '../../src/client/database/db.ts';
+import type { DatabaseHandle } from '../../src/db/db.ts';
 import { ConfigService } from '../../src/services/ConfigService.ts';
 import { UserProfileService } from '../../src/services/UserProfileService.ts';
 import {

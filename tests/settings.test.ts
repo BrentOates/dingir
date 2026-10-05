@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import { after, afterEach, before, beforeEach, test } from 'node:test';
 import { ChannelType } from 'discord.js';
-import type { DatabaseHandle } from '../src/client/database/db.ts';
+import type { DatabaseHandle } from '../src/db/db.ts';
 import { closeTestDb, clearConfigs, createTestDb } from './helpers/db.ts';
-import type { ServerConfig } from '../src/client/database/schema.ts';
+import type { ServerConfig } from '../src/db/schema.ts';
 import { ConfigService } from '../src/services/ConfigService.ts';
 import { type CommandContext, defineCommand, type Handler } from '../src/framework/command.ts';
 import {

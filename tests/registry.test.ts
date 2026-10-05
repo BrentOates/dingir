@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { events } from '../src/events/index.ts';
 import { validateRegistry } from '../src/framework/registry.ts';
-import { commands } from '../src/slash-commands/index.ts';
+import { commands } from '../src/commands/index.ts';
 
 test('validateRegistry accepts unique names', () => {
   assert.doesNotThrow(() => validateRegistry('command', [{ name: 'a' }, { name: 'b' }]));

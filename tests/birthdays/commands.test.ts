@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict';
 import { after, before, beforeEach, test } from 'node:test';
-import type { DatabaseHandle } from '../../src/client/database/db.ts';
+import type { DatabaseHandle } from '../../src/db/db.ts';
 import { initEnv } from '../../src/config/env.ts';
 import { type CommandContext, createReply } from '../../src/framework/command.ts';
-import mybirthday from '../../src/slash-commands/Info/mybirthday.ts';
-import profile from '../../src/slash-commands/Info/profile.ts';
+import mybirthday from '../../src/commands/info/mybirthday.ts';
+import profile from '../../src/commands/info/profile.ts';
 import { fakeClient, fakeGuildWithMembers } from '../fakes/guild.ts';
 import { fakeInteraction } from '../fakes/interaction.ts';
 import {

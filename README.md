@@ -267,31 +267,31 @@ Migrations run automatically on startup. Current migrations:
 
 ```
 src/
-  client/               # Discord.js client setup and models
-    database/           #   Drizzle schema, better-sqlite3 setup, migrations
-    NovaClient.ts       #   Main client class (intents, startup)
+  client/
+    DingirClient.ts     # Main client class (intents, startup)
+  commands/             # Slash command definitions, organized by category
+    info/
+    admin/
+    config/groups/      #   /config subcommand groups
   config/
     env.ts              # Environment loading and validation
+  db/                   # Drizzle schema, better-sqlite3 setup, migrations
   events/               # Discord event handlers
   framework/
     command.ts          # Command definition and resolution
     event.ts            # Event definition
     settings.ts         # Reusable /config setting groups (channel, boolean)
   services/             # Business logic (onboarding, birthdays, audit, etc.)
-  slash-commands/       # Slash command definitions, organized by category
-    Info/
-    Admin/
-    Config/Subcommands/
   utilities/            # Logging, formatting
   index.ts              # Entry point
 ```
 
 ### Adding a Command
 
-Slash commands are defined in `src/slash-commands/`. Here's a minimal example:
+Slash commands are defined in `src/commands/`. Here's a minimal example:
 
 ```typescript
-// src/slash-commands/Info/hello.ts
+// src/commands/info/hello.ts
 import { defineCommand } from '../../framework/command';
 
 export default defineCommand({
@@ -315,7 +315,7 @@ Commands are auto-loaded from the directory. Set `adminOnly: true` to require Ad
 Use the helpers in `src/framework/settings.ts`. For a channel setting:
 
 ```typescript
-// src/slash-commands/Config/config.ts (add to groups array)
+// src/commands/config/config.ts (add to groups array)
 channelSetting({
   name: 'myfeature',
   description: 'Set the my feature channel',
@@ -325,9 +325,9 @@ channelSetting({
 })
 ```
 
-Then ensure the field is defined in `src/client/database/schema.ts` and add a migration to add the column if needed. For a boolean setting, use `booleanSetting()` instead.
+Then ensure the field is defined in `src/db/schema.ts` and add a migration to add the column if needed. For a boolean setting, use `booleanSetting()` instead.
 
-**Migrations**: If adding a new config field, add a column to `serverConfigs` in `src/client/database/schema.ts` and a migration (see [Adding a Migration](#adding-a-migration)). Update settings with `ConfigService.updateConfig(serverId, { field: value })`.
+**Migrations**: If adding a new config field, add a column to `serverConfigs` in `src/db/schema.ts` and a migration (see [Adding a Migration](#adding-a-migration)). Update settings with `ConfigService.updateConfig(serverId, { field: value })`.
 
 ### Adding an Event
 
@@ -349,10 +349,10 @@ Set `once: true` to only listen once (useful for `clientReady`).
 
 ### Adding a Migration
 
-Migrations are plain synchronous functions over the better-sqlite3 handle. Create a new file in `src/client/database/migrations/` and register it in `src/client/database/migrator.ts`:
+Migrations are plain synchronous functions over the better-sqlite3 handle. Create a new file in `src/db/migrations/` and register it in `src/db/migrator.ts`:
 
 ```typescript
-// src/client/database/migrations/004-add-myfeature.ts
+// src/db/migrations/004-add-myfeature.ts
 import type { Database } from 'better-sqlite3';
 
 export function up(db: Database): void {

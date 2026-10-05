@@ -1,6 +1,6 @@
 import { GuildMember, Message, PermissionFlagsBits } from 'discord.js';
-import type { NovaClient } from '../client/NovaClient.ts';
-import type { ServerConfig } from '../client/database/schema.ts';
+import type { DingirClient } from '../client/DingirClient.ts';
+import type { ServerConfig } from '../db/schema.ts';
 import { defineEvent } from '../framework/event.ts';
 import { EmbedColours } from '../resources/EmbedColours.ts';
 import { AuditEmbed } from '../services/AuditEmbed.ts';
@@ -16,7 +16,7 @@ const formatError = (error: unknown): string =>
   error instanceof Error ? error.message : String(error);
 
 const auditHoneypot = async (
-  client: NovaClient,
+  client: DingirClient,
   config: ServerConfig,
   member: GuildMember,
   channelId: string,
@@ -32,7 +32,7 @@ const auditHoneypot = async (
 
 /** Returns true when the message was posted in the honeypot channel and has been dealt with. */
 export const handleHoneypot = async (
-  client: NovaClient,
+  client: DingirClient,
   message: Message<true>,
   config: ServerConfig
 ): Promise<boolean> => {

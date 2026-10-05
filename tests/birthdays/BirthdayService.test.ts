@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import { after, before, beforeEach, test } from 'node:test';
 import { DateTime } from 'luxon';
-import type { DatabaseHandle } from '../../src/client/database/db.ts';
-import type { ServerConfig } from '../../src/client/database/schema.ts';
+import type { DatabaseHandle } from '../../src/db/db.ts';
+import type { ServerConfig } from '../../src/db/schema.ts';
 import { notifyBirthdays, refreshCalendar } from '../../src/services/BirthdayService.ts';
 import {
   apiError,

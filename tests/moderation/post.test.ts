@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import { after, before, beforeEach, test } from 'node:test';
 import { Collection, PermissionFlagsBits } from 'discord.js';
-import type { DatabaseHandle } from '../../src/client/database/db.ts';
-import post from '../../src/slash-commands/Admin/post.ts';
+import type { DatabaseHandle } from '../../src/db/db.ts';
+import post from '../../src/commands/admin/post.ts';
 import { ConfigService } from '../../src/services/ConfigService.ts';
 import { closeTestDb, createTestDb } from '../helpers/db.ts';
 import { fakeInteraction } from '../fakes/interaction.ts';

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { after, before, beforeEach, test } from 'node:test';
-import type { DatabaseHandle } from '../../src/client/database/db.ts';
+import type { DatabaseHandle } from '../../src/db/db.ts';
 import guildMemberAdd from '../../src/events/guildMemberAdd.ts';
 import guildMemberUpdate from '../../src/events/guildMemberUpdate.ts';
 import { clearConfigs, closeTestDb, createConfig, createTestDb } from '../helpers/db.ts';

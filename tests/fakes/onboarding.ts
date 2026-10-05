@@ -1,5 +1,5 @@
 import type { Client, GuildMember } from 'discord.js';
-import type { ServerConfig } from '../../src/client/database/schema.ts';
+import type { ServerConfig } from '../../src/db/schema.ts';
 import type { CommandContext } from '../../src/framework/command.ts';
 import { fakeInteraction } from './interaction.ts';
 

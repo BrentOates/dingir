@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import { after, afterEach, before, beforeEach, test } from 'node:test';
 import { Collection, MessageFlags } from 'discord.js';
-import type { DatabaseHandle } from '../src/client/database/db.ts';
+import type { DatabaseHandle } from '../src/db/db.ts';
 import { closeTestDb, createTestDb } from './helpers/db.ts';
-import type { NovaClient } from '../src/client/NovaClient.ts';
+import type { DingirClient } from '../src/client/DingirClient.ts';
 import { type Command, defineCommand } from '../src/framework/command.ts';
 import interactionCreate from '../src/events/interactionCreate.ts';
 import { fakeInteraction } from './fakes/interaction.ts';
@@ -36,9 +36,9 @@ afterEach(() => {
 const clientWith = (...commands: Command[]) =>
   ({
     slashCommands: new Collection(commands.map((c) => [c.name, c])),
-  }) as unknown as NovaClient;
+  }) as unknown as DingirClient;
 
-const dispatch = (client: NovaClient, interaction: unknown) =>
+const dispatch = (client: DingirClient, interaction: unknown) =>
   interactionCreate.run(client, interaction as never);
 
 test('ignores interactions that are not chat input commands', async () => {

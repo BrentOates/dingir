@@ -1,5 +1,5 @@
 import type { Database } from 'better-sqlite3';
-import { Logger } from '../../../utilities/Logger.ts';
+import { Logger } from '../../utilities/Logger.ts';
 
 const INDEX_NAME = 'user_profiles_server_user_unique';
 

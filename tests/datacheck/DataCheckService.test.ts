@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { after, before, beforeEach, test } from 'node:test';
-import type { DatabaseHandle } from '../../src/client/database/db.ts';
-import type { ServerConfig } from '../../src/client/database/schema.ts';
+import type { DatabaseHandle } from '../../src/db/db.ts';
+import type { ServerConfig } from '../../src/db/schema.ts';
 import { run } from '../../src/services/DataCheckService.ts';
 import { apiError, fakeClient, fakeGuildWithMembers } from '../fakes/guild.ts';
 import { clearConfigs, clearProfiles, closeTestDb, allProfiles, countProfiles, createConfig, createConfigs, createProfiles, createTestDb, findConfig } from '../helpers/db.ts';

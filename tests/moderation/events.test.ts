@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { after, afterEach, before, beforeEach, test } from 'node:test';
 import { Collection } from 'discord.js';
-import type { DatabaseHandle } from '../../src/client/database/db.ts';
+import type { DatabaseHandle } from '../../src/db/db.ts';
 import guildMemberRemove from '../../src/events/guildMemberRemove.ts';
 import messageCreate from '../../src/events/messageCreate.ts';
 import messageDelete from '../../src/events/messageDelete.ts';

@@ -1,11 +1,11 @@
 import { Collection, User } from 'discord.js';
-import type { NovaClient } from '../../src/client/NovaClient.ts';
+import type { DingirClient } from '../../src/client/DingirClient.ts';
 import type { Command } from '../../src/framework/command.ts';
 import interactionCreate from '../../src/events/interactionCreate.ts';
 import type { FakeInteraction } from './interaction.ts';
 
 export interface AuditSink {
-  client: NovaClient;
+  client: DingirClient;
   sent: any[];
 }
 
@@ -18,7 +18,7 @@ export function fakeAuditClient(channelId = 'audit-1', commands: Command[] = [])
   const client = {
     channels: { fetch: async (id: string) => (id === channelId ? channel : null) },
     slashCommands: new Collection(commands.map((c) => [c.name, c])),
-  } as unknown as NovaClient;
+  } as unknown as DingirClient;
   return { client, sent };
 }
 
@@ -76,7 +76,7 @@ export function fakeMessage(overrides: Record<string, unknown> = {}) {
 }
 
 export async function runSlash(
-  client: NovaClient,
+  client: DingirClient,
   fake: FakeInteraction,
   extra: Record<string, unknown> = {}
 ): Promise<void> {
