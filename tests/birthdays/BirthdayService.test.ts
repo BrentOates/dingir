@@ -17,7 +17,7 @@ const zone = 'Europe/London';
 const at = (iso: string): Date => DateTime.fromISO(iso, { zone }).toJSDate();
 
 const base = createTestApp();
-const { clearConfigs, clearProfiles, createConfig, createProfiles } = dbFixtures(base.db);
+const { clearConfigs, clearProfiles, createConfig, createProfiles } = dbFixtures(base);
 const appAt = (iso?: string): TestApp =>
   createTestApp({ db: base.db, ...(iso ? { clock: () => at(iso) } : {}) });
 

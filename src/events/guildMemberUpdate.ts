@@ -16,7 +16,7 @@ export default defineEvent({
       return;
     }
 
-    const config = await getConfig(app.db, newMember.guild.id);
+    const config = await getConfig(app, newMember.guild.id);
     await complete(app, client, newMember, config);
   },
 });

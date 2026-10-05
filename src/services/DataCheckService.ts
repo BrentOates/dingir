@@ -58,7 +58,7 @@ export const runDataCheck = async (
       );
 
       if (next.purge) {
-        const result = await purgeGuild(app.db, guild);
+        const result = await purgeGuild(app, guild);
         logger.warn('Purged guild after sustained loss of access', {
           guild,
           failures: next.accessFailureCount,
@@ -72,7 +72,7 @@ export const runDataCheck = async (
         next.accessFailureCount !== config.accessFailureCount ||
         next.firstAccessFailureAt?.getTime() !== config.firstAccessFailureAt?.getTime()
       ) {
-        await updateConfig(app.db, config.serverId, {
+        await updateConfig(app, config.serverId, {
           accessFailureCount: next.accessFailureCount,
           firstAccessFailureAt: next.firstAccessFailureAt,
         });

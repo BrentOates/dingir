@@ -17,7 +17,7 @@ export default defineEvent({
       return;
     }
 
-    const config = await getConfig(app.db, message.guildId);
+    const config = await getConfig(app, message.guildId);
 
     if (message.partial || !message.author) {
       const audit = new AuditEmbed()

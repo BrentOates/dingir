@@ -77,7 +77,7 @@ export const NewRolesGroup = defineSubcommandGroup({
         }
 
         const ids = [...roles.keys()];
-        ctx.config = await updateConfig(ctx.app.db, ctx.config.serverId, {
+        ctx.config = await updateConfig(ctx.app, ctx.config.serverId, {
           guestRoleIds: ids.join(','),
         });
         await auditChange(ctx, 'New member roles updated', ids);
@@ -91,7 +91,7 @@ export const NewRolesGroup = defineSubcommandGroup({
       name: 'clear',
       description: 'Clear the roles given to members when they complete onboarding',
       run: async (ctx) => {
-        ctx.config = await updateConfig(ctx.app.db, ctx.config.serverId, { guestRoleIds: null });
+        ctx.config = await updateConfig(ctx.app, ctx.config.serverId, { guestRoleIds: null });
         await auditChange(ctx, 'New member roles cleared', []);
         await ctx.reply('New-member roles cleared.');
       },

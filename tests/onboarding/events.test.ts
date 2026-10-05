@@ -7,7 +7,7 @@ import { createTestApp } from '../helpers/app.ts';
 import { dbFixtures } from '../helpers/db.ts';
 
 const app = createTestApp();
-const { clearConfigs, createConfig } = dbFixtures(app.db);
+const { clearConfigs, createConfig } = dbFixtures(app);
 
 after(() => {
   app.close();

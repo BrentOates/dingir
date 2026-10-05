@@ -35,7 +35,7 @@ export default defineEvent({
       .addField('Current', newMessage.content)
       .addField('Jump to message', newMessage.url);
 
-    const config = await getConfig(app.db, newMessage.guildId);
+    const config = await getConfig(app, newMessage.guildId);
     await sendAudit(app, client, config, audit);
   },
 });

@@ -13,7 +13,7 @@ import { dbFixtures } from '../helpers/db.ts';
 
 const app = createTestApp();
 const { clearConfigs, clearProfiles, countProfiles, createConfig, createProfiles, findProfile } =
-  dbFixtures(app.db);
+  dbFixtures(app);
 
 after(() => {
   app.close();

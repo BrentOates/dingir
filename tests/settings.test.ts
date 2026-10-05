@@ -18,7 +18,7 @@ import { createTestApp } from './helpers/app.ts';
 import { dbFixtures } from './helpers/db.ts';
 
 const app = createTestApp();
-const { clearConfigs, findConfig } = dbFixtures(app.db);
+const { clearConfigs, findConfig } = dbFixtures(app);
 let config: ServerConfig;
 let persistedAtReply: (ServerConfig | null)[];
 
@@ -28,7 +28,7 @@ after(() => {
 
 beforeEach(async () => {
   clearConfigs();
-  config = await getConfig(app.db, 'guild-1');
+  config = await getConfig(app, 'guild-1');
   persistedAtReply = [];
 });
 
@@ -80,7 +80,7 @@ test('channelSetting set saves before replying and persists', async () => {
 
   assert.equal(persistedAtReply[0]?.auditChannelId, '123');
   assert.deepEqual(texts(replies), ['Audit channel set to <#123>.']);
-  config = await getConfig(app.db, 'guild-1');
+  config = await getConfig(app, 'guild-1');
   assert.equal(config.auditChannelId, '123');
 });
 
@@ -100,14 +100,14 @@ test('channelSetting get reports set, missing and not-set channels', async () =>
 });
 
 test('channelSetting clear nulls the field, saves, then replies', async () => {
-  config = await updateConfig(app.db, 'guild-1', { auditChannelId: '123' });
+  config = await updateConfig(app, 'guild-1', { auditChannelId: '123' });
 
   const { ctx, replies } = makeCtx({});
   await run(channelGroup, 'clear')(ctx);
 
   assert.equal(persistedAtReply[0]?.auditChannelId, null);
   assert.deepEqual(texts(replies), ['Audit channel cleared.']);
-  config = await getConfig(app.db, 'guild-1');
+  config = await getConfig(app, 'guild-1');
   assert.equal(config.auditChannelId, null);
 });
 
@@ -128,7 +128,7 @@ test('booleanSetting set saves before replying; get reads the stored value', asy
   await run(boolGroup, 'set')(set.ctx);
   assert.equal(persistedAtReply[0]?.systemMessagesEnabled, true);
   assert.deepEqual(texts(set.replies), ['Bot system messages: enabled']);
-  config = await getConfig(app.db, 'guild-1');
+  config = await getConfig(app, 'guild-1');
   assert.equal(config.systemMessagesEnabled, true);
 
   const get = makeCtx({});

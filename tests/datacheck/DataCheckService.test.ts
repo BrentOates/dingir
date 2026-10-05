@@ -12,7 +12,7 @@ const t0 = new Date('2027-01-01T00:00:00Z');
 
 const base = createTestApp();
 const { allProfiles, clearConfigs, clearProfiles, countProfiles, createConfig, createConfigs, createProfiles, findConfig } =
-  dbFixtures(base.db);
+  dbFixtures(base);
 const run = (client: ReturnType<typeof fakeClient>, now: Date, p = policy): Promise<void> =>
   runDataCheck(createTestApp({ db: base.db, clock: () => now }), client, p);
 

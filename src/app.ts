@@ -2,6 +2,7 @@ import { loadEnv, type Env } from './config/env.ts';
 import { openDb, type Db } from './db/db.ts';
 import { migrate } from './db/migrator.ts';
 import { createShutdownRegistry, type ShutdownRegistry } from './framework/shutdown.ts';
+import { type ConfigCache, createConfigCache } from './services/ConfigService.ts';
 import { createHoneypotTracker, type HoneypotTracker } from './services/HoneypotTracker.ts';
 import { createConsoleLogger, type Logger } from './utilities/Logger.ts';
 
@@ -12,6 +13,7 @@ export interface App {
   logger: Logger;
   clock: () => Date;
   honeypot: HoneypotTracker;
+  configCache: ConfigCache;
   shutdown: ShutdownRegistry;
 }
 
@@ -38,6 +40,7 @@ export function createApp(overrides: Partial<App> = {}): App {
     logger,
     clock: overrides.clock ?? (() => new Date()),
     honeypot: overrides.honeypot ?? createHoneypotTracker(),
+    configCache: overrides.configCache ?? createConfigCache(),
     shutdown,
   };
 }

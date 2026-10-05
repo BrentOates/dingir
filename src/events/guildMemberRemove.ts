@@ -22,7 +22,7 @@ export default defineEvent({
       .addField('ID', user.id)
       .addField('Member data cleanup', dataDeleted ? 'Deleted' : 'No stored member data');
 
-    const config = await getConfig(app.db, member.guild.id);
+    const config = await getConfig(app, member.guild.id);
     await sendAudit(app, client, config, audit);
   },
 });

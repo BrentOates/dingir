@@ -48,7 +48,7 @@ export const BirthdaysGroup = defineSubcommandGroup({
           allowedMentions: { parse: [] },
         });
         const path = `${message.channelId}/${message.id}`;
-        ctx.config = await updateConfig(ctx.app.db, ctx.config.serverId, {
+        ctx.config = await updateConfig(ctx.app, ctx.config.serverId, {
           birthdayCalendarMessagePath: path,
         });
 
@@ -89,7 +89,7 @@ export const BirthdaysGroup = defineSubcommandGroup({
           throw new UserError('There is no birthday calendar configured.');
         }
         await deleteCalendarMessage(ctx.interaction.client, ctx.config.birthdayCalendarMessagePath);
-        ctx.config = await updateConfig(ctx.app.db, ctx.config.serverId, {
+        ctx.config = await updateConfig(ctx.app, ctx.config.serverId, {
           birthdayCalendarMessagePath: null,
         });
         await ctx.reply('Birthday calendar removed.');

@@ -24,7 +24,7 @@ const setMessage = async (ctx: CommandContext) => {
   if (problem) {
     throw new UserError(problem);
   }
-  ctx.config = await updateConfig(ctx.app.db, ctx.config.serverId, { welcomeMessage: text });
+  ctx.config = await updateConfig(ctx.app, ctx.config.serverId, { welcomeMessage: text });
   await ctx.reply({
     content: 'Welcome message saved. Use `{member}` in the text to mention the new member.',
     allowedMentions: NO_MENTIONS,
@@ -45,7 +45,7 @@ const setImage = async (ctx: CommandContext) => {
       { cause: error }
     );
   }
-  ctx.config = await updateConfig(ctx.app.db, ctx.config.serverId, {
+  ctx.config = await updateConfig(ctx.app, ctx.config.serverId, {
     welcomeMessageBackgroundUrl: url,
   });
   await ctx.reply('Welcome image saved. Use /config welcome preview to see how it looks.');
@@ -71,7 +71,7 @@ const clear = async (ctx: CommandContext) => {
   if (which === 'image' || which === 'all') {
     patch.welcomeMessageBackgroundUrl = null;
   }
-  ctx.config = await updateConfig(ctx.app.db, ctx.config.serverId, patch);
+  ctx.config = await updateConfig(ctx.app, ctx.config.serverId, patch);
   await ctx.reply(`Cleared welcome ${which === 'all' ? 'message and image' : which}.`);
 };
 

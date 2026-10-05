@@ -13,7 +13,7 @@ import { rejectsUserError } from '../helpers/assertions.ts';
 import { dbFixtures } from '../helpers/db.ts';
 
 const app = createTestApp();
-const { clearConfigs, createConfig } = dbFixtures(app.db);
+const { clearConfigs, createConfig } = dbFixtures(app);
 
 after(() => {
   app.close();

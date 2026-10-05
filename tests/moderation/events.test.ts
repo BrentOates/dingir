@@ -12,14 +12,14 @@ import { dbFixtures } from '../helpers/db.ts';
 import { auditJson, fakeAuditClient, fakeMember, fakeMessage, fakeUser } from '../fakes/messages.ts';
 
 const app = createTestApp();
-const { clearProfiles, findProfile } = dbFixtures(app.db);
+const { clearProfiles, findProfile } = dbFixtures(app);
 
 after(() => {
   app.close();
 });
 
 beforeEach(async () => {
-  await updateConfig(app.db, 'guild-1', { auditChannelId: 'audit-1', honeyPotChannelId: 'honey-1' });
+  await updateConfig(app, 'guild-1', { auditChannelId: 'audit-1', honeyPotChannelId: 'honey-1' });
 });
 
 afterEach(() => {

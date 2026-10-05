@@ -5,7 +5,7 @@ import { auditJoin, complete } from '../services/OnboardingService.ts';
 export default defineEvent({
   name: 'guildMemberAdd',
   run: async (app, client, member) => {
-    const config = await getConfig(app.db, member.guild.id);
+    const config = await getConfig(app, member.guild.id);
 
     await auditJoin(app, client, member, config);
 

@@ -10,7 +10,7 @@ import { auditJson, fakeAuditClient, fakeMember, runSlash } from '../fakes/messa
 const app = createTestApp();
 
 before(async () => {
-  await updateConfig(app.db, 'guild-1', { auditChannelId: 'audit-1' });
+  await updateConfig(app, 'guild-1', { auditChannelId: 'audit-1' });
 });
 
 after(() => {

@@ -39,7 +39,7 @@ export default defineEvent({
           resolved.defer === 'ephemeral' ? { flags: MessageFlags.Ephemeral } : {}
         );
       }
-      const config = await getConfig(app.db, interaction.guildId);
+      const config = await getConfig(app, interaction.guildId);
       const ctx: CommandContext = {
         app,
         interaction,

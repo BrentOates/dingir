@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { after, beforeEach, test } from 'node:test';
 import { count, eq } from 'drizzle-orm';
 import { serverConfigs, userProfiles } from '../../src/db/schema.ts';
-import { purgeGuild } from '../../src/services/ConfigService.ts';
+import { getConfig, purgeGuild } from '../../src/services/ConfigService.ts';
 import { createTestApp } from '../helpers/app.ts';
 
 const app = createTestApp();
@@ -13,6 +13,7 @@ after(() => {
 });
 
 beforeEach(() => {
+  app.configCache.clear();
   db.delete(userProfiles).run();
   db.delete(serverConfigs).run();
   db.insert(serverConfigs).values([{ serverId: 's1' }, { serverId: 's2' }]).run();
@@ -33,7 +34,7 @@ const profileCount = (serverId?: string): number => {
 const configCount = (): number => db.select({ n: count() }).from(serverConfigs).get()!.n;
 
 test('purgeGuild deletes only the target server and reports counts', async () => {
-  assert.deepEqual(await purgeGuild(db, 's1'), { config: true, profiles: 2 });
+  assert.deepEqual(await purgeGuild(app, 's1'), { config: true, profiles: 2 });
 
   assert.equal(db.select().from(serverConfigs).where(eq(serverConfigs.serverId, 's1')).get(), undefined);
   assert.ok(db.select().from(serverConfigs).where(eq(serverConfigs.serverId, 's2')).get());
@@ -42,7 +43,7 @@ test('purgeGuild deletes only the target server and reports counts', async () =>
 });
 
 test('purgeGuild on an unknown server deletes nothing', async () => {
-  assert.deepEqual(await purgeGuild(db, 'nope'), { config: false, profiles: 0 });
+  assert.deepEqual(await purgeGuild(app, 'nope'), { config: false, profiles: 0 });
   assert.equal(configCount(), 2);
   assert.equal(profileCount(), 3);
 });
@@ -52,11 +53,18 @@ test('purgeGuild rolls back the profile delete when the config delete fails', as
     "CREATE TRIGGER block_config_delete BEFORE DELETE ON `ServerConfigs` BEGIN SELECT RAISE(ABORT, 'boom'); END"
   );
   try {
-    await assert.rejects(purgeGuild(db, 's1'), /boom/);
+    await assert.rejects(purgeGuild(app, 's1'), /boom/);
   } finally {
     db.$client.exec('DROP TRIGGER block_config_delete');
   }
 
   assert.equal(profileCount('s1'), 2);
   assert.ok(db.select().from(serverConfigs).where(eq(serverConfigs.serverId, 's1')).get());
+});
+
+test('purgeGuild drops the cached config', async () => {
+  await getConfig(app, 's1');
+  assert.ok(app.configCache.has('s1'));
+  await purgeGuild(app, 's1');
+  assert.equal(app.configCache.has('s1'), false);
 });
