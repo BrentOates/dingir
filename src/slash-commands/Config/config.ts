@@ -1,58 +1,48 @@
-import {
-  ChatInputCommandInteraction,
-  SlashCommandBuilder,
-  PermissionFlagsBits,
-  InteractionContextType,
-} from 'discord.js';
-import { ServerConfig } from '../../client/models/ServerConfig';
-import { SlashCommand, SlashSubCommand, SlashSubGroupCommand } from '../../types/SlashCommand';
-import { AnnouncementsCommand } from './Subcommands/announcements';
-import { AuditCommand } from './Subcommands/audit';
-import { BirthdaysConfigCommand } from './Subcommands/birthdays';
-import { DebugCommand } from './Subcommands/debug';
-import { HoneyPotCommand } from './Subcommands/honeypot';
-import { NewRolesCommand } from './Subcommands/newroles';
-import { SystemMessagesCommand } from './Subcommands/systemMsgs';
-import { WelcomeCommand } from './Subcommands/welcome';
+import { ChannelType } from 'discord.js';
+import { defineCommand } from '../../framework/command';
+import { booleanSetting, channelSetting } from '../../framework/settings';
+import BirthdaysGroup from './Subcommands/birthdays';
+import DebugGroup from './Subcommands/debug';
+import NewRolesGroup from './Subcommands/newroles';
+import WelcomeGroup from './Subcommands/welcome';
 
-const cmdMap: { [key: string]: SlashSubGroupCommand | SlashSubCommand } = {
-  announcements: AnnouncementsCommand,
-  debug: DebugCommand,
-  sysmsgs: SystemMessagesCommand,
-  audit: AuditCommand,
-  welcome: WelcomeCommand,
-  newroles: NewRolesCommand,
-  birthdays: BirthdaysConfigCommand,
-  honeypot: HoneyPotCommand,
-};
+const textChannels = [ChannelType.GuildText, ChannelType.GuildAnnouncement] as const;
 
-const execute = async (cmd: ChatInputCommandInteraction, config: ServerConfig) => {
-  const subCommand = cmd.options.getSubcommandGroup() ?? cmd.options.getSubcommand();
-  const subCmd = cmdMap[subCommand];
-
-  if (!subCommand) {
-    return cmd.reply({ content: 'This command is misconfigured', ephemeral: true });
-  }
-
-  await subCmd.execute(cmd, config);
-};
-
-const commandData = new SlashCommandBuilder()
-  .setName('config')
-  .setDescription('Manage configuration data for this server')
-  .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
-  .setContexts([InteractionContextType.Guild])
-  .addSubcommandGroup(AnnouncementsCommand.commandData)
-  .addSubcommandGroup(DebugCommand.commandData)
-  .addSubcommandGroup(SystemMessagesCommand.commandData)
-  .addSubcommandGroup(AuditCommand.commandData)
-  .addSubcommandGroup(WelcomeCommand.commandData)
-  .addSubcommandGroup(NewRolesCommand.commandData)
-  .addSubcommandGroup(BirthdaysConfigCommand.commandData)
-  .addSubcommandGroup(HoneyPotCommand.commandData);
-
-const slashCommand: SlashCommand = {
-  commandData: commandData,
-  execute: execute,
-};
-export = slashCommand;
+export default defineCommand({
+  name: 'config',
+  description: 'Manage configuration data for this server',
+  adminOnly: true,
+  groups: [
+    channelSetting({
+      name: 'announcements',
+      description: 'Configure the announcements channel for this server',
+      field: 'announcementsChannelId',
+      label: 'Announcements channel',
+      channelTypes: [...textChannels],
+    }),
+    DebugGroup,
+    booleanSetting({
+      name: 'sysmsgs',
+      description: "Toggle bot-created welcome messages in the server's system channel",
+      field: 'systemMessagesEnabled',
+      label: 'Bot system messages',
+    }),
+    channelSetting({
+      name: 'audit',
+      description: 'Configure the audit channel for this server',
+      field: 'auditChannelId',
+      label: 'Audit channel',
+      channelTypes: [...textChannels],
+    }),
+    WelcomeGroup,
+    NewRolesGroup,
+    BirthdaysGroup,
+    channelSetting({
+      name: 'honeypot',
+      description: 'Configure the honey-pot channel for this server',
+      field: 'honeyPotChannelId',
+      label: 'Honey-pot channel',
+      channelTypes: [...textChannels],
+    }),
+  ],
+});

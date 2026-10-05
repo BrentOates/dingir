@@ -1,6 +1,6 @@
 import { GuildMember, AttachmentBuilder } from 'discord.js';
 import { NovaClient } from '../client/NovaClient';
-import { RunFunction } from '../types/Event';
+import { defineEvent } from '../framework/event';
 import { EmbedColours } from '../resources/EmbedColours';
 import { ChannelService } from '../utilities/ChannelService';
 import { ConfigService } from '../utilities/ConfigService';
@@ -135,71 +135,69 @@ const sendScreenAudit = async (
   }
 };
 
-export const name = 'guildMemberUpdate';
-export const run: RunFunction = async (
-  client: NovaClient,
-  oldMember: GuildMember,
-  newMember: GuildMember
-) => {
-  if (newMember.partial) {
-    await newMember.fetch();
-  }
-
-  const serverConfig = await ConfigService.getConfig(newMember.guild.id);
-  const notPassedScreen =
-    oldMember.pending || (oldMember.pending === null && newMember.roles.cache.size === 1);
-
-  if (notPassedScreen && !newMember.pending) {
-    await sendScreenAudit(serverConfig, newMember, client);
-
-    if (serverConfig.guestRoleIds) {
-      await addGuestRoles(serverConfig, newMember, client).catch((err: unknown) =>
-        Logger.writeError(
-          `Guest role audit failed in guildMemberUpdate for ${serverConfig.id}.`,
-          err
-        )
-      );
+export default defineEvent({
+  name: 'guildMemberUpdate',
+  run: async (client, oldMember, newMember) => {
+    if (newMember.partial) {
+      await newMember.fetch();
     }
 
-    if (
-      serverConfig.systemMessagesEnabled &&
-      (serverConfig.welcomeMessage || serverConfig.welcomeMessageBackgroundUrl)
-    ) {
-      try {
-        let attachment: AttachmentBuilder | undefined;
-        let content: string | undefined;
-        if (serverConfig.welcomeMessageBackgroundUrl) {
-          attachment = await getWelcomeImage(serverConfig, newMember);
-        }
+    const serverConfig = await ConfigService.getConfig(newMember.guild.id);
+    const notPassedScreen =
+      oldMember.pending || (oldMember.pending === null && newMember.roles.cache.size === 1);
 
-        if (serverConfig.welcomeMessage) {
-          content = await getWelcomeMessage(serverConfig, newMember);
-        }
+    if (notPassedScreen && !newMember.pending) {
+      await sendScreenAudit(serverConfig, newMember, client);
 
-        const systemChannel = newMember.guild.systemChannel;
-        if (!systemChannel) {
-          throw new Error(`No system channel for guild ${newMember.guild.id}.`);
-        }
-        await systemChannel.send({
-          content,
-          files: attachment ? [attachment] : undefined,
-        });
-      } catch (e) {
-        Logger.writeError(
-          `Sending welcome message failed in guildMemberUpdate for server: ${serverConfig.serverId}.`,
-          e
+      if (serverConfig.guestRoleIds) {
+        await addGuestRoles(serverConfig, newMember, client).catch((err: unknown) =>
+          Logger.writeError(
+            `Guest role audit failed in guildMemberUpdate for ${serverConfig.id}.`,
+            err
+          )
         );
-        const audit = new EmbedCompatLayer()
-          .setColor(EmbedColours.negative)
-          .setAuthor({
-            name: newMember.displayName,
-            iconURL: newMember.displayAvatarURL(),
-          })
-          .setDescription('Unable to send welcome message.')
-          .addField('ID', newMember.user.id)
-          .setTimestamp();
-        return ChannelService.sendAuditMessage(client, serverConfig, audit);
+      }
+
+      if (
+        serverConfig.systemMessagesEnabled &&
+        (serverConfig.welcomeMessage || serverConfig.welcomeMessageBackgroundUrl)
+      ) {
+        try {
+          let attachment: AttachmentBuilder | undefined;
+          let content: string | undefined;
+          if (serverConfig.welcomeMessageBackgroundUrl) {
+            attachment = await getWelcomeImage(serverConfig, newMember);
+          }
+
+          if (serverConfig.welcomeMessage) {
+            content = await getWelcomeMessage(serverConfig, newMember);
+          }
+
+          const systemChannel = newMember.guild.systemChannel;
+          if (!systemChannel) {
+            throw new Error(`No system channel for guild ${newMember.guild.id}.`);
+          }
+          await systemChannel.send({
+            content,
+            files: attachment ? [attachment] : undefined,
+          });
+        } catch (e) {
+          Logger.writeError(
+            `Sending welcome message failed in guildMemberUpdate for server: ${serverConfig.serverId}.`,
+            e
+          );
+          const audit = new EmbedCompatLayer()
+            .setColor(EmbedColours.negative)
+            .setAuthor({
+              name: newMember.displayName,
+              iconURL: newMember.displayAvatarURL(),
+            })
+            .setDescription('Unable to send welcome message.')
+            .addField('ID', newMember.user.id)
+            .setTimestamp();
+          return ChannelService.sendAuditMessage(client, serverConfig, audit);
+        }
       }
     }
-  }
-};
+  },
+});

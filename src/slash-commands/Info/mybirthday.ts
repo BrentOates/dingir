@@ -1,86 +1,74 @@
-import {
-  ChatInputCommandInteraction,
-  InteractionContextType,
-  SlashCommandBuilder,
-  SlashCommandNumberOption,
-} from 'discord.js';
 import { DateTime } from 'luxon';
-import { SlashCommand } from '../../types/SlashCommand';
+import { defineCommand } from '../../framework/command';
 import { BirthdayManager } from '../../utilities/BirthdayManager';
 import { UserProfileService } from '../../utilities/UserProfileService';
-import { requireGuild } from '../../utilities/requireGuild';
 
-const execute = async (cmd: ChatInputCommandInteraction) => {
-  let day = cmd.options.getNumber('day', true);
-  const month = cmd.options.getNumber('month', true);
+export default defineCommand({
+  name: 'mybirthday',
+  description: 'Set your birthday in this server',
+  options: (b) =>
+    b
+      .addNumberOption((opt) =>
+        opt
+          .setName('day')
+          .setDescription('Day of the month of your birthday')
+          .setRequired(true)
+          .setMinValue(1)
+          .setMaxValue(31)
+      )
+      .addNumberOption((opt) =>
+        opt
+          .setName('month')
+          .setDescription('Month of your birthday')
+          .setRequired(true)
+          .setMinValue(1)
+          .setMaxValue(12)
+      ),
+  run: async (ctx) => {
+    const cmd = ctx.interaction;
+    let day = cmd.options.getNumber('day', true);
+    const month = cmd.options.getNumber('month', true);
 
-  let alteredForLeap = false;
+    let alteredForLeap = false;
 
-  const now = DateTime.local();
+    const now = DateTime.local();
 
-  if (!now.isInLeapYear && day === 29 && month === 2) {
-    day--;
-    alteredForLeap = true;
-  }
-
-  let nextDate = DateTime.local(now.year, month, day);
-
-  if (nextDate <= now) {
-    nextDate = nextDate.plus({
-      year: 1,
-    });
-    if (nextDate.isInLeapYear && alteredForLeap) {
-      nextDate = nextDate.plus({
-        day: 1,
-      });
+    if (!now.isInLeapYear && day === 29 && month === 2) {
+      day--;
+      alteredForLeap = true;
     }
-  }
 
-  if (!nextDate.isValid) {
-    return cmd.reply({
-      content: 'It looks like that date was invalid, make sure a valid day and month were given',
-      ephemeral: true,
-    });
-  }
+    let nextDate = DateTime.local(now.year, month, day);
 
-  const guildId = requireGuild(cmd).id;
-  const userProfile = await UserProfileService.getUserProfile(guildId, cmd.user.id);
+    if (nextDate <= now) {
+      nextDate = nextDate.plus({
+        year: 1,
+      });
+      if (nextDate.isInLeapYear && alteredForLeap) {
+        nextDate = nextDate.plus({
+          day: 1,
+        });
+      }
+    }
 
-  userProfile.birthdayDay = day;
-  userProfile.birthdayMonth = month;
+    if (!nextDate.isValid) {
+      await ctx.reply(
+        'It looks like that date was invalid, make sure a valid day and month were given'
+      );
+      return;
+    }
 
-  await userProfile.save();
+    const guildId = ctx.guild.id;
+    const userProfile = await UserProfileService.getUserProfile(guildId, cmd.user.id);
 
-  await cmd.reply({
-    content: `I've set your next birthday to ${nextDate.toLocaleString(DateTime.DATE_FULL)}!`,
-    ephemeral: true,
-  });
-  return BirthdayManager.populateCalendars(cmd.client, guildId);
-};
+    userProfile.birthdayDay = day;
+    userProfile.birthdayMonth = month;
 
-const commandData = new SlashCommandBuilder()
-  .setName('mybirthday')
-  .setDescription('Set your birthday in this server')
-  .addNumberOption((opt: SlashCommandNumberOption) =>
-    opt
-      .setName('day')
-      .setDescription('Day of the month of your birthday')
-      .setRequired(true)
-      .setMinValue(1)
-      .setMaxValue(31)
-  )
-  .addNumberOption((opt: SlashCommandNumberOption) =>
-    opt
-      .setName('month')
-      .setDescription('Month of your birthday')
-      .setRequired(true)
-      .setMinValue(1)
-      .setMaxValue(12)
-  )
-  .setContexts([InteractionContextType.Guild]);
+    await userProfile.save();
 
-const slashCommand: SlashCommand = {
-  commandData: commandData,
-  execute: execute,
-};
-export = slashCommand;
+    await ctx.reply(
+      `I've set your next birthday to ${nextDate.toLocaleString(DateTime.DATE_FULL)}!`
+    );
+    await BirthdayManager.populateCalendars(cmd.client, guildId);
+  },
+});

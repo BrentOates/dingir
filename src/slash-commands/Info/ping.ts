@@ -1,24 +1,12 @@
-import {
-  ChatInputCommandInteraction,
-  InteractionContextType,
-  SlashCommandBuilder,
-} from 'discord.js';
-import { SlashCommand } from '../../types/SlashCommand';
+import { defineCommand } from '../../framework/command';
 
-const execute = async (cmd: ChatInputCommandInteraction) => {
-  return cmd.reply({
-    content: 'Pong!',
-    ephemeral: true,
-  });
-};
-
-const commandData = new SlashCommandBuilder()
-  .setName('ping')
-  .setDescription('Pings Dingir')
-  .setContexts([InteractionContextType.Guild]);
-
-const slashCommand: SlashCommand = {
-  commandData: commandData,
-  execute: execute,
-};
-export = slashCommand;
+export default defineCommand({
+  name: 'ping',
+  description: 'Pings Dingir',
+  defer: 'ephemeral',
+  run: async (ctx) => {
+    const roundTrip = Date.now() - ctx.interaction.createdTimestamp;
+    const websocket = Math.round(ctx.interaction.client.ws.ping);
+    await ctx.reply(`Pong! WebSocket: ${websocket}ms, round-trip: ${roundTrip}ms`);
+  },
+});

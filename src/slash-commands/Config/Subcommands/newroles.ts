@@ -1,35 +1,17 @@
-import {
-  SlashCommandSubcommandGroupBuilder,
-  SlashCommandSubcommandBuilder,
-  ChatInputCommandInteraction,
-  SlashCommandRoleOption,
-} from 'discord.js';
-import { ServerConfig } from '../../../client/models/ServerConfig';
+import { CommandContext, defineSubcommandGroup } from '../../../framework/command';
 import { EmbedColours } from '../../../resources/EmbedColours';
 import { EmbedCompatLayer } from '../../../types/EmbedCompatLayer';
-import { SlashSubGroupCommand } from '../../../types/SlashCommand';
 import { ChannelService } from '../../../utilities/ChannelService';
 import { Logger } from '../../../utilities/Logger';
-import { requireGuild } from '../../../utilities/requireGuild';
 
-const set = async (cmd: ChatInputCommandInteraction, config: ServerConfig) => {
-  const role1 = cmd.options.getRole('role-one', true);
-  const role2 = cmd.options.getRole('role-two');
-
-  const newGuestRoles: string = [role1.id, role2?.id].filter(Boolean).join(',');
-  config.guestRoleIds = newGuestRoles;
-  await config.save();
-
-  return get(cmd, config);
-};
-
-const get = async (cmd: ChatInputCommandInteraction, config: ServerConfig) => {
+const get = async (ctx: CommandContext) => {
+  const { config, guild, interaction: cmd } = ctx;
   if (!config.guestRoleIds) {
-    return cmd.reply('No guest roles configured for this server');
+    await ctx.reply({ content: 'No guest roles configured for this server', ephemeral: false });
+    return;
   }
 
   const roleIds: string[] = config.guestRoleIds.split(',');
-  const guild = requireGuild(cmd);
   const roles = guild.roles.cache.filter((r) => roleIds.includes(r.id));
   const member = guild.members.cache.get(cmd.user.id);
 
@@ -56,62 +38,55 @@ const get = async (cmd: ChatInputCommandInteraction, config: ServerConfig) => {
   await ChannelService.sendAuditMessage(cmd.client, config, audit).catch((err: unknown) =>
     Logger.writeError('Could not send new roles audit.', err)
   );
-  await cmd.reply({
-    content: `New user roles ${!config.guestRoleIds ? 'Removed' : 'Updated'}`,
-    ephemeral: true,
-  });
+  await ctx.reply(`New user roles ${!config.guestRoleIds ? 'Removed' : 'Updated'}`);
 };
 
-const clear = async (cmd: ChatInputCommandInteraction, config: ServerConfig) => {
-  config.guestRoleIds = null;
-  await config.save();
+export const NewRolesGroup = defineSubcommandGroup({
+  name: 'newroles',
+  description: 'Control the roles assigned to newly screened members',
+  subcommands: [
+    {
+      name: 'get',
+      description: 'Gets the roles assigned to newly screened members',
+      run: get,
+    },
+    {
+      name: 'set',
+      description: 'Sets the roles of newly screened members',
+      options: (sub) =>
+        sub
+          .addRoleOption((option) =>
+            option
+              .setName('role-one')
+              .setDescription('First role to give to newly screened members')
+              .setRequired(true)
+          )
+          .addRoleOption((option) =>
+            option
+              .setName('role-two')
+              .setDescription('Second optional role to give to newly screened members')
+          ),
+      run: async (ctx) => {
+        const role1 = ctx.interaction.options.getRole('role-one', true);
+        const role2 = ctx.interaction.options.getRole('role-two');
 
-  return get(cmd, config);
-};
+        ctx.config.guestRoleIds = [role1.id, role2?.id].filter(Boolean).join(',');
+        await ctx.config.save();
 
-const exec = async (cmd: ChatInputCommandInteraction, config: ServerConfig) => {
-  const subCommand = cmd.options.getSubcommand();
-  if (subCommand == 'set') {
-    return set(cmd, config);
-  } else if (subCommand == 'get') {
-    return get(cmd, config);
-  } else if (subCommand == 'clear') {
-    return clear(cmd, config);
-  } else {
-    return cmd.reply({
-      content: 'A valid option was not supplied for this command',
-      ephemeral: true,
-    });
-  }
-};
+        await get(ctx);
+      },
+    },
+    {
+      name: 'clear',
+      description: 'Clears the roles assigned to newly screened members',
+      run: async (ctx) => {
+        ctx.config.guestRoleIds = null;
+        await ctx.config.save();
 
-const data = new SlashCommandSubcommandGroupBuilder()
-  .setName('newroles')
-  .setDescription('Control the roles assigned to newly screened members')
-  .addSubcommand((sub: SlashCommandSubcommandBuilder) =>
-    sub.setName('get').setDescription('Gets the roles assigned to newly screened members')
-  )
-  .addSubcommand((sub: SlashCommandSubcommandBuilder) =>
-    sub
-      .setName('set')
-      .setDescription('Sets the roles of newly screened members')
-      .addRoleOption((option: SlashCommandRoleOption) =>
-        option
-          .setName('role-one')
-          .setDescription('First role to give to newly screened members')
-          .setRequired(true)
-      )
-      .addRoleOption((option: SlashCommandRoleOption) =>
-        option
-          .setName('role-two')
-          .setDescription('Second optional role to give to newly screened members')
-      )
-  )
-  .addSubcommand((sub: SlashCommandSubcommandBuilder) =>
-    sub.setName('clear').setDescription('Clears the roles assigned to newly screened members')
-  );
+        await get(ctx);
+      },
+    },
+  ],
+});
 
-export const NewRolesCommand: SlashSubGroupCommand = {
-  commandData: data,
-  execute: exec,
-};
+export default NewRolesGroup;

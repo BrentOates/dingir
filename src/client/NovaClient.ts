@@ -1,24 +1,24 @@
+import path from 'node:path';
 import { env } from '../config/env';
-import { glob } from 'glob';
 import { Client, Collection, Partials, GatewayIntentBits } from 'discord.js';
-import { Event } from '../types/Event';
+import { Command } from '../framework/command';
+import { bindEvent } from '../framework/event';
+import { loadCommands, loadEvents } from '../framework/loader';
+import { registerShutdownHook, runShutdownHooks } from '../framework/shutdown';
 import { Logger } from '../utilities/Logger';
 import { sequelize } from './database/sequelize';
-import { SlashCommand } from '../types/SlashCommand';
 
 class NovaClient extends Client {
-  public events: Collection<string, Event> = new Collection();
-  public slashCommands: Collection<string, SlashCommand> = new Collection();
+  public slashCommands: Collection<string, Command> = new Collection();
+  private shuttingDown = false;
 
   public constructor() {
     super({
-      partials: [Partials.Message, Partials.Channel, Partials.Reaction, Partials.GuildMember],
+      partials: [Partials.Message, Partials.Channel, Partials.GuildMember],
       intents: [
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildMembers,
         GatewayIntentBits.GuildMessages,
-        GatewayIntentBits.GuildMessageReactions,
-        GatewayIntentBits.DirectMessages,
         GatewayIntentBits.MessageContent,
       ],
     });
@@ -26,36 +26,48 @@ class NovaClient extends Client {
 
   public async start(): Promise<void> {
     await sequelize.sync({ alter: true });
+    registerShutdownHook(() => sequelize.close());
 
-    const eventFiles: string[] = await glob(`${__dirname}/../events/**/*{.js,.ts}`);
-    const slashCommandFiles: string[] = await glob(`${__dirname}/../slash-commands/*/*{.js,.ts}`);
+    const [commands, events] = await Promise.all([
+      loadCommands(path.join(__dirname, '..', 'slash-commands')),
+      loadEvents(path.join(__dirname, '..', 'events')),
+    ]);
 
-    for (const eventFile of eventFiles) {
-      const importedEvent = await import(eventFile);
-      const event = (importedEvent.default ?? importedEvent) as Event;
-      this.events.set(event.name, event);
-      this.on(event.name, (...args: any[]) => {
-        event.run(this, ...args).catch((err: unknown) => {
-          Logger.writeError(`Unhandled error in ${event.name} event handler.`, err);
-        });
+    for (const command of commands) {
+      this.slashCommands.set(command.name, command);
+    }
+    for (const event of events) {
+      bindEvent(this, event);
+    }
+
+    this.on('error', (error) => Logger.error('Discord client error', undefined, error));
+    this.on('warn', (message) => Logger.warn(message));
+    process.on('unhandledRejection', (reason) =>
+      Logger.error('Unhandled promise rejection', undefined, reason)
+    );
+    for (const signal of ['SIGTERM', 'SIGINT'] as const) {
+      process.on(signal, () => {
+        void this.shutdown(signal);
       });
     }
 
-    for (const slashCommandFile of slashCommandFiles) {
-      const importedCommand = await import(slashCommandFile);
-      const cmd = (importedCommand.default ?? importedCommand) as SlashCommand;
-      this.slashCommands.set(cmd.commandData.name, cmd);
-    }
-
-    process.on('SIGTERM', () => {
-      Logger.writeLog('SIGTERM Received, destroying client & shutting down.');
-      this.destroy()
-        .catch((err: unknown) => Logger.writeError('Error destroying client.', err))
-        .finally(() => process.exit());
-    });
-
     await this.login(env.token);
-    Logger.writeLog('Logged in');
+    Logger.info('Logged in');
+  }
+
+  private async shutdown(signal: string): Promise<void> {
+    if (this.shuttingDown) {
+      return;
+    }
+    this.shuttingDown = true;
+    Logger.info(`${signal} received, shutting down`);
+    try {
+      await this.destroy();
+    } catch (error) {
+      Logger.error('Error destroying client', undefined, error);
+    }
+    await runShutdownHooks();
+    process.exit(0);
   }
 }
 

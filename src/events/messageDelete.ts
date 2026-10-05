@@ -1,45 +1,45 @@
-import { Message } from 'discord.js';
-import { NovaClient } from '../client/NovaClient';
 import { EmbedColours } from '../resources/EmbedColours';
-import { RunFunction } from '../types/Event';
+import { defineEvent } from '../framework/event';
 import { ChannelService } from '../utilities/ChannelService';
 import { ConfigService } from '../utilities/ConfigService';
 import { EmbedCompatLayer } from '../types/EmbedCompatLayer';
 import { UserProfileService } from '../utilities/UserProfileService';
 import { HoneyPotEnforcementService } from '../utilities/HoneyPotEnforcementService';
 
-export const name = 'messageDelete';
-export const run: RunFunction = async (client: NovaClient, message: Message) => {
-  if (!message.author || !message.guild) {
-    return;
-  }
+export default defineEvent({
+  name: 'messageDelete',
+  run: async (client, message) => {
+    if (!message.author || !message.guild) {
+      return;
+    }
 
-  if (HoneyPotEnforcementService.isActive(message.guild.id, message.author.id)) {
-    return;
-  }
+    if (HoneyPotEnforcementService.isActive(message.guild.id, message.author.id)) {
+      return;
+    }
 
-  const serverConfig = await ConfigService.getConfig(message.guild.id);
+    const serverConfig = await ConfigService.getConfig(message.guild.id);
 
-  await UserProfileService.decrementActivityScore(message.guild.id, message.author.id);
+    await UserProfileService.decrementActivityScore(message.guild.id, message.author.id);
 
-  const audit = new EmbedCompatLayer()
-    .setColor(EmbedColours.neutral)
-    .setAuthor({
-      name: message.author.tag,
-      iconURL: message.author.displayAvatarURL(),
-    })
-    .setDescription('A message was deleted')
-    .setTimestamp();
+    const audit = new EmbedCompatLayer()
+      .setColor(EmbedColours.neutral)
+      .setAuthor({
+        name: message.author.tag,
+        iconURL: message.author.displayAvatarURL(),
+      })
+      .setDescription('A message was deleted')
+      .setTimestamp();
 
-  if (message.content) {
-    audit.addField('Message', message.content);
-  }
-  if (message.embeds.length > 0) {
-    audit.addField('Embeds', message.embeds.length.toString());
-  }
-  if (message.attachments.size > 0) {
-    audit.addField('Attachments', message.attachments.size.toString());
-  }
+    if (message.content) {
+      audit.addField('Message', message.content);
+    }
+    if (message.embeds.length > 0) {
+      audit.addField('Embeds', message.embeds.length.toString());
+    }
+    if (message.attachments.size > 0) {
+      audit.addField('Attachments', message.attachments.size.toString());
+    }
 
-  await ChannelService.sendAuditMessage(client, serverConfig, audit);
-};
+    await ChannelService.sendAuditMessage(client, serverConfig, audit);
+  },
+});

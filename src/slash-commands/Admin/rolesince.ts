@@ -1,68 +1,49 @@
-import {
-  ChatInputCommandInteraction,
-  SlashCommandBuilder,
-  PermissionFlagsBits,
-  SlashCommandRoleOption,
-  SlashCommandNumberOption,
-  InteractionContextType,
-} from 'discord.js';
 import { DateTime } from 'luxon';
-import { SlashCommand } from '../../types/SlashCommand';
-import { requireGuild } from '../../utilities/requireGuild';
+import { defineCommand } from '../../framework/command';
 
-const execute = async (cmd: ChatInputCommandInteraction) => {
-  const role = cmd.options.getRole('role', true);
-  const days = cmd.options.getNumber('days') ?? 0;
+export default defineCommand({
+  name: 'rolesince',
+  description: 'Returns members in the given role for the specified number of days',
+  adminOnly: true,
+  options: (b) =>
+    b
+      .addRoleOption((opt) =>
+        opt.setName('role').setDescription('Role to search again').setRequired(true)
+      )
+      .addNumberOption((opt) =>
+        opt.setName('days').setDescription('Minimum number of days in the role')
+      ),
+  run: async (ctx) => {
+    const role = ctx.interaction.options.getRole('role', true);
+    const days = ctx.interaction.options.getNumber('days') ?? 0;
 
-  const allMembers = await requireGuild(cmd).members.fetch();
+    const allMembers = await ctx.guild.members.fetch();
 
-  const members = allMembers.filter((member) => {
-    const joined = DateTime.fromMillis(member.joinedTimestamp ?? Date.now()).startOf('day');
-    const daysInServer = DateTime.local().startOf('day').diff(joined, 'days').days;
-    return member.roles.cache.find((r) => r.id === role.id) && daysInServer >= days;
-  });
+    const members = allMembers.filter((member) => {
+      const joined = DateTime.fromMillis(member.joinedTimestamp ?? Date.now()).startOf('day');
+      const daysInServer = DateTime.local().startOf('day').diff(joined, 'days').days;
+      return member.roles.cache.find((r) => r.id === role.id) && daysInServer >= days;
+    });
 
-  let response: string;
+    let response: string;
 
-  if (members.size < 1) {
-    response = `There are no users in ${role.toString()} that have been in the server for at least ${
-      days ?? 0
-    } days.`;
-  } else {
-    response = `**Users in ${role.toString()} that have been in the server for at least ${
-      days ?? 0
-    } days.**\n------\n`;
-    for (const mem of members.values()) {
-      if (mem.partial) {
-        await mem.fetch();
+    if (members.size < 1) {
+      response = `There are no users in ${role.toString()} that have been in the server for at least ${days} days.`;
+    } else {
+      response = `**Users in ${role.toString()} that have been in the server for at least ${days} days.**\n------\n`;
+      for (const mem of members.values()) {
+        if (mem.partial) {
+          await mem.fetch();
+        }
+        response += `${mem.toString()} joined <t:${Math.floor((mem.joinedTimestamp ?? 0) / 1000)}:R>\n`;
       }
-      response += `${mem.toString()} joined <t:${Math.floor((mem.joinedTimestamp ?? 0) / 1000)}:R>\n`;
     }
-  }
 
-  return cmd.reply({
-    content: response,
-    allowedMentions: {
-      parse: [],
-    },
-    ephemeral: true,
-  });
-};
-
-const commandData = new SlashCommandBuilder()
-  .setName('rolesince')
-  .setDescription('Returns members in the given role for the specified number of days')
-  .addRoleOption((opt: SlashCommandRoleOption) =>
-    opt.setName('role').setDescription('Role to search again').setRequired(true)
-  )
-  .addNumberOption((opt: SlashCommandNumberOption) =>
-    opt.setName('days').setDescription('Minimum number of days in the role')
-  )
-  .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
-  .setContexts([InteractionContextType.Guild]);
-
-const slashCommand: SlashCommand = {
-  commandData: commandData,
-  execute: execute,
-};
-export = slashCommand;
+    await ctx.reply({
+      content: response,
+      allowedMentions: {
+        parse: [],
+      },
+    });
+  },
+});

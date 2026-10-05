@@ -1,81 +1,54 @@
-import {
-  SlashCommandSubcommandBuilder,
-  SlashCommandChannelOption,
-  ChatInputCommandInteraction,
-  SlashCommandSubcommandGroupBuilder,
-} from 'discord.js';
-import { ServerConfig } from '../../../client/models/ServerConfig';
-import { SlashSubGroupCommand } from '../../../types/SlashCommand';
+import { defineSubcommandGroup } from '../../../framework/command';
 import { BirthdayManager } from '../../../utilities/BirthdayManager';
-import { requireGuild } from '../../../utilities/requireGuild';
 
-const create = async (cmd: ChatInputCommandInteraction, config: ServerConfig) => {
-  const { id } = cmd.options.getChannel('channel', true);
-  const channel = requireGuild(cmd).channels.cache.get(id);
+export const BirthdaysGroup = defineSubcommandGroup({
+  name: 'birthdays',
+  description: 'Configure the birthday calendar for this server',
+  subcommands: [
+    {
+      name: 'create',
+      description: 'Creates or recreates a birthday calendar for this server',
+      options: (sub) =>
+        sub.addChannelOption((opt) =>
+          opt
+            .setName('channel')
+            .setDescription('Channel to create the birthday calendar in')
+            .setRequired(true)
+        ),
+      run: async (ctx) => {
+        const { id } = ctx.interaction.options.getChannel('channel', true);
+        const channel = ctx.guild.channels.cache.get(id);
 
-  if (!channel || !channel.isTextBased()) {
-    return cmd.reply('Provided channel is not a text channel');
-  }
+        if (!channel || !channel.isTextBased()) {
+          await ctx.reply({ content: 'Provided channel is not a text channel', ephemeral: false });
+          return;
+        }
 
-  const birthdaysCalendar = await channel.send({
-    content: 'Placeholder calendar message - populating...',
-  });
-  config.birthdayCalendarMessagePath = `${birthdaysCalendar.channel.id}/${birthdaysCalendar.id}`;
-  await config.save();
-  await BirthdayManager.populateCalendars(cmd.client, requireGuild(cmd).id);
+        const birthdaysCalendar = await channel.send({
+          content: 'Placeholder calendar message - populating...',
+        });
+        ctx.config.birthdayCalendarMessagePath = `${birthdaysCalendar.channel.id}/${birthdaysCalendar.id}`;
+        await ctx.config.save();
+        await BirthdayManager.populateCalendars(ctx.interaction.client, ctx.guild.id);
 
-  return cmd.reply({ content: 'Birthday calendar has been created.', ephemeral: true });
-};
+        await ctx.reply('Birthday calendar has been created.');
+      },
+    },
+    {
+      name: 'sync',
+      description: 'Syncs the birthday calendar for this server',
+      run: async (ctx) => {
+        try {
+          await BirthdayManager.populateCalendars(ctx.interaction.client, ctx.config.serverId);
+        } catch {
+          await ctx.reply('An error ocurred running the calendar sync for this server.');
+          return;
+        }
 
-const sync = async (cmd: ChatInputCommandInteraction, config: ServerConfig) => {
-  try {
-    await BirthdayManager.populateCalendars(cmd.client, config.serverId);
-  } catch {
-    return cmd.reply({
-      content: 'An error ocurred running the calendar sync for this server.',
-      ephemeral: true,
-    });
-  }
+        await ctx.reply(`Calendar successfully synchronised for ${ctx.guild.name}.`);
+      },
+    },
+  ],
+});
 
-  return cmd.reply({
-    content: `Calendar successfully synchronised for ${requireGuild(cmd).name}.`,
-    ephemeral: true,
-  });
-};
-
-const exec = async (cmd: ChatInputCommandInteraction, config: ServerConfig) => {
-  const subCommand = cmd.options.getSubcommand();
-  if (subCommand == 'create') {
-    return create(cmd, config);
-  } else if (subCommand == 'sync') {
-    return sync(cmd, config);
-  } else {
-    return cmd.reply({
-      content: 'A valid option was not supplied for this command',
-      ephemeral: true,
-    });
-  }
-};
-
-const data = new SlashCommandSubcommandGroupBuilder()
-  .setName('birthdays')
-  .setDescription('Configure the birthday calendar for this server')
-  .addSubcommand((sub: SlashCommandSubcommandBuilder) =>
-    sub
-      .setName('create')
-      .setDescription('Creates or recreates a birthday calendar for this server')
-      .addChannelOption((opt: SlashCommandChannelOption) =>
-        opt
-          .setName('channel')
-          .setDescription('Channel to create the birthday calendar in')
-          .setRequired(true)
-      )
-  )
-  .addSubcommand((sub: SlashCommandSubcommandBuilder) =>
-    sub.setName('sync').setDescription('Syncs the birthday calendar for this server')
-  );
-
-export const BirthdaysConfigCommand: SlashSubGroupCommand = {
-  commandData: data,
-  execute: exec,
-};
+export default BirthdaysGroup;

@@ -1,59 +1,69 @@
-import { ChatInputCommandInteraction, Interaction } from 'discord.js';
-import { NovaClient } from '../client/NovaClient';
-import { RunFunction } from '../types/Event';
+import { MessageFlags } from 'discord.js';
+import { CommandContext, createReply } from '../framework/command';
+import { defineEvent } from '../framework/event';
 import { ConfigService } from '../utilities/ConfigService';
 import { Logger } from '../utilities/Logger';
-import { UserProfileService } from '../utilities/UserProfileService';
-import { ServerConfig } from '../client/models/ServerConfig';
 
-export const name = 'interactionCreate';
-
-const runCommand = async (
-  client: NovaClient,
-  cmd: ChatInputCommandInteraction,
-  config: ServerConfig
-) => {
-  const slashCmd = client.slashCommands.get(cmd.commandName);
-
-  if (!slashCmd) {
-    return;
-  }
-
-  await slashCmd.execute(cmd, config).catch(async (err: unknown) => {
-    try {
-      if (cmd.deferred && !cmd.replied) {
-        await cmd.editReply({
-          content: 'Something went wrong, was this command run in the correct place?',
-        });
-      } else if (!cmd.replied) {
-        await cmd.reply({
-          content: 'Something went wrong, was this command run in the correct place?',
-          ephemeral: true,
-        });
-      }
-    } catch (replyErr) {
-      Logger.writeError('Failed to send command error reply.', replyErr);
+export default defineEvent({
+  name: 'interactionCreate',
+  run: async (client, interaction) => {
+    if (!interaction.isChatInputCommand()) {
+      return;
     }
-    Logger.writeError(`Command ${cmd.commandName} failed.`, err);
-  });
-};
 
-export const run: RunFunction = async (client: NovaClient, interaction: Interaction) => {
-  if (!interaction.isChatInputCommand()) {
-    return;
-  }
+    if (!interaction.inCachedGuild()) {
+      await interaction.reply({
+        content: 'Dingir only works in servers.',
+        flags: MessageFlags.Ephemeral,
+      });
+      return;
+    }
 
-  if (!interaction.guild) {
-    return interaction.reply({
-      content: 'Dingir only supports interactions in Discord Servers.',
-      ephemeral: true,
-    });
-  }
+    const command = client.slashCommands.get(interaction.commandName);
+    const resolved = command?.resolve(interaction);
+    if (!resolved) {
+      Logger.warn('Unknown command', {
+        command: interaction.commandName,
+        subcommand: interaction.options.getSubcommand(false),
+        guild: interaction.guildId,
+        user: interaction.user.id,
+      });
+      await interaction.reply({ content: 'Unknown command.', flags: MessageFlags.Ephemeral });
+      return;
+    }
 
-  const serverConfig = await ConfigService.getConfigByMessage(interaction);
-  await UserProfileService.incrementActivityScore(interaction.guild.id, interaction.user.id);
-
-  if (serverConfig) {
-    await runCommand(client, interaction, serverConfig);
-  }
-};
+    const reply = createReply(interaction);
+    try {
+      const config = await ConfigService.getConfig(interaction.guildId);
+      if (resolved.defer) {
+        await interaction.deferReply(
+          resolved.defer === 'ephemeral' ? { flags: MessageFlags.Ephemeral } : {}
+        );
+      }
+      const ctx: CommandContext = {
+        interaction,
+        guild: interaction.guild,
+        member: interaction.member,
+        config,
+        reply,
+      };
+      await resolved.run(ctx);
+    } catch (error) {
+      Logger.error(
+        'Command failed',
+        {
+          command: interaction.commandName,
+          path: resolved.path,
+          guild: interaction.guildId,
+          user: interaction.user.id,
+        },
+        error
+      );
+      try {
+        await reply('Something went wrong running this command.');
+      } catch (replyError) {
+        Logger.error('Could not send command error reply', { path: resolved.path }, replyError);
+      }
+    }
+  },
+});
