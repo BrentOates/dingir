@@ -142,35 +142,6 @@ export function defineCommand(def: CommandDefinition): Command {
     ...(def.groups ?? []).map((g) => g.name),
   ]);
 
-  const routes = new Map<string, ResolvedCommand>();
-  const routeKey = (group: string | null, sub: string | null): string =>
-    `${group ?? ''}/${sub ?? ''}`;
-
-  let builder = new SlashCommandBuilder()
-    .setName(def.name)
-    .setDescription(def.description)
-    .setContexts([InteractionContextType.Guild]);
-
-  if (def.adminOnly) {
-    builder = builder.setDefaultMemberPermissions(PermissionFlagsBits.Administrator);
-  }
-
-  if (def.run) {
-    if (def.options) {
-      builder = def.options(builder) as unknown as SlashCommandBuilder;
-    }
-    routes.set(routeKey(null, null), { run: def.run, defer: def.defer ?? false, path: def.name });
-  }
-
-  for (const sub of def.subcommands ?? []) {
-    builder.addSubcommand(subcommandBuilder(sub));
-    routes.set(routeKey(null, sub.name), {
-      run: sub.run,
-      defer: sub.defer ?? false,
-      path: `${def.name} ${sub.name}`,
-    });
-  }
-
   for (const group of def.groups ?? []) {
     const groupWhere = `group "${group.name}" in ${where}`;
     if (group.subcommands.length === 0) {
@@ -181,29 +152,59 @@ export function defineCommand(def: CommandDefinition): Command {
       groupWhere,
       group.subcommands.map((s) => s.name)
     );
-    builder.addSubcommandGroup((g: SlashCommandSubcommandGroupBuilder) => {
-      g.setName(group.name).setDescription(group.description);
-      for (const sub of group.subcommands) {
-        g.addSubcommand(subcommandBuilder(sub));
-        routes.set(routeKey(group.name, sub.name), {
-          run: sub.run,
-          defer: sub.defer ?? false,
-          path: `${def.name} ${group.name} ${sub.name}`,
-        });
-      }
-      return g;
-    });
   }
 
-  // Building the JSON now surfaces invalid names, descriptions and options at definition time
+  const routeKey = (group: string | null, sub: string | null): string =>
+    `${group ?? ''}/${sub ?? ''}`;
+  const routes = new Map<string, ResolvedCommand>();
   let json: RESTPostAPIChatInputApplicationCommandsJSONBody;
   try {
+    let builder = new SlashCommandBuilder()
+      .setName(def.name)
+      .setDescription(def.description)
+      .setContexts([InteractionContextType.Guild]);
+
+    if (def.adminOnly) {
+      builder = builder.setDefaultMemberPermissions(PermissionFlagsBits.Administrator);
+    }
+
+    if (def.run) {
+      if (def.options) {
+        builder = def.options(builder) as unknown as SlashCommandBuilder;
+      }
+      routes.set(routeKey(null, null), { run: def.run, defer: def.defer ?? false, path: def.name });
+    }
+
+    for (const sub of def.subcommands ?? []) {
+      builder.addSubcommand(subcommandBuilder(sub));
+      routes.set(routeKey(null, sub.name), {
+        run: sub.run,
+        defer: sub.defer ?? false,
+        path: `${def.name} ${sub.name}`,
+      });
+    }
+
+    for (const group of def.groups ?? []) {
+      builder.addSubcommandGroup((g: SlashCommandSubcommandGroupBuilder) => {
+        g.setName(group.name).setDescription(group.description);
+        for (const sub of group.subcommands) {
+          g.addSubcommand(subcommandBuilder(sub));
+          routes.set(routeKey(group.name, sub.name), {
+            run: sub.run,
+            defer: sub.defer ?? false,
+            path: `${def.name} ${group.name} ${sub.name}`,
+          });
+        }
+        return g;
+      });
+    }
+
+    // Building the JSON now surfaces invalid names, descriptions and options at definition time
     json = builder.toJSON();
   } catch (error) {
-    throw new Error(
-      `Invalid ${where}: ${error instanceof Error ? error.message : String(error)}`,
-      { cause: error }
-    );
+    throw new Error(`Invalid ${where}: ${error instanceof Error ? error.message : String(error)}`, {
+      cause: error,
+    });
   }
 
   return {
