@@ -11,6 +11,11 @@ const FONT_PATH = path.join(import.meta.dirname, '..', 'resources', 'fonts', 'Ro
 const DOWNLOAD_TIMEOUT_MS = 10_000;
 const MAX_DOWNLOAD_BYTES = 10 * 1024 * 1024;
 const MIN_FONT_SIZE = 8;
+const AVATAR_CENTER = { x: 125, y: 125 };
+const AVATAR_RADIUS = 75;
+const RING_WIDTH = 5;
+const RING_COLOUR = 'rgba(255, 255, 255, 0.7)';
+const AVATAR_BACKDROP = 'rgba(0, 0, 0, 0.4)';
 
 let fontRegistered = false;
 const ensureFont = (): void => {
@@ -110,16 +115,33 @@ export const render: WelcomeImageRenderer = async (app, member, backgroundUrl) =
   ctx.font = applyText(canvas, joinedText, 20);
   ctx.fillText(joinedText, 225, 200);
 
+  const cx = AVATAR_CENTER.x;
+  const cy = AVATAR_CENTER.y;
+  const r = AVATAR_RADIUS;
+
+  // Create a clipping region for the avatar
+  ctx.save();
   ctx.beginPath();
-  ctx.arc(125, 125, 75, 0, Math.PI * 2, true);
-  ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
-  ctx.lineWidth = 10;
-  ctx.stroke();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
   ctx.closePath();
   ctx.clip();
 
+  // Fill the clipped region with backdrop
+  ctx.fillStyle = AVATAR_BACKDROP;
+  ctx.fillRect(cx - r, cy - r, 2 * r, 2 * r);
+
+  // Draw the avatar
   const avatar = await loadImage(member.displayAvatarURL({ extension: 'png', size: 256 }));
-  ctx.drawImage(avatar, 50, 50, 150, 150);
+  ctx.drawImage(avatar, cx - r, cy - r, 2 * r, 2 * r);
+
+  ctx.restore();
+
+  // Draw the ring outside the clipped region
+  ctx.beginPath();
+  ctx.arc(cx, cy, r + RING_WIDTH / 2, 0, Math.PI * 2);
+  ctx.strokeStyle = RING_COLOUR;
+  ctx.lineWidth = RING_WIDTH;
+  ctx.stroke();
 
   return new AttachmentBuilder(await canvas.encode('png')).setName('welcome-image.png');
 };
