@@ -1,4 +1,4 @@
-name: Lint and Build
+name: Lint, Typecheck and Test
 
 on:
   # Trigger the workflow on push or pull request,
@@ -15,8 +15,8 @@ permissions:
   checks: write
 
 jobs:
-  lint-and-build:
-    name: Lint and Build
+  verify:
+    name: Lint, Typecheck and Test
     runs-on: ubuntu-latest
 
     steps:
@@ -38,8 +38,8 @@ jobs:
       - name: Run linters
         run: npm run lint
 
-      - name: Build TypeScript
-        run: npm run build
+      - name: Type check
+        run: npm run typecheck
 
       - name: Run tests
         run: npm test

@@ -10,8 +10,8 @@ permissions:
   packages: write
       
 jobs:
-  run-linters:
-    name: Run ESLint
+  verify:
+    name: Lint, Typecheck and Test
     runs-on: ubuntu-latest
 
     steps:
@@ -34,8 +34,15 @@ jobs:
       - name: Run linters
         run: npm run lint
 
+      - name: Type check
+        run: npm run typecheck
+
+      - name: Run tests
+        run: npm test
+
   docker:
     name: Build Docker Image
+    needs: verify
     runs-on: ubuntu-latest
 
     steps:

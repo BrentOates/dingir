@@ -1,18 +1,9 @@
-# Stage 1 - Build
-
-FROM node:24-trixie-slim AS build
+FROM node:24-trixie-slim
 WORKDIR /usr/src/app
 COPY package*.json ./
-RUN npm ci
-COPY . .
-RUN npm run build
-
-# Stage 2 - Dist Only
-
-FROM node:24-trixie-slim AS dist
-WORKDIR /usr/src/app
-COPY package*.json ./
-RUN npm ci --omit=dev
-COPY --from=build /usr/src/app/dist dist
+RUN npm ci --omit=dev --ignore-scripts
+COPY src ./src
+RUN mkdir -p data && chown node:node data
+USER node
 VOLUME /usr/src/app/data
-ENTRYPOINT ["npm", "start"]
+CMD ["node", "src/index.ts"]
