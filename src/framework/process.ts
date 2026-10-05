@@ -13,9 +13,9 @@ export interface ProcessHandlerDeps {
 }
 
 export interface ProcessHandlers {
-  onUnhandledRejection(reason: unknown): void;
-  onUncaughtException(error: unknown): Promise<void>;
-  onSignal(signal: string): Promise<void>;
+  onUnhandledRejection: (reason: unknown) => void;
+  onUncaughtException: (error: unknown) => Promise<void>;
+  onSignal: (signal: string) => Promise<void>;
 }
 
 /** Resolves true if `run` finished (even by throwing) before the timeout, false if it timed out. */

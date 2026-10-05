@@ -1,4 +1,5 @@
-import { type ApplicationCommandOptionAllowedChannelTypes, Guild } from 'discord.js';
+import type { Guild } from 'discord.js';
+import { type ApplicationCommandOptionAllowedChannelTypes } from 'discord.js';
 import { defineSubcommandGroup, type SubcommandGroupDefinition } from './command.ts';
 import { updateConfig } from '../services/ConfigService.ts';
 

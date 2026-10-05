@@ -54,7 +54,7 @@ test('mybirthday set rejects invalid dates', async () => {
     exec(mybirthday, { subcommand: 'set', options: { day: 31, month: 4 } }),
     /invalid/
   );
-  assert.equal(await countProfiles(), 0);
+  assert.equal(countProfiles(), 0);
 });
 
 test('mybirthday clear removes the birthday but keeps the profile', async () => {
@@ -74,7 +74,7 @@ test('profile replies for a non-member without creating a profile', async () => 
     exec(profile, { options: { member: { id: 'ghost' } }, guild }),
     "That user isn't a member of this server."
   );
-  assert.equal(await countProfiles(), 0);
+  assert.equal(countProfiles(), 0);
 });
 
 test('profile for a member without a profile does not create one', async () => {
@@ -93,5 +93,5 @@ test('profile for a member without a profile does not create one', async () => {
   const field = (name: string): string => embed.fields?.find((f) => f.name === name)?.value ?? '';
   assert.equal(field('Onboarding'), 'Not completed');
   assert.equal(field('Activity Score'), '0');
-  assert.equal(await countProfiles(), 0);
+  assert.equal(countProfiles(), 0);
 });

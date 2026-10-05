@@ -1,4 +1,4 @@
-import { GuildMember, SlashCommandSubcommandBuilder } from 'discord.js';
+import type { GuildMember, SlashCommandSubcommandBuilder } from 'discord.js';
 import { type CommandContext, defineCommand } from '../../framework/command.ts';
 import { UserError } from '../../framework/errors.ts';
 import { resolveMember } from '../../services/MemberResolver.ts';

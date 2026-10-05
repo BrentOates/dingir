@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { Client, EmbedBuilder } from 'discord.js';
+import type { Client} from 'discord.js';
+import { EmbedBuilder } from 'discord.js';
 import type { ServerConfig } from '../../src/db/schema.ts';
 import { sendAudit } from '../../src/services/AuditService.ts';
 import { fakeConfig, stub } from '../fakes/discord.ts';

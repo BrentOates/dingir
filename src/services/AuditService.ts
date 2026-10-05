@@ -1,4 +1,4 @@
-import { Attachment, Client, EmbedBuilder } from 'discord.js';
+import type { Attachment, Client, EmbedBuilder } from 'discord.js';
 import type { App } from '../app.ts';
 import type { ServerConfig } from '../db/schema.ts';
 

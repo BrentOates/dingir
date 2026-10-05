@@ -35,25 +35,25 @@ const makeConfig = (fields: Record<string, unknown> = {}): ServerConfig =>
   createConfig({ serverId: 'g1', ...fields });
 
 test('refreshCalendar: not configured', async () => {
-  const config = await makeConfig();
+  const config = makeConfig();
   assert.equal(await refreshCalendar(appAt(), fakeClient(), config), 'not-configured');
 });
 
 test('refreshCalendar: channel fetch rejecting keeps the stored path', async () => {
-  const config = await makeConfig({ birthdayCalendarMessagePath: 'c1/m1' });
+  const config = makeConfig({ birthdayCalendarMessagePath: 'c1/m1' });
   const client = fakeClient({ channelFetchError: apiError(50001) });
   assert.equal(await refreshCalendar(appAt(), client, config), 'channel-missing');
   assert.equal(config.birthdayCalendarMessagePath, 'c1/m1');
 });
 
 test('refreshCalendar: message missing', async () => {
-  const config = await makeConfig({ birthdayCalendarMessagePath: 'c1/m1' });
+  const config = makeConfig({ birthdayCalendarMessagePath: 'c1/m1' });
   const client = fakeClient({ channels: [fakeTextChannel('c1')] });
   assert.equal(await refreshCalendar(appAt(), client, config), 'message-missing');
 });
 
 test('refreshCalendar: edit failure reports failed', async () => {
-  const config = await makeConfig({ birthdayCalendarMessagePath: 'c1/m1' });
+  const config = makeConfig({ birthdayCalendarMessagePath: 'c1/m1' });
   const message = fakeEditableMessage('m1');
   message.edit = async () => {
     throw new Error('boom');
@@ -63,8 +63,8 @@ test('refreshCalendar: edit failure reports failed', async () => {
 });
 
 test('refreshCalendar: edits with Feb 29 shown on Feb 28 and today counted', async () => {
-  const config = await makeConfig({ birthdayCalendarMessagePath: 'c1/m1' });
-  await createProfiles([
+  const config = makeConfig({ birthdayCalendarMessagePath: 'c1/m1' });
+  createProfiles([
     { serverId: 'g1', userId: 'leap', birthdayMonth: 2, birthdayDay: 29 },
     { serverId: 'g1', userId: 'today', birthdayMonth: 2, birthdayDay: 27 },
     { serverId: 'g1', userId: 'nobday' },
@@ -86,7 +86,7 @@ test('refreshCalendar: edits with Feb 29 shown on Feb 28 and today counted', asy
 });
 
 test('refreshCalendar: empty state', async () => {
-  const config = await makeConfig({ birthdayCalendarMessagePath: 'c1/m1' });
+  const config = makeConfig({ birthdayCalendarMessagePath: 'c1/m1' });
   const message = fakeEditableMessage('m1');
   const client = fakeClient({ channels: [fakeTextChannel('c1', [message])] });
   assert.equal(await refreshCalendar(appAt(), client, config), 'updated');
@@ -94,8 +94,8 @@ test('refreshCalendar: empty state', async () => {
 });
 
 test('notifyBirthdays: skips departed members and mentions only present ones', async () => {
-  await makeConfig({ announcementsChannelId: 'ann' });
-  await createProfiles([
+  makeConfig({ announcementsChannelId: 'ann' });
+  createProfiles([
     { serverId: 'g1', userId: 'here', birthdayMonth: 6, birthdayDay: 1 },
     { serverId: 'g1', userId: 'gone', birthdayMonth: 6, birthdayDay: 1 },
     { serverId: 'g1', userId: 'other', birthdayMonth: 6, birthdayDay: 2 },
@@ -111,8 +111,8 @@ test('notifyBirthdays: skips departed members and mentions only present ones', a
 });
 
 test('notifyBirthdays: Feb 29 is celebrated on Feb 28 in a non-leap year', async () => {
-  await makeConfig({ announcementsChannelId: 'ann' });
-  await createProfiles([
+  makeConfig({ announcementsChannelId: 'ann' });
+  createProfiles([
     { serverId: 'g1', userId: 'a', birthdayMonth: 2, birthdayDay: 29 },
     { serverId: 'g1', userId: 'b', birthdayMonth: 2, birthdayDay: 28 },
   ]);
@@ -131,8 +131,8 @@ test('notifyBirthdays: Feb 29 is celebrated on Feb 28 in a non-leap year', async
 });
 
 test('notifyBirthdays: no announcements channel sends nothing', async () => {
-  await makeConfig();
-  await createProfiles([{ serverId: 'g1', userId: 'a', birthdayMonth: 6, birthdayDay: 1 }]);
+  makeConfig();
+  createProfiles([{ serverId: 'g1', userId: 'a', birthdayMonth: 6, birthdayDay: 1 }]);
   const channel = fakeTextChannel('ann');
   const guild = fakeGuildWithMembers({ id: 'g1', memberIds: ['a'], channels: [channel] });
   await notifyBirthdays(appAt('2027-06-01T09:00'), fakeClient({ guilds: { g1: guild } }));

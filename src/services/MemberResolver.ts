@@ -1,4 +1,5 @@
-import { Guild, GuildMember, type GuildTextBasedChannel, type Snowflake, User } from 'discord.js';
+import type { Guild, GuildMember, User } from 'discord.js';
+import { type GuildTextBasedChannel, type Snowflake } from 'discord.js';
 
 const UNKNOWN_MEMBER = 10007;
 const UNKNOWN_USER = 10013;

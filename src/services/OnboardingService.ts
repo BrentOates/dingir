@@ -1,10 +1,11 @@
-import {
+import type {
   AttachmentBuilder,
   Client,
   Guild,
   GuildMember,
+  Role} from 'discord.js';
+import {
   type PartialGuildMember,
-  Role,
   type Snowflake,
 } from 'discord.js';
 import type { App } from '../app.ts';

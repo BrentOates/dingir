@@ -19,7 +19,7 @@ after(() => {
 
 beforeEach(async () => {
   clearConfigs();
-  await createConfig({ serverId: 'guild-1', guestRoleIds: 'r1', auditChannelId: 'audit-1' });
+  createConfig({ serverId: 'guild-1', guestRoleIds: 'r1', auditChannelId: 'audit-1' });
 });
 
 const update = async (oldState: Record<string, unknown>, newPending: boolean | null) => {

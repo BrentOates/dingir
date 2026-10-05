@@ -1,4 +1,5 @@
-import { GuildMember, Message, PermissionFlagsBits, type Snowflake } from 'discord.js';
+import type { GuildMember, Message} from 'discord.js';
+import { PermissionFlagsBits, type Snowflake } from 'discord.js';
 import type { App } from '../app.ts';
 import type { DingirClient } from '../client/DingirClient.ts';
 import type { ServerConfig } from '../db/schema.ts';

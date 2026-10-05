@@ -1,7 +1,9 @@
 import path from 'node:path';
-import { AttachmentBuilder, GuildMember } from 'discord.js';
+import type { GuildMember } from 'discord.js';
+import { AttachmentBuilder } from 'discord.js';
 import { DateTime } from 'luxon';
-import { Canvas, createCanvas, GlobalFonts, loadImage } from '@napi-rs/canvas';
+import type { Canvas} from '@napi-rs/canvas';
+import { createCanvas, GlobalFonts, loadImage } from '@napi-rs/canvas';
 import type { App } from '../app.ts';
 
 const FONT_FAMILY = 'Roboto';

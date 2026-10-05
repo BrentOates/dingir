@@ -1,4 +1,4 @@
-import { Role } from 'discord.js';
+import type { Role } from 'discord.js';
 import { type CommandContext, defineSubcommandGroup } from '../../../framework/command.ts';
 import { UserError } from '../../../framework/errors.ts';
 import { EmbedColours } from '../../../resources/EmbedColours.ts';

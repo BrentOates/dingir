@@ -1,4 +1,5 @@
-import { AttachmentBuilder, GuildMember } from 'discord.js';
+import type { GuildMember } from 'discord.js';
+import { AttachmentBuilder } from 'discord.js';
 import { DateTime } from 'luxon';
 import type { ReplyOptions } from '../framework/command.ts';
 

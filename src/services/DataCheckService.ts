@@ -1,4 +1,5 @@
-import { Client, type Snowflake } from 'discord.js';
+import type { Client} from 'discord.js';
+import { type Snowflake } from 'discord.js';
 import type { App } from '../app.ts';
 import { getConfigs, purgeGuild, updateConfig } from './ConfigService.ts';
 import { deleteUsers, getServerProfiles } from './UserProfileService.ts';

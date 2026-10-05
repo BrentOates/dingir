@@ -1,4 +1,5 @@
-import { Client, type ClientEvents } from 'discord.js';
+import type { Client} from 'discord.js';
+import { type ClientEvents } from 'discord.js';
 import type { App } from '../app.ts';
 import type { DingirClient } from '../client/DingirClient.ts';
 

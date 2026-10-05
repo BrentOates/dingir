@@ -1,4 +1,5 @@
-import { ChannelType, Message, PermissionFlagsBits } from 'discord.js';
+import type { Message} from 'discord.js';
+import { ChannelType, PermissionFlagsBits } from 'discord.js';
 import { defineCommand } from '../../framework/command.ts';
 import { UserError } from '../../framework/errors.ts';
 import { EmbedColours } from '../../resources/EmbedColours.ts';

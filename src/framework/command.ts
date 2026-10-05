@@ -1,12 +1,15 @@
-import {
-  type APIEmbed,
+import type {
   Attachment,
   AttachmentBuilder,
-  type AttachmentPayload,
   ChatInputCommandInteraction,
   EmbedBuilder,
   Guild,
   GuildMember,
+  SlashCommandSubcommandBuilder,
+  SlashCommandSubcommandGroupBuilder} from 'discord.js';
+import {
+  type APIEmbed,
+  type AttachmentPayload,
   InteractionContextType,
   type InteractionEditReplyOptions,
   type InteractionReplyOptions,
@@ -15,9 +18,7 @@ import {
   PermissionFlagsBits,
   type RESTPostAPIChatInputApplicationCommandsJSONBody,
   SlashCommandBuilder,
-  type SlashCommandOptionsOnlyBuilder,
-  SlashCommandSubcommandBuilder,
-  SlashCommandSubcommandGroupBuilder,
+  type SlashCommandOptionsOnlyBuilder
 } from 'discord.js';
 import type { App } from '../app.ts';
 import type { ServerConfig } from '../db/schema.ts';
@@ -38,7 +39,7 @@ export interface CommandContext {
   guild: Guild;
   member: GuildMember;
   config: ServerConfig;
-  reply(response: string | ReplyOptions): Promise<void>;
+  reply: (response: string | ReplyOptions) => Promise<void>;
 }
 
 export type Handler = (ctx: CommandContext) => Promise<void>;

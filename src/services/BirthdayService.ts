@@ -1,4 +1,5 @@
-import { Client, type Snowflake } from 'discord.js';
+import type { Client} from 'discord.js';
+import { type Snowflake } from 'discord.js';
 import { DateTime } from 'luxon';
 import type { ServerConfig } from '../db/schema.ts';
 import type { App } from '../app.ts';
