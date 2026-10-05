@@ -1,24 +1,16 @@
 import { defineEvent } from '../framework/event';
-import { EmbedColours } from '../resources/EmbedColours';
-import { ChannelService } from '../utilities/ChannelService';
+import { auditJoin, complete } from '../services/OnboardingService';
 import { ConfigService } from '../utilities/ConfigService';
-import { EmbedCompatLayer } from '../types/EmbedCompatLayer';
 
 export default defineEvent({
   name: 'guildMemberAdd',
   run: async (client, member) => {
-    const serverConfig = await ConfigService.getConfig(member.guild.id);
+    const config = await ConfigService.getConfig(member.guild.id);
 
-    const audit = new EmbedCompatLayer()
-      .setColor(EmbedColours.positive)
-      .setAuthor({
-        name: member.displayName,
-        iconURL: member.displayAvatarURL(),
-      })
-      .setDescription('New member joined')
-      .addField('ID', member.user.id)
-      .setTimestamp();
+    await auditJoin(client, member, config);
 
-    await ChannelService.sendAuditMessage(client, serverConfig, audit);
+    if (!member.pending) {
+      await complete(client, member, config);
+    }
   },
 });

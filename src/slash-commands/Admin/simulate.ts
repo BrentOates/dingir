@@ -1,57 +1,71 @@
-import { GuildMember } from 'discord.js';
+import { GuildMember, SlashCommandSubcommandBuilder } from 'discord.js';
 import { CommandContext, defineCommand } from '../../framework/command';
+import { resolveMember } from '../../services/MemberResolver';
+import { auditJoin, complete, formatOnboardingSummary } from '../../services/OnboardingService';
 
-const findMember = (ctx: CommandContext) => {
-  const members = ctx.guild.members.cache;
+const NO_MENTIONS = { parse: [] };
+
+const targetOf = async (ctx: CommandContext): Promise<GuildMember | null> => {
   const user = ctx.interaction.options.getUser('member');
-  return (user ? members.get(user.id) : undefined) ?? members.get(ctx.interaction.user.id);
+  if (!user) {
+    return ctx.member;
+  }
+  const member = await resolveMember(ctx.guild, user);
+  if (!member) {
+    await ctx.reply(`Could not find ${user.toString()} in this server.`);
+  }
+  return member;
 };
+
+const memberOption = (description: string) => (b: SlashCommandSubcommandBuilder) =>
+  b.addUserOption((opt) => opt.setName('member').setDescription(description));
 
 export default defineCommand({
   name: 'simulate',
-  description: 'Simulate events in this server',
+  description: 'Simulate member events safely (no roles or welcome messages are applied)',
   adminOnly: true,
   subcommands: [
     {
       name: 'join',
-      description: 'Simulate someone joining this server',
-      options: (b) =>
-        b.addUserOption((opt) =>
-          opt.setName('member').setDescription('Member to simulate joining as')
-        ),
+      description: 'Send only the "member joined" audit for a member (no roles or welcome)',
+      defer: 'ephemeral',
+      options: memberOption('Member to simulate joining as (defaults to you)'),
       run: async (ctx) => {
-        const guildMember = findMember(ctx);
-        if (!guildMember) {
-          await ctx.reply('Could not find that member.');
+        const target = await targetOf(ctx);
+        if (!target) {
           return;
         }
-        ctx.interaction.client.emit('guildMemberAdd', guildMember);
-
-        await ctx.reply(`Emitted guildMemberAdd for ${guildMember.toString()}`);
+        const sent = await auditJoin(ctx.interaction.client, target, ctx.config);
+        await ctx.reply({
+          content: sent
+            ? `Sent the "member joined" audit for ${target.toString()}. No roles or welcome message were applied.`
+            : 'No audit message was sent: the audit channel is not configured or not usable.',
+          allowedMentions: NO_MENTIONS,
+        });
       },
     },
     {
-      name: 'screen',
-      description: 'Simulate someone passing screening in this server',
-      options: (b) =>
-        b.addUserOption((opt) =>
-          opt.setName('member').setDescription('Member to simulate passing screening as')
-        ),
+      name: 'onboard',
+      description: 'Dry run: show what onboarding (guest roles, welcome) would do for a member',
+      defer: 'ephemeral',
+      options: memberOption('Member to simulate completing onboarding as (defaults to you)'),
       run: async (ctx) => {
-        const guildMember = findMember(ctx);
-        if (!guildMember) {
-          await ctx.reply('Could not find that member.');
+        const target = await targetOf(ctx);
+        if (!target) {
           return;
         }
-
-        const oldMemberMock = Object.assign({}, guildMember, {
-          pending: true,
-        }) as unknown as GuildMember;
-        const newMemberMock = guildMember;
-
-        ctx.interaction.client.emit('guildMemberUpdate', oldMemberMock, newMemberMock);
-
-        await ctx.reply(`Emitted guildMemberUpdate for ${guildMember.toString()}`);
+        const result = await complete(ctx.interaction.client, target, ctx.config, { dryRun: true });
+        const payload = result.welcomePayload;
+        const welcome = payload
+          ? `\n\nWelcome preview:\n${payload.content ?? '*(no text)*'}${
+              payload.imageError ? `\nImage failed: ${payload.imageError}` : ''
+            }`
+          : '';
+        await ctx.reply({
+          content: `Dry run for ${target.toString()} (nothing was changed or sent):\n${formatOnboardingSummary(result)}${welcome}`,
+          files: payload?.image ? [payload.image] : undefined,
+          allowedMentions: NO_MENTIONS,
+        });
       },
     },
   ],

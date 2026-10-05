@@ -1,89 +1,101 @@
+import { Role } from 'discord.js';
 import { CommandContext, defineSubcommandGroup } from '../../../framework/command';
 import { EmbedColours } from '../../../resources/EmbedColours';
-import { EmbedCompatLayer } from '../../../types/EmbedCompatLayer';
-import { ChannelService } from '../../../utilities/ChannelService';
-import { Logger } from '../../../utilities/Logger';
+import { AuditEmbed } from '../../../services/AuditEmbed';
+import { sendAudit } from '../../../services/AuditService';
+import { parseRoleIds, roleProblem } from '../../../services/OnboardingService';
+
+const ROLE_OPTIONS = ['role-one', 'role-two', 'role-three'] as const;
+const NO_MENTIONS = { parse: [] };
+
+const auditChange = (ctx: CommandContext, description: string, roleIds: string[]) => {
+  const embed = AuditEmbed.forMember(ctx.member, EmbedColours.info, description);
+  if (roleIds.length > 0) {
+    embed.addField('New member roles', roleIds.map((id) => `<@&${id}>`).join('\n'));
+  }
+  return sendAudit(ctx.interaction.client, ctx.config, embed);
+};
 
 const get = async (ctx: CommandContext) => {
-  const { config, guild, interaction: cmd } = ctx;
-  if (!config.guestRoleIds) {
-    await ctx.reply({ content: 'No guest roles configured for this server', ephemeral: false });
+  const ids = parseRoleIds(ctx.config.guestRoleIds);
+  if (ids.length === 0) {
+    await ctx.reply('No new-member roles configured');
     return;
   }
-
-  const roleIds: string[] = config.guestRoleIds.split(',');
-  const roles = guild.roles.cache.filter((r) => roleIds.includes(r.id));
-  const member = guild.members.cache.get(cmd.user.id);
-
-  const audit = new EmbedCompatLayer()
-    .setColor(EmbedColours.info)
-    .setAuthor({
-      name: member?.displayName ?? cmd.user.username,
-      iconURL: cmd.user.displayAvatarURL(),
-    })
-    .setDescription(`New user roles ${!config.guestRoleIds ? 'Removed' : 'Updated'}`)
-    .setTimestamp();
-
-  if (config.guestRoleIds) {
-    audit.addField('New user roles', roles.map((r) => r.toString()).join('\n'));
-  }
-
-  if (roles.size !== roleIds.length) {
-    audit.addField(
-      'WARNING',
-      'Not all roles configured are available in this server, please reconfigure new user roles'
-    );
-  }
-
-  await ChannelService.sendAuditMessage(cmd.client, config, audit).catch((err: unknown) =>
-    Logger.writeError('Could not send new roles audit.', err)
+  const lines = ids.map((id) =>
+    ctx.guild.roles.cache.has(id) ? `<@&${id}>` : `${id} (this role no longer exists)`
   );
-  await ctx.reply(`New user roles ${!config.guestRoleIds ? 'Removed' : 'Updated'}`);
+  await ctx.reply({
+    content: `Roles given to members when they complete onboarding:\n${lines.join('\n')}`,
+    allowedMentions: NO_MENTIONS,
+  });
 };
 
 export const NewRolesGroup = defineSubcommandGroup({
   name: 'newroles',
-  description: 'Control the roles assigned to newly screened members',
+  description: 'Roles given to members when they complete onboarding',
   subcommands: [
     {
       name: 'get',
-      description: 'Gets the roles assigned to newly screened members',
+      description: 'Show the roles given to members when they complete onboarding',
       run: get,
     },
     {
       name: 'set',
-      description: 'Sets the roles of newly screened members',
+      description: 'Set the roles given to members when they complete onboarding',
       options: (sub) =>
         sub
           .addRoleOption((option) =>
             option
-              .setName('role-one')
-              .setDescription('First role to give to newly screened members')
+              .setName(ROLE_OPTIONS[0])
+              .setDescription('Role to give to members when they complete onboarding')
               .setRequired(true)
           )
           .addRoleOption((option) =>
-            option
-              .setName('role-two')
-              .setDescription('Second optional role to give to newly screened members')
+            option.setName(ROLE_OPTIONS[1]).setDescription('Optional second role to give')
+          )
+          .addRoleOption((option) =>
+            option.setName(ROLE_OPTIONS[2]).setDescription('Optional third role to give')
           ),
       run: async (ctx) => {
-        const role1 = ctx.interaction.options.getRole('role-one', true);
-        const role2 = ctx.interaction.options.getRole('role-two');
+        const roles = new Map<string, Role>();
+        for (const name of ROLE_OPTIONS) {
+          const role = ctx.interaction.options.getRole(name);
+          if (role) {
+            roles.set(role.id, role);
+          }
+        }
 
-        ctx.config.guestRoleIds = [role1.id, role2?.id].filter(Boolean).join(',');
+        const problems = [...roles.values()].flatMap((role) => {
+          const problem = roleProblem(ctx.guild, role);
+          return problem ? [`${role.name}: ${problem}`] : [];
+        });
+        if (problems.length > 0) {
+          await ctx.reply({
+            content: `Those roles cannot be used:\n${problems.join('\n')}`,
+            allowedMentions: NO_MENTIONS,
+          });
+          return;
+        }
+
+        const ids = [...roles.keys()];
+        ctx.config.guestRoleIds = ids.join(',');
         await ctx.config.save();
-
-        await get(ctx);
+        await auditChange(ctx, 'New member roles updated', ids);
+        await ctx.reply({
+          content: `New-member roles set to ${ids.map((id) => `<@&${id}>`).join(', ')}.`,
+          allowedMentions: NO_MENTIONS,
+        });
       },
     },
     {
       name: 'clear',
-      description: 'Clears the roles assigned to newly screened members',
+      description: 'Clear the roles given to members when they complete onboarding',
       run: async (ctx) => {
         ctx.config.guestRoleIds = null;
         await ctx.config.save();
-
-        await get(ctx);
+        await auditChange(ctx, 'New member roles cleared', []);
+        await ctx.reply('New-member roles cleared.');
       },
     },
   ],
