@@ -7,10 +7,11 @@ import {
 import { ServerConfig } from '../../../client/models/ServerConfig';
 import { SlashSubGroupCommand } from '../../../types/SlashCommand';
 import { BirthdayManager } from '../../../utilities/BirthdayManager';
+import { requireGuild } from '../../../utilities/requireGuild';
 
 const create = async (cmd: ChatInputCommandInteraction, config: ServerConfig) => {
-  const { id } = cmd.options.getChannel('channel');
-  const channel = cmd.guild.channels.cache.get(id);
+  const { id } = cmd.options.getChannel('channel', true);
+  const channel = requireGuild(cmd).channels.cache.get(id);
 
   if (!channel || !channel.isTextBased()) {
     return cmd.reply('Provided channel is not a text channel');
@@ -21,9 +22,9 @@ const create = async (cmd: ChatInputCommandInteraction, config: ServerConfig) =>
   });
   config.birthdayCalendarMessagePath = `${birthdaysCalendar.channel.id}/${birthdaysCalendar.id}`;
   await config.save();
-  await BirthdayManager.populateCalendars(cmd.client, cmd.guild.id);
+  await BirthdayManager.populateCalendars(cmd.client, requireGuild(cmd).id);
 
-  cmd.reply({ content: 'Birthday calendar has been created.', ephemeral: true });
+  return cmd.reply({ content: 'Birthday calendar has been created.', ephemeral: true });
 };
 
 const sync = async (cmd: ChatInputCommandInteraction, config: ServerConfig) => {
@@ -37,7 +38,7 @@ const sync = async (cmd: ChatInputCommandInteraction, config: ServerConfig) => {
   }
 
   return cmd.reply({
-    content: `Calendar successfully synchronised for ${cmd.guild.name}.`,
+    content: `Calendar successfully synchronised for ${requireGuild(cmd).name}.`,
     ephemeral: true,
   });
 };

@@ -8,9 +8,9 @@ import { ServerConfig } from '../../../client/models/ServerConfig';
 import { SlashSubGroupCommand } from '../../../types/SlashCommand';
 
 const set = async (cmd: ChatInputCommandInteraction, config: ServerConfig) => {
-  const value = cmd.options.getBoolean('enabled');
+  const value = cmd.options.getBoolean('enabled', true);
   config.systemMessagesEnabled = value;
-  config.save();
+  await config.save();
 
   return get(cmd, config);
 };

@@ -5,6 +5,10 @@ export class ConfigService {
   public static async getConfigByMessage(
     message: Message | ChatInputCommandInteraction
   ): Promise<ServerConfig | undefined> {
+    if (!message.guild) {
+      return undefined;
+    }
+
     const [config] = await ServerConfig.findOrCreate({
       where: {
         serverId: message.guild.id,

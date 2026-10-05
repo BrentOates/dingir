@@ -17,7 +17,7 @@ const formatError = (error: unknown): string => {
 
 const sendAudit = async (
   client: NovaClient,
-  message: Message,
+  message: Message<true>,
   description: string,
   action: string
 ): Promise<void> => {
@@ -39,7 +39,7 @@ const sendAudit = async (
 
 export const name = 'messageCreate';
 export const run: RunFunction = async (client: NovaClient, message: Message) => {
-  if (!message.guild || message.author.bot) {
+  if (!message.inGuild() || message.author.bot) {
     return;
   }
 

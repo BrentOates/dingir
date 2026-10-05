@@ -12,7 +12,7 @@ export class BirthdayManager {
   public static async populateCalendars(client: Client, serverId?: string): Promise<void> {
     Logger.writeLog('Running birthday calendar update job.');
 
-    let parsedConfigs: ServerConfig[];
+    let parsedConfigs: ServerConfig[] = [];
 
     if (serverId) {
       const serverConfig = await ConfigService.getConfig(serverId).catch((err) => {
@@ -38,7 +38,7 @@ export class BirthdayManager {
 
     for (const config of parsedConfigs) {
       const profiles = await UserProfileService.getServerBirthdays(config.serverId);
-      const [channelId, messageId] = config.birthdayCalendarMessagePath.split('/');
+      const [channelId, messageId] = config.birthdayCalendarMessagePath!.split('/');
       let messageContent = ':tada: ~ Upcoming Birthdays ~ :tada:\n';
 
       const chanToEdit = await client.channels.fetch(channelId);
@@ -60,12 +60,16 @@ export class BirthdayManager {
 
           const now = DateTime.local();
 
-          if (!now.isInLeapYear && u.birthdayDay === 29 && u.birthdayMonth === 2) {
-            u.birthdayDay--;
+          // getServerBirthdays only returns profiles with a month and day set
+          const month = u.birthdayMonth!;
+          let day = u.birthdayDay!;
+
+          if (!now.isInLeapYear && day === 29 && month === 2) {
+            day--;
             alteredForLeap = true;
           }
 
-          let nextDate = DateTime.local(now.year, u.birthdayMonth, u.birthdayDay);
+          let nextDate = DateTime.local(now.year, month, day);
 
           if (nextDate <= now) {
             nextDate = nextDate.plus({
@@ -120,7 +124,7 @@ export class BirthdayManager {
     config: ServerConfig
   ) {
     if (config && config.announcementsChannelId) {
-      const server: Guild = client.guilds.cache.get(config.serverId);
+      const server: Guild | undefined = client.guilds.cache.get(config.serverId);
       if (!server) {
         return Logger.writeError(`Server missing with id ${config.serverId}`);
       }
@@ -161,7 +165,11 @@ export class BirthdayManager {
 
     for (const server in usersWithBirthdaysByServer) {
       const config = await ConfigService.getConfig(server);
-      this.notifyServerBirthdays(client, usersWithBirthdaysByServer[server], config);
+      try {
+        await this.notifyServerBirthdays(client, usersWithBirthdaysByServer[server], config);
+      } catch (err) {
+        Logger.writeError(`Error sending birthday notifications for server ${server}.`, err);
+      }
     }
 
     Logger.writeLog('Finished birthday notifications job.');

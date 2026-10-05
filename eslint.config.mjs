@@ -8,6 +8,12 @@ export default defineConfig([
   tseslint.configs.recommended,
   {
     files: ['**/*.ts'],
+    languageOptions: {
+      parserOptions: {
+        projectService: true,
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
     rules: {
       'no-tabs': ['error', { allowIndentationTabs: true }],
       'quotes': [
@@ -19,6 +25,15 @@ export default defineConfig([
       'brace-style': 'error',
       'curly': ['error', 'all'],
       '@typescript-eslint/no-explicit-any': 'off',
+      '@typescript-eslint/no-floating-promises': 'error',
+      '@typescript-eslint/no-misused-promises': 'error',
+    },
+  },
+  {
+    // node:test's top-level test()/describe() calls return promises that the runner tracks
+    files: ['tests/**/*.ts'],
+    rules: {
+      '@typescript-eslint/no-floating-promises': 'off',
     },
   },
 ]);

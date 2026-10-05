@@ -24,7 +24,7 @@ const applyText = (canvas: Canvas, text: string, baseSize: number) => {
 };
 
 const getWelcomeMessage = async (config: ServerConfig, member: GuildMember) => {
-  return config.welcomeMessage.replace('{member}', `<@${member.id}>`);
+  return (config.welcomeMessage ?? '').replace('{member}', `<@${member.id}>`);
 };
 
 const getWelcomeImage = async (config: ServerConfig, member: GuildMember) => {
@@ -32,10 +32,17 @@ const getWelcomeImage = async (config: ServerConfig, member: GuildMember) => {
 
   const canvas = createCanvas(700, 250);
   const ctx = canvas.getContext('2d');
+  if (member.joinedTimestamp === null) {
+    throw new Error(`Join date unavailable for member ${member.id}.`);
+  }
+  const backgroundUrl = config.welcomeMessageBackgroundUrl;
+  if (!backgroundUrl) {
+    throw new Error('Welcome message background URL is not configured.');
+  }
   const joinedTs = DateTime.fromMillis(member.joinedTimestamp).toLocaleString(DateTime.DATE_FULL);
 
   // Draw background
-  const background = await loadImage(config.welcomeMessageBackgroundUrl);
+  const background = await loadImage(backgroundUrl);
   ctx.drawImage(background, 0, 0, canvas.width, canvas.height);
 
   // Draw Username
@@ -80,7 +87,7 @@ const addGuestRoles = async (
   client: NovaClient
 ) => {
   try {
-    const guestRoleIds = serverConfig.guestRoleIds.split(',');
+    const guestRoleIds = (serverConfig.guestRoleIds ?? '').split(',');
     const guildRoles = await newMember.guild.roles.fetch();
 
     await newMember.roles.add(guildRoles.filter((role) => guestRoleIds.includes(role.id)));
@@ -143,10 +150,15 @@ export const run: RunFunction = async (
     oldMember.pending || (oldMember.pending === null && newMember.roles.cache.size === 1);
 
   if (notPassedScreen && !newMember.pending) {
-    sendScreenAudit(serverConfig, newMember, client);
+    await sendScreenAudit(serverConfig, newMember, client);
 
     if (serverConfig.guestRoleIds) {
-      addGuestRoles(serverConfig, newMember, client);
+      await addGuestRoles(serverConfig, newMember, client).catch((err: unknown) =>
+        Logger.writeError(
+          `Guest role audit failed in guildMemberUpdate for ${serverConfig.id}.`,
+          err
+        )
+      );
     }
 
     if (
@@ -154,8 +166,8 @@ export const run: RunFunction = async (
       (serverConfig.welcomeMessage || serverConfig.welcomeMessageBackgroundUrl)
     ) {
       try {
-        let attachment: AttachmentBuilder;
-        let content: string;
+        let attachment: AttachmentBuilder | undefined;
+        let content: string | undefined;
         if (serverConfig.welcomeMessageBackgroundUrl) {
           attachment = await getWelcomeImage(serverConfig, newMember);
         }
@@ -164,8 +176,12 @@ export const run: RunFunction = async (
           content = await getWelcomeMessage(serverConfig, newMember);
         }
 
-        await newMember.guild.systemChannel.send({
-          content: content ?? undefined,
+        const systemChannel = newMember.guild.systemChannel;
+        if (!systemChannel) {
+          throw new Error(`No system channel for guild ${newMember.guild.id}.`);
+        }
+        await systemChannel.send({
+          content,
           files: attachment ? [attachment] : undefined,
         });
       } catch (e) {

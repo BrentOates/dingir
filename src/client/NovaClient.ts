@@ -1,8 +1,8 @@
+import { env } from '../config/env';
 import { glob } from 'glob';
 import { Client, Collection, Partials, GatewayIntentBits } from 'discord.js';
 import { Event } from '../types/Event';
 import { Logger } from '../utilities/Logger';
-import 'dotenv/config';
 import { sequelize } from './database/sequelize';
 import { SlashCommand } from '../types/SlashCommand';
 
@@ -30,26 +30,31 @@ class NovaClient extends Client {
     const eventFiles: string[] = await glob(`${__dirname}/../events/**/*{.js,.ts}`);
     const slashCommandFiles: string[] = await glob(`${__dirname}/../slash-commands/*/*{.js,.ts}`);
 
-    eventFiles.forEach(async (eventFile: string) => {
+    for (const eventFile of eventFiles) {
       const importedEvent = await import(eventFile);
       const event = (importedEvent.default ?? importedEvent) as Event;
       this.events.set(event.name, event);
-      this.on(event.name, event.run.bind(null, this));
-    });
+      this.on(event.name, (...args: any[]) => {
+        event.run(this, ...args).catch((err: unknown) => {
+          Logger.writeError(`Unhandled error in ${event.name} event handler.`, err);
+        });
+      });
+    }
 
-    slashCommandFiles.forEach(async (slashCommandFile: string) => {
+    for (const slashCommandFile of slashCommandFiles) {
       const importedCommand = await import(slashCommandFile);
       const cmd = (importedCommand.default ?? importedCommand) as SlashCommand;
       this.slashCommands.set(cmd.commandData.name, cmd);
-    });
+    }
 
     process.on('SIGTERM', () => {
       Logger.writeLog('SIGTERM Received, destroying client & shutting down.');
-      this.destroy();
-      process.exit();
+      this.destroy()
+        .catch((err: unknown) => Logger.writeError('Error destroying client.', err))
+        .finally(() => process.exit());
     });
 
-    await this.login(process.env.TOKEN);
+    await this.login(env.token);
     Logger.writeLog('Logged in');
   }
 }

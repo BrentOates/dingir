@@ -31,10 +31,10 @@ const execute = async (cmd: ChatInputCommandInteraction, config: ServerConfig) =
   const subCmd = cmdMap[subCommand];
 
   if (!subCommand) {
-    cmd.reply({ content: 'This command is misconfigured', ephemeral: true });
+    return cmd.reply({ content: 'This command is misconfigured', ephemeral: true });
   }
 
-  subCmd.execute(cmd, config);
+  await subCmd.execute(cmd, config);
 };
 
 const commandData = new SlashCommandBuilder()

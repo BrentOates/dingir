@@ -8,10 +8,11 @@ import { DateTime } from 'luxon';
 import { SlashCommand } from '../../types/SlashCommand';
 import { BirthdayManager } from '../../utilities/BirthdayManager';
 import { UserProfileService } from '../../utilities/UserProfileService';
+import { requireGuild } from '../../utilities/requireGuild';
 
 const execute = async (cmd: ChatInputCommandInteraction) => {
-  let day = cmd.options.getNumber('day');
-  const month = cmd.options.getNumber('month');
+  let day = cmd.options.getNumber('day', true);
+  const month = cmd.options.getNumber('month', true);
 
   let alteredForLeap = false;
 
@@ -42,18 +43,19 @@ const execute = async (cmd: ChatInputCommandInteraction) => {
     });
   }
 
-  const userProfile = await UserProfileService.getUserProfile(cmd.guild.id, cmd.user.id);
+  const guildId = requireGuild(cmd).id;
+  const userProfile = await UserProfileService.getUserProfile(guildId, cmd.user.id);
 
   userProfile.birthdayDay = day;
   userProfile.birthdayMonth = month;
 
   await userProfile.save();
 
-  cmd.reply({
+  await cmd.reply({
     content: `I've set your next birthday to ${nextDate.toLocaleString(DateTime.DATE_FULL)}!`,
     ephemeral: true,
   });
-  return BirthdayManager.populateCalendars(cmd.client, cmd.guild.id);
+  return BirthdayManager.populateCalendars(cmd.client, guildId);
 };
 
 const commandData = new SlashCommandBuilder()

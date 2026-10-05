@@ -7,20 +7,32 @@ import {
   InteractionContextType,
 } from 'discord.js';
 import { SlashCommand } from '../../types/SlashCommand';
+import { requireGuild } from '../../utilities/requireGuild';
+
+const findMember = (cmd: ChatInputCommandInteraction) => {
+  const members = requireGuild(cmd).members.cache;
+  const user = cmd.options.getUser('member');
+  return (user ? members.get(user.id) : undefined) ?? members.get(cmd.user.id);
+};
 
 const testJoin = async (cmd: ChatInputCommandInteraction) => {
-  const user = cmd.options.getUser('member');
-  const guildMember =
-    cmd.guild.members.cache.get(user?.id) ?? cmd.guild.members.cache.get(cmd.user.id);
+  const guildMember = findMember(cmd);
+  if (!guildMember) {
+    return cmd.reply({ content: 'Could not find that member.', ephemeral: true });
+  }
   cmd.client.emit('guildMemberAdd', guildMember);
 
-  cmd.reply({ content: `Emitted guildMemberAdd for ${guildMember.toString()}`, ephemeral: true });
+  await cmd.reply({
+    content: `Emitted guildMemberAdd for ${guildMember.toString()}`,
+    ephemeral: true,
+  });
 };
 
 const testScreen = async (cmd: ChatInputCommandInteraction) => {
-  const user = cmd.options.getUser('member');
-  const guildMember =
-    cmd.guild.members.cache.get(user?.id) ?? cmd.guild.members.cache.get(cmd.user.id);
+  const guildMember = findMember(cmd);
+  if (!guildMember) {
+    return cmd.reply({ content: 'Could not find that member.', ephemeral: true });
+  }
 
   const oldMemberMock = Object.assign({}, guildMember, {
     pending: true,
@@ -29,7 +41,7 @@ const testScreen = async (cmd: ChatInputCommandInteraction) => {
 
   cmd.client.emit('guildMemberUpdate', oldMemberMock, newMemberMock);
 
-  cmd.reply({
+  await cmd.reply({
     content: `Emitted guildMemberUpdate for ${guildMember.toString()}`,
     ephemeral: true,
   });
@@ -39,7 +51,7 @@ const execute = async (cmd: ChatInputCommandInteraction) => {
   const subCommand = cmd.options.getSubcommand();
 
   if (!subCommand) {
-    cmd.reply({ content: 'This command is misconfigured', ephemeral: true });
+    return cmd.reply({ content: 'This command is misconfigured', ephemeral: true });
   }
 
   if (subCommand == 'join') {

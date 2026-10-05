@@ -13,33 +13,35 @@ import { EmbedColours } from '../../resources/EmbedColours';
 import { EmbedCompatLayer } from '../../types/EmbedCompatLayer';
 import { SlashCommand } from '../../types/SlashCommand';
 import { ChannelService } from '../../utilities/ChannelService';
+import { Logger } from '../../utilities/Logger';
+import { requireGuild } from '../../utilities/requireGuild';
 
 const sendAudit = async (
   cmd: ChatInputCommandInteraction,
   config: ServerConfig,
-  file: Attachment,
-  content: string
+  file: Attachment | null,
+  content: string | null
 ) => {
   const embed = new EmbedCompatLayer();
-  const member = cmd.guild.members.cache.get(cmd.user.id);
+  const member = requireGuild(cmd).members.cache.get(cmd.user.id);
 
   embed
     .setColor(EmbedColours.neutral)
     .setAuthor({
-      name: member.displayName,
-      iconURL: member.displayAvatarURL(),
+      name: member?.displayName ?? cmd.user.username,
+      iconURL: (member ?? cmd.user).displayAvatarURL(),
     })
     .addField('Content', content ? content : 'No')
     .addField('Attachment', file ? 'Yes' : 'No')
     .setDescription('Post created via Dingir')
     .setTimestamp();
 
-  ChannelService.sendAuditMessage(cmd.client, config, embed, file);
+  await ChannelService.sendAuditMessage(cmd.client, config, embed, file ?? undefined);
 };
 
 const execute = async (cmd: ChatInputCommandInteraction, config: ServerConfig) => {
   await cmd.deferReply({ ephemeral: true });
-  const channel = cmd.options.getChannel('channel');
+  const channel = cmd.options.getChannel('channel', true);
   const content = cmd.options.getString('content');
   const attachment = cmd.options.getAttachment('attachment');
 
@@ -49,7 +51,7 @@ const execute = async (cmd: ChatInputCommandInteraction, config: ServerConfig) =
     });
   }
 
-  const guildChannel = cmd.guild.channels.cache.get(channel.id);
+  const guildChannel = requireGuild(cmd).channels.cache.get(channel.id);
   if (!guildChannel || !guildChannel.isTextBased()) {
     return cmd.editReply({
       content: 'The provided channel is not valid',
@@ -58,8 +60,8 @@ const execute = async (cmd: ChatInputCommandInteraction, config: ServerConfig) =
 
   await guildChannel
     .send({
-      content: content,
-      files: attachment ? [attachment] : null,
+      content: content ?? undefined,
+      files: attachment ? [attachment] : undefined,
     })
     .catch(() => {
       return cmd.editReply({
@@ -67,7 +69,9 @@ const execute = async (cmd: ChatInputCommandInteraction, config: ServerConfig) =
       });
     });
 
-  sendAudit(cmd, config, attachment, content);
+  await sendAudit(cmd, config, attachment, content).catch((err: unknown) =>
+    Logger.writeError('Could not send post audit.', err)
+  );
 
   return cmd.editReply({
     content: 'Message successfully sent',

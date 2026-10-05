@@ -9,14 +9,16 @@ import { EmbedColours } from '../../../resources/EmbedColours';
 import { EmbedCompatLayer } from '../../../types/EmbedCompatLayer';
 import { SlashSubGroupCommand } from '../../../types/SlashCommand';
 import { ChannelService } from '../../../utilities/ChannelService';
+import { Logger } from '../../../utilities/Logger';
+import { requireGuild } from '../../../utilities/requireGuild';
 
 const set = async (cmd: ChatInputCommandInteraction, config: ServerConfig) => {
-  const role1 = cmd.options.getRole('role-one');
+  const role1 = cmd.options.getRole('role-one', true);
   const role2 = cmd.options.getRole('role-two');
 
   const newGuestRoles: string = [role1.id, role2?.id].filter(Boolean).join(',');
   config.guestRoleIds = newGuestRoles;
-  config.save();
+  await config.save();
 
   return get(cmd, config);
 };
@@ -27,13 +29,14 @@ const get = async (cmd: ChatInputCommandInteraction, config: ServerConfig) => {
   }
 
   const roleIds: string[] = config.guestRoleIds.split(',');
-  const roles = cmd.guild.roles.cache.filter((r) => roleIds.includes(r.id));
-  const member = cmd.guild.members.cache.get(cmd.user.id);
+  const guild = requireGuild(cmd);
+  const roles = guild.roles.cache.filter((r) => roleIds.includes(r.id));
+  const member = guild.members.cache.get(cmd.user.id);
 
   const audit = new EmbedCompatLayer()
     .setColor(EmbedColours.info)
     .setAuthor({
-      name: member.displayName,
+      name: member?.displayName ?? cmd.user.username,
       iconURL: cmd.user.displayAvatarURL(),
     })
     .setDescription(`New user roles ${!config.guestRoleIds ? 'Removed' : 'Updated'}`)
@@ -50,8 +53,10 @@ const get = async (cmd: ChatInputCommandInteraction, config: ServerConfig) => {
     );
   }
 
-  ChannelService.sendAuditMessage(cmd.client, config, audit);
-  cmd.reply({
+  await ChannelService.sendAuditMessage(cmd.client, config, audit).catch((err: unknown) =>
+    Logger.writeError('Could not send new roles audit.', err)
+  );
+  await cmd.reply({
     content: `New user roles ${!config.guestRoleIds ? 'Removed' : 'Updated'}`,
     ephemeral: true,
   });
@@ -59,7 +64,7 @@ const get = async (cmd: ChatInputCommandInteraction, config: ServerConfig) => {
 
 const clear = async (cmd: ChatInputCommandInteraction, config: ServerConfig) => {
   config.guestRoleIds = null;
-  config.save();
+  await config.save();
 
   return get(cmd, config);
 };

@@ -1,4 +1,4 @@
-import { Table, Column, Model, Default } from 'sequelize-typescript';
+import { Table, Column, DataType, Model, Default } from 'sequelize-typescript';
 
 @Table
 export class UserProfile extends Model {
@@ -8,14 +8,14 @@ export class UserProfile extends Model {
   @Column
   declare userId: string;
 
-  @Column
-  declare birthdayYear: number;
+  @Column(DataType.INTEGER)
+  declare birthdayYear: number | null;
 
-  @Column
-  declare birthdayMonth: number;
+  @Column(DataType.INTEGER)
+  declare birthdayMonth: number | null;
 
-  @Column
-  declare birthdayDay: number;
+  @Column(DataType.INTEGER)
+  declare birthdayDay: number | null;
 
   @Default(0)
   @Column

@@ -5,9 +5,10 @@ import {
   InteractionContextType,
 } from 'discord.js';
 import { SlashCommand } from '../../types/SlashCommand';
+import { requireGuild } from '../../utilities/requireGuild';
 
 const execute = async (cmd: ChatInputCommandInteraction) => {
-  const allMembers = await cmd.guild.members.fetch();
+  const allMembers = await requireGuild(cmd).members.fetch();
 
   const members = allMembers.filter((member) => member.roles.cache.size === 1);
 
@@ -17,12 +18,12 @@ const execute = async (cmd: ChatInputCommandInteraction) => {
     response = 'There are no users with no roles.';
   } else {
     response = '**Users with no roles**\n------\n';
-    members.each(async (mem) => {
+    for (const mem of members.values()) {
       if (mem.partial) {
         await mem.fetch();
       }
-      response += `${mem.toString()} joined <t:${Math.floor(mem.joinedTimestamp / 1000)}:R>\n`;
-    });
+      response += `${mem.toString()} joined <t:${Math.floor((mem.joinedTimestamp ?? 0) / 1000)}:R>\n`;
+    }
   }
 
   return cmd.reply({

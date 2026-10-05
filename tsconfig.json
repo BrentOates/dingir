@@ -5,6 +5,7 @@
 		"moduleResolution": "NodeNext",
 		"target": "ES2024",
 		"strict": false,
+		"strictNullChecks": true,
 		"outDir": "dist",
 		"sourceMap": true,
 		"esModuleInterop": true,

@@ -7,7 +7,7 @@ export class ChannelService {
     serverConfig: ServerConfig,
     embed: EmbedBuilder,
     attachment?: Attachment
-  ): Promise<boolean> {
+  ): Promise<void> {
     if (!serverConfig.auditChannelId) {
       return;
     }

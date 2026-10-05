@@ -19,18 +19,22 @@ const runCommand = async (
     return;
   }
 
-  await slashCmd.execute(cmd, config).catch((err: string) => {
-    if (cmd.deferred && !cmd.replied) {
-      cmd.editReply({
-        content: 'Something went wrong, was this command run in the correct place?',
-      });
-    } else if (!cmd.replied) {
-      cmd.reply({
-        content: 'Something went wrong, was this command run in the correct place?',
-        ephemeral: true,
-      });
+  await slashCmd.execute(cmd, config).catch(async (err: unknown) => {
+    try {
+      if (cmd.deferred && !cmd.replied) {
+        await cmd.editReply({
+          content: 'Something went wrong, was this command run in the correct place?',
+        });
+      } else if (!cmd.replied) {
+        await cmd.reply({
+          content: 'Something went wrong, was this command run in the correct place?',
+          ephemeral: true,
+        });
+      }
+    } catch (replyErr) {
+      Logger.writeError('Failed to send command error reply.', replyErr);
     }
-    Logger.writeError(err);
+    Logger.writeError(`Command ${cmd.commandName} failed.`, err);
   });
 };
 

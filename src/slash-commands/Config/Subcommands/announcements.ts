@@ -9,7 +9,7 @@ import { SlashSubGroupCommand } from '../../../types/SlashCommand';
 import { ConfigManager } from '../../../utilities/ConfigManager';
 
 const set = async (cmd: ChatInputCommandInteraction, config: ServerConfig) => {
-  ConfigManager.updateChannelNew(cmd, config, 'announcementsChannelId');
+  await ConfigManager.updateChannelNew(cmd, config, 'announcementsChannelId');
   return get(cmd, config);
 };
 
@@ -22,7 +22,7 @@ const get = async (cmd: ChatInputCommandInteraction, config: ServerConfig) => {
 };
 
 const clear = async (cmd: ChatInputCommandInteraction, config: ServerConfig) => {
-  ConfigManager.clearChannel(config, 'announcementsChannelId');
+  await ConfigManager.clearChannel(config, 'announcementsChannelId');
   return get(cmd, config);
 };
 

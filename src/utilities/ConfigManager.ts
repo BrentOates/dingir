@@ -9,7 +9,7 @@ export class ConfigManager {
   ): Promise<InteractionResponse> {
     const chan = interaction.options.getChannel('channel');
 
-    let messageContent: string;
+    let messageContent: string | undefined;
     if (!chan && serverConfig[field]) {
       serverConfig[field] = null;
     } else if (!chan && !serverConfig[field]) {
@@ -35,7 +35,7 @@ export class ConfigManager {
 
     if (serverConfig[field]) {
       return interaction.reply({
-        content: `Channel updated to ${chan.toString()}.`,
+        content: `Channel updated to ${chan?.toString()}.`,
         ephemeral: true,
       });
     } else {
@@ -52,7 +52,7 @@ export class ConfigManager {
     field: string
   ) {
     if (serverConfig[field]) {
-      return interaction.guild.channels.cache.get(serverConfig[field]);
+      return interaction.guild?.channels.cache.get(serverConfig[field]);
     }
 
     return null;
@@ -68,13 +68,13 @@ export class ConfigManager {
       return interaction.reply('Provided channel is not valid');
     }
     serverConfig[field] = chan.id;
-    serverConfig.save();
+    await serverConfig.save();
 
     return chan;
   }
 
   public static async clearChannel(serverConfig: ServerConfig, field: string) {
     serverConfig[field] = null;
-    serverConfig.save();
+    await serverConfig.save();
   }
 }

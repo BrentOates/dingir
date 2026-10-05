@@ -18,14 +18,14 @@ const msgChoice = {
 
 const set = async (cmd: ChatInputCommandInteraction, config: ServerConfig) => {
   console.log(cmd.options);
-  config[cmd.options.getString('content')] = cmd.options.getString('value');
-  config.save();
+  config[cmd.options.getString('content', true)] = cmd.options.getString('value', true);
+  await config.save();
 
   return get(cmd, config);
 };
 
 const get = async (cmd: ChatInputCommandInteraction, config: ServerConfig) => {
-  const value = config[cmd.options.getString('content')];
+  const value = config[cmd.options.getString('content', true)];
 
   return cmd.reply({
     content: `Current value is: ${value ? value : 'Not Set'}`,
@@ -34,8 +34,8 @@ const get = async (cmd: ChatInputCommandInteraction, config: ServerConfig) => {
 };
 
 const clear = async (cmd: ChatInputCommandInteraction, config: ServerConfig) => {
-  config[cmd.options.getString('content')] = null;
-  config.save();
+  config[cmd.options.getString('content', true)] = null;
+  await config.save();
 
   return get(cmd, config);
 };

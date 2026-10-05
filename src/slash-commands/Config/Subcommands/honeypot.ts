@@ -7,10 +7,11 @@ import {
 } from 'discord.js';
 import { ServerConfig } from '../../../client/models/ServerConfig';
 import { SlashSubGroupCommand } from '../../../types/SlashCommand';
+import { requireGuild } from '../../../utilities/requireGuild';
 
 const get = async (cmd: ChatInputCommandInteraction, config: ServerConfig) => {
   const channel = config.honeyPotChannelId
-    ? cmd.guild.channels.cache.get(config.honeyPotChannelId)
+    ? requireGuild(cmd).channels.cache.get(config.honeyPotChannelId)
     : null;
 
   return cmd.reply({

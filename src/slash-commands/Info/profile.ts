@@ -9,12 +9,17 @@ import { EmbedColours } from '../../resources/EmbedColours';
 import { EmbedCompatLayer } from '../../types/EmbedCompatLayer';
 import { SlashCommand } from '../../types/SlashCommand';
 import { UserProfileService } from '../../utilities/UserProfileService';
+import { requireGuild } from '../../utilities/requireGuild';
 
 const execute = async (cmd: ChatInputCommandInteraction) => {
-  const user = cmd.options.getUser('member');
-  const member = cmd.guild.members.cache.get(user.id);
+  const user = cmd.options.getUser('member', true);
+  const guild = requireGuild(cmd);
+  const member = guild.members.cache.get(user.id);
+  if (!member) {
+    return cmd.reply({ content: 'Could not find that member in this server.', ephemeral: true });
+  }
 
-  const userProfile = await UserProfileService.getUserProfile(cmd.guild.id, member.id);
+  const userProfile = await UserProfileService.getUserProfile(guild.id, member.id);
 
   const embed = new EmbedCompatLayer()
     .setThumbnail(member.displayAvatarURL())
@@ -24,7 +29,7 @@ const execute = async (cmd: ChatInputCommandInteraction) => {
     .addField('Member', member.toString())
     .addField('Nickname', member.nickname ? member.nickname : 'Not set')
     .addField('Username', member.user.tag.endsWith('#0') ? member.user.username : member.user.tag)
-    .addField('Joined', `<t:${Math.floor(member.joinedTimestamp / 1000)}:R>`)
+    .addField('Joined', `<t:${Math.floor((member.joinedTimestamp ?? 0) / 1000)}:R>`)
     .addField('Screening', member.pending ? 'Not completed' : 'Passed')
     .addField('Activity Score', userProfile ? userProfile.activityScore.toString() : 'Not found')
     .addField('ID', member.user.id);
