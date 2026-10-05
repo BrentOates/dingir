@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { after, before, beforeEach, test } from 'node:test';
 import { ChannelType } from 'discord.js';
 import type { Sequelize } from 'sequelize-typescript';
-import { createSequelize } from '../src/client/database/createSequelize';
+import { createTestDb } from './helpers/db';
 import { ServerConfig } from '../src/client/models/ServerConfig';
 import { CommandContext, defineCommand, Handler } from '../src/framework/command';
 import {
@@ -20,8 +20,7 @@ let config: ServerConfig;
 let events: string[];
 
 before(async () => {
-  db = createSequelize(':memory:');
-  await db.sync();
+  db = await createTestDb();
 });
 
 after(async () => {

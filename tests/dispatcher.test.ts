@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { after, afterEach, before, beforeEach, test } from 'node:test';
 import { Collection, MessageFlags } from 'discord.js';
 import type { Sequelize } from 'sequelize-typescript';
-import { createSequelize } from '../src/client/database/createSequelize';
+import { createTestDb } from './helpers/db';
 import type { NovaClient } from '../src/client/NovaClient';
 import { Command, defineCommand } from '../src/framework/command';
 import interactionCreate from '../src/events/interactionCreate';
@@ -13,8 +13,7 @@ const original = { log: console.log, warn: console.warn, error: console.error };
 let errors: string[];
 
 before(async () => {
-  db = createSequelize(':memory:');
-  await db.sync();
+  db = await createTestDb();
 });
 
 after(async () => {

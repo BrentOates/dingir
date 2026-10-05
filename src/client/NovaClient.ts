@@ -6,6 +6,7 @@ import { bindEvent } from '../framework/event';
 import { loadCommands, loadEvents } from '../framework/loader';
 import { registerShutdownHook, runShutdownHooks } from '../framework/shutdown';
 import { Logger } from '../utilities/Logger';
+import { migrate } from './database/migrator';
 import { sequelize } from './database/sequelize';
 
 class NovaClient extends Client {
@@ -25,7 +26,8 @@ class NovaClient extends Client {
   }
 
   public async start(): Promise<void> {
-    await sequelize.sync({ alter: true });
+    const applied = await migrate(sequelize);
+    Logger.info('Database migrations complete', { applied: applied.length ? applied : 'none' });
     registerShutdownHook(() => sequelize.close());
 
     const [commands, events] = await Promise.all([

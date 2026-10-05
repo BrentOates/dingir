@@ -1,4 +1,4 @@
-import { Table, Column, DataType, Model, PrimaryKey, Default } from 'sequelize-typescript';
+import { Table, Column, DataType, Model, PrimaryKey, Default, AllowNull } from 'sequelize-typescript';
 
 @Table
 export class ServerConfig extends Model {
@@ -6,21 +6,8 @@ export class ServerConfig extends Model {
   @Column
   declare serverId: string;
 
-  @Default('^')
-  @Column
-  declare prefix: string;
-
-  @Column
-  declare rulesMessagePath: string;
-
-  @Column
-  declare rulesMessage: string;
-
   @Column(DataType.STRING)
   declare guestRoleIds: string | null;
-
-  @Column
-  declare adminRoleId: string;
 
   @Column(DataType.STRING)
   declare welcomeMessage: string | null;
@@ -47,4 +34,12 @@ export class ServerConfig extends Model {
 
   @Column(DataType.STRING)
   declare honeyPotChannelId: string | null;
+
+  @Default(0)
+  @AllowNull(false)
+  @Column(DataType.INTEGER)
+  declare accessFailureCount: number;
+
+  @Column(DataType.DATE)
+  declare firstAccessFailureAt: Date | null;
 }
