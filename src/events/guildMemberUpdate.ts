@@ -195,7 +195,7 @@ export default defineEvent({
             .setDescription('Unable to send welcome message.')
             .addField('ID', newMember.user.id)
             .setTimestamp();
-          return ChannelService.sendAuditMessage(client, serverConfig, audit);
+          await ChannelService.sendAuditMessage(client, serverConfig, audit);
         }
       }
     }

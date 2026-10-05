@@ -3,7 +3,7 @@ import { defineConfig, globalIgnores } from 'eslint/config';
 import tseslint from 'typescript-eslint';
 
 export default defineConfig([
-  globalIgnores(['dist/**', 'node_modules/**', 'package.json', '.github/**']),
+  globalIgnores(['dist/**', 'node_modules/**', '.claude/**', 'package.json', '.github/**']),
   js.configs.recommended,
   tseslint.configs.recommended,
   {
