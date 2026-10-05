@@ -1,9 +1,9 @@
 import type { ChatInputCommandInteraction } from 'discord.js';
-import { fakeGuild, stub } from './discord.ts';
+import { fakeGuild, type SentPayload, stub } from './discord.ts';
 
 export interface Call {
   method: 'reply' | 'deferReply' | 'editReply' | 'followUp';
-  payload: any;
+  payload: SentPayload;
 }
 
 export interface FakeInteractionOptions {
@@ -71,19 +71,19 @@ export function fakeInteraction(opts: FakeInteractionOptions = {}): FakeInteract
       getInteger: required,
       getAttachment: required,
     },
-    reply: async (payload: unknown) => {
+    reply: async (payload: SentPayload) => {
       calls.push({ method: 'reply', payload });
       state.replied = true;
     },
-    deferReply: async (payload: unknown) => {
+    deferReply: async (payload: SentPayload) => {
       calls.push({ method: 'deferReply', payload });
       state.deferred = true;
     },
-    editReply: async (payload: unknown) => {
+    editReply: async (payload: SentPayload) => {
       calls.push({ method: 'editReply', payload });
       state.replied = true;
     },
-    followUp: async (payload: unknown) => {
+    followUp: async (payload: SentPayload) => {
       calls.push({ method: 'followUp', payload });
     },
   };

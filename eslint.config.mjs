@@ -24,7 +24,6 @@ export default defineConfig([
       'semi': ['error', 'always'],
       'brace-style': 'error',
       'curly': ['error', 'all'],
-      '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/no-floating-promises': 'error',
       '@typescript-eslint/no-misused-promises': 'error',
     },

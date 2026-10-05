@@ -3,6 +3,7 @@ import { test } from 'node:test';
 import { fakeMember, stub } from '../fakes/discord.ts';
 import { AuditEmbed, memberAuditEmbed } from '../../src/services/AuditEmbed.ts';
 import { EmbedColours } from '../../src/resources/EmbedColours.ts';
+import { nth } from '../helpers/assertions.ts';
 
 const total = (json: ReturnType<AuditEmbed['toJSON']>): number =>
   (json.title?.length ?? 0) +
@@ -18,7 +19,8 @@ test('short fields pass through untouched', () => {
 
 test('1025-char value is truncated to 1024 with ellipsis and a note', () => {
   const json = new AuditEmbed().addField('Big', 'x'.repeat(1025)).toJSON();
-  const [field, note] = json.fields ?? [];
+  const field = nth(json.fields);
+  const note = nth(json.fields, 1);
   assert.equal(field.value.length, 1024);
   assert.ok(field.value.endsWith('…'));
   assert.equal(note.name, 'Truncated');
@@ -35,7 +37,7 @@ test('empty and whitespace values render as *(empty)*', () => {
 
 test('long names truncate to 256', () => {
   const json = new AuditEmbed().addField('n'.repeat(300), 'v').toJSON();
-  assert.equal(json.fields?.[0].name.length, 256);
+  assert.equal(nth(json.fields).name.length, 256);
 });
 
 test('30 fields are capped at 25 including the truncation note', () => {
@@ -45,8 +47,8 @@ test('30 fields are capped at 25 including the truncation note', () => {
   }
   const json = embed.toJSON();
   assert.equal(json.fields?.length, 25);
-  assert.equal(json.fields?.[24].name, 'Truncated');
-  assert.equal(json.fields?.[23].name, 'f23');
+  assert.equal(nth(json.fields, 24).name, 'Truncated');
+  assert.equal(nth(json.fields, 23).name, 'f23');
 });
 
 test('exactly 25 fields need no note', () => {
@@ -56,7 +58,7 @@ test('exactly 25 fields need no note', () => {
   }
   const json = embed.toJSON();
   assert.equal(json.fields?.length, 25);
-  assert.notEqual(json.fields?.[24].name, 'Truncated');
+  assert.notEqual(nth(json.fields, 24).name, 'Truncated');
 });
 
 test('description over 4096 is truncated', () => {
@@ -73,7 +75,7 @@ test('7000 total chars are trimmed to 6000 or less, dropping trailing fields', (
   const json = embed.toJSON();
   assert.ok(total(json) <= 6000, `total was ${total(json)}`);
   assert.equal(json.fields?.at(-1)?.name, 'Truncated');
-  assert.equal(json.fields?.[0].name, 'f0');
+  assert.equal(nth(json.fields).name, 'f0');
   assert.ok((json.fields?.length ?? 0) < 8);
 });
 

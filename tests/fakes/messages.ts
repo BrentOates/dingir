@@ -1,16 +1,25 @@
-import { Collection } from 'discord.js';
+import assert from 'node:assert/strict';
+import { Collection, type Message, type OmitPartialGroupDMChannel } from 'discord.js';
 import type { App } from '../../src/app.ts';
 import type { DingirClient } from '../../src/client/DingirClient.ts';
 import type { Command } from '../../src/framework/command.ts';
 import interactionCreate from '../../src/events/interactionCreate.ts';
-import { fakeAuditChannel, fakeChannelClient, fakeGuild, fakeMember, fakeUser } from './discord.ts';
+import {
+  type EmbedJson,
+  fakeAuditChannel,
+  fakeChannelClient,
+  fakeGuild,
+  fakeMember,
+  fakeUser,
+  type SentPayload,
+} from './discord.ts';
 import type { FakeInteraction } from './interaction.ts';
 
 export { fakeMember, fakeUser };
 
 export interface AuditSink {
   client: DingirClient;
-  sent: any[];
+  sent: SentPayload[];
 }
 
 export function fakeAuditClient(channelId = 'audit-1', commands: Command[] = []): AuditSink {
@@ -19,7 +28,17 @@ export function fakeAuditClient(channelId = 'audit-1', commands: Command[] = [])
   return { client: fakeChannelClient(channelId, channel, { slashCommands }), sent };
 }
 
-export const auditJson = (sent: any[], index = 0): any => sent[index].embeds[0].toJSON();
+export const auditJson = (sent: SentPayload[], index = 0): EmbedJson => {
+  const embed = sent[index]?.embeds?.[0];
+  assert.ok(embed, `no embed in sent payload ${index}`);
+  return embed.toJSON();
+};
+
+export const embedField = (embed: EmbedJson, name: string): { name: string; value: string } => {
+  const field = embed.fields.find((f) => f.name === name);
+  assert.ok(field, `embed has no "${name}" field`);
+  return field;
+};
 
 export function fakeMessage(overrides: Record<string, unknown> = {}) {
   const author = (overrides.author as ReturnType<typeof fakeUser> | null | undefined) ?? fakeUser('u1');
@@ -41,7 +60,7 @@ export function fakeMessage(overrides: Record<string, unknown> = {}) {
       return Boolean(this.guildId);
     },
   };
-  return { ...base, ...overrides } as any;
+  return { ...base, ...overrides } as unknown as OmitPartialGroupDMChannel<Message>;
 }
 
 export async function runSlash(

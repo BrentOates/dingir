@@ -1,12 +1,12 @@
 import { Collection } from 'discord.js';
 import type { Client } from 'discord.js';
-import { apiError, fakeMember, stub } from './discord.ts';
+import { apiError, fakeMember, stub, type SentPayload } from './discord.ts';
 
 export { apiError };
 
 export interface FakeEditableMessage {
   id: string;
-  edits: any[];
+  edits: SentPayload[];
   deleted: boolean;
   edit(payload: unknown): Promise<FakeEditableMessage>;
   delete(): Promise<void>;
@@ -18,7 +18,7 @@ export const fakeEditableMessage = (id: string): FakeEditableMessage => {
     edits: [],
     deleted: false,
     edit: async (payload) => {
-      message.edits.push(payload);
+      message.edits.push(payload as SentPayload);
       return message;
     },
     delete: async () => {
@@ -30,7 +30,7 @@ export const fakeEditableMessage = (id: string): FakeEditableMessage => {
 
 export interface FakeChannel {
   id: string;
-  sent: any[];
+  sent: SentPayload[];
   messages: { fetch(id: string): Promise<FakeEditableMessage> };
   isTextBased(): boolean;
   isDMBased(): boolean;
@@ -55,7 +55,7 @@ export const fakeTextChannel = (id: string, messages: FakeEditableMessage[] = []
     isDMBased: () => false,
     isSendable: () => true,
     send: async (payload) => {
-      channel.sent.push(payload);
+      channel.sent.push(payload as SentPayload);
       return { id: `sent-${channel.sent.length}`, channelId: id };
     },
   };

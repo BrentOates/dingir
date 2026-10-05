@@ -2,12 +2,13 @@ import assert from 'node:assert/strict';
 import { after, test } from 'node:test';
 import { Collection, MessageFlags } from 'discord.js';
 import type { DingirClient } from '../src/client/DingirClient.ts';
-import { type Command, defineCommand } from '../src/framework/command.ts';
+import { type Command, type CommandContext, defineCommand } from '../src/framework/command.ts';
 import { UserError } from '../src/framework/errors.ts';
 import interactionCreate from '../src/events/interactionCreate.ts';
 import { stub } from './fakes/discord.ts';
 import { fakeInteraction } from './fakes/interaction.ts';
 import { createTestApp } from './helpers/app.ts';
+import { nth } from './helpers/assertions.ts';
 
 const app = createTestApp();
 
@@ -64,11 +65,11 @@ test('replies "Unknown command." for unregistered commands and unresolvable subc
   const badSub = fakeInteraction({ commandName: 'tree', subcommand: 'zzz' });
   await dispatch(clientWith(cmd), badSub.interaction);
   assert.equal(badSub.calls.length, 1);
-  assert.equal(badSub.calls[0].payload.content, 'Unknown command.');
+  assert.equal(nth(badSub.calls).payload.content, 'Unknown command.');
 });
 
 test('runs the handler with context and applies the defer mode', async () => {
-  let seen: any;
+  let seen: CommandContext | undefined;
   const cmd = defineCommand({
     name: 'test',
     description: 'd',
@@ -85,9 +86,9 @@ test('runs the handler with context and applies the defer mode', async () => {
     calls.map((c) => c.method),
     ['deferReply', 'editReply']
   );
-  assert.deepEqual(calls[0].payload, { flags: MessageFlags.Ephemeral });
-  assert.equal(seen.config.serverId, 'guild-9');
-  assert.equal(seen.interaction, interaction);
+  assert.deepEqual(nth(calls).payload, { flags: MessageFlags.Ephemeral });
+  assert.equal(seen?.config.serverId, 'guild-9');
+  assert.equal(seen?.interaction, interaction);
 });
 
 test('public defer does not set the ephemeral flag', async () => {
@@ -146,9 +147,11 @@ test('a failing error reply is logged and does not throw', async () => {
     },
   });
   const { interaction } = fakeInteraction();
-  (interaction as any).reply = async () => {
-    throw new Error('reply failed');
-  };
+  Object.assign(interaction, {
+    reply: async () => {
+      throw new Error('reply failed');
+    },
+  });
   await dispatch(clientWith(cmd), interaction);
   assert.ok(app.logsAt('error').some((entry) => entry.message === 'Could not send command error reply'));
 });
@@ -191,7 +194,7 @@ test('a UserError thrown after deferring edits the deferred reply', async () => 
     calls.map((c) => c.method),
     ['deferReply', 'editReply']
   );
-  assert.equal(calls[1].payload.content, 'Nope.');
+  assert.equal(nth(calls, 1).payload.content, 'Nope.');
 });
 
 test('defers the reply before looking up the server config', async () => {

@@ -6,6 +6,7 @@ import { updateConfig } from '../../src/services/ConfigService.ts';
 import { createTestApp } from '../helpers/app.ts';
 import { fakeInteraction } from '../fakes/interaction.ts';
 import { auditJson, fakeAuditClient, fakeMember, runSlash } from '../fakes/messages.ts';
+import { contentOf, last, nth, optionNamed } from '../helpers/assertions.ts';
 
 const app = createTestApp();
 
@@ -60,15 +61,15 @@ test('send failure replies with an error and neither succeeds nor audits', async
     { content: 'hi' }
   );
   await runSlash(app, sink.client, fake, { member: fakeMember('user-1') });
-  const reply = fake.calls.at(-1)!;
+  const reply = last(fake.calls);
   assert.equal(reply.method, 'editReply');
-  assert.match(reply.payload.content, /error was encountered/);
+  assert.match(contentOf(reply.payload), /error was encountered/);
   assert.equal(sink.sent.length, 0);
 });
 
 test('success audits then replies with the jump link', async () => {
   const sink = fakeAuditClient('audit-1', [post]);
-  const sentPayloads: any[] = [];
+  const sentPayloads: number[] = [];
   const fake = setup(
     target(async () => {
       sentPayloads.push(1);
@@ -80,11 +81,11 @@ test('success audits then replies with the jump link', async () => {
   assert.equal(sentPayloads.length, 1);
   assert.equal(sink.sent.length, 1);
   const embed = auditJson(sink.sent);
-  const names = embed.fields.map((f: any) => f.name);
+  const names = embed.fields.map((f) => f.name);
   assert.deepEqual(names, ['Channel', 'Content', 'Attachment', 'Message']);
-  assert.equal(embed.fields[2].value, 'pic.png');
+  assert.equal(nth(embed.fields, 2).value, 'pic.png');
   assert.equal(
-    fake.calls.at(-1)!.payload.content,
+    contentOf(last(fake.calls).payload),
     'Posted in <#chan-9>: https://discord.com/channels/g/c/m'
   );
 });
@@ -102,17 +103,15 @@ test('missing permission replies clearly and does not send', async () => {
   await runSlash(app, sink.client, fake, { member: fakeMember('user-1') });
   assert.equal(sends, 0);
   assert.equal(sink.sent.length, 0);
-  assert.match(fake.calls.at(-1)!.payload.content, /AttachFiles/);
+  assert.match(contentOf(last(fake.calls).payload), /AttachFiles/);
 });
 
 test('requires content or attachment and limits content length', async () => {
   const sink = fakeAuditClient('audit-1', [post]);
   const fake = setup(target(async () => ({ url: 'x' }), allPerms), {});
   await runSlash(app, sink.client, fake, { member: fakeMember('user-1') });
-  assert.match(fake.calls.at(-1)!.payload.content, /at least text or an attachment/);
+  assert.match(contentOf(last(fake.calls).payload), /at least text or an attachment/);
 
-  const content = post.toJSON().options!.find((o: any) => o.name === 'content') as any;
-  assert.equal(content.max_length, 2000);
-  const channel = post.toJSON().options!.find((o: any) => o.name === 'channel') as any;
-  assert.deepEqual(channel.channel_types, [0, 5]);
+  assert.equal(optionNamed(post.toJSON(), 'content').max_length, 2000);
+  assert.deepEqual(optionNamed(post.toJSON(), 'channel').channel_types, [0, 5]);
 });

@@ -55,7 +55,10 @@ export function up(db: Database, logger: Logger): void {
     }
 
     const withBirthday = group.filter(hasBirthday).sort(newestFirst);
-    const keep = withBirthday.length > 0 ? withBirthday[0] : [...group].sort(newestFirst)[0];
+    const keep = withBirthday[0] ?? [...group].sort(newestFirst)[0];
+    if (!keep) {
+      continue;
+    }
 
     if (new Set(withBirthday.map(birthdayKey)).size > 1) {
       logger.warn('Conflicting birthdays while deduplicating UserProfiles; keeping most recent', {

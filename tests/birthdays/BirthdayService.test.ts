@@ -12,6 +12,7 @@ import {
 } from '../fakes/guild.ts';
 import { createTestApp, type TestApp } from '../helpers/app.ts';
 import { dbFixtures } from '../helpers/db.ts';
+import { contentOf, nth } from '../helpers/assertions.ts';
 
 const zone = 'Europe/London';
 const at = (iso: string): Date => DateTime.fromISO(iso, { zone }).toJSDate();
@@ -73,14 +74,15 @@ test('refreshCalendar: edits with Feb 29 shown on Feb 28 and today counted', asy
 
   const status = await refreshCalendar(appAt('2027-02-27T10:00'), client, config);
   assert.equal(status, 'updated');
-  const [edit] = message.edits;
+  const edit = nth(message.edits);
+  const text = contentOf(edit);
   assert.deepEqual(edit.allowedMentions, { parse: [] });
-  assert.match(edit.content, /Upcoming Birthdays/);
-  assert.match(edit.content, /Set yours with `\/mybirthday set`/);
-  assert.match(edit.content, /\*\*27 February 2027\*\*\n<@today>/);
-  assert.match(edit.content, /\*\*28 February 2027\*\*\n<@leap>/);
-  assert.doesNotMatch(edit.content, /nobday/);
-  assert.ok(edit.content.indexOf('<@today>') < edit.content.indexOf('<@leap>'));
+  assert.match(text, /Upcoming Birthdays/);
+  assert.match(text, /Set yours with `\/mybirthday set`/);
+  assert.match(text, /\*\*27 February 2027\*\*\n<@today>/);
+  assert.match(text, /\*\*28 February 2027\*\*\n<@leap>/);
+  assert.doesNotMatch(text, /nobday/);
+  assert.ok(text.indexOf('<@today>') < text.indexOf('<@leap>'));
 });
 
 test('refreshCalendar: empty state', async () => {
@@ -88,7 +90,7 @@ test('refreshCalendar: empty state', async () => {
   const message = fakeEditableMessage('m1');
   const client = fakeClient({ channels: [fakeTextChannel('c1', [message])] });
   assert.equal(await refreshCalendar(appAt(), client, config), 'updated');
-  assert.match(message.edits[0].content, /There are no birthdays in this server/);
+  assert.match(contentOf(nth(message.edits)), /There are no birthdays in this server/);
 });
 
 test('notifyBirthdays: skips departed members and mentions only present ones', async () => {
@@ -104,8 +106,8 @@ test('notifyBirthdays: skips departed members and mentions only present ones', a
 
   await notifyBirthdays(appAt('2027-06-01T09:00'), client);
   assert.equal(channel.sent.length, 1);
-  assert.equal(channel.sent[0].content, 'Happy Birthday to <@here>!');
-  assert.deepEqual(channel.sent[0].allowedMentions, { users: ['here'] });
+  assert.equal(nth(channel.sent).content, 'Happy Birthday to <@here>!');
+  assert.deepEqual(nth(channel.sent).allowedMentions, { users: ['here'] });
 });
 
 test('notifyBirthdays: Feb 29 is celebrated on Feb 28 in a non-leap year', async () => {
@@ -120,8 +122,8 @@ test('notifyBirthdays: Feb 29 is celebrated on Feb 28 in a non-leap year', async
 
   await notifyBirthdays(appAt('2027-02-28T09:00'), client);
   assert.equal(channel.sent.length, 1);
-  assert.match(channel.sent[0].content, /<@a>/);
-  assert.match(channel.sent[0].content, /<@b>/);
+  assert.match(contentOf(nth(channel.sent)), /<@a>/);
+  assert.match(contentOf(nth(channel.sent)), /<@b>/);
 
   channel.sent.length = 0;
   await notifyBirthdays(appAt('2027-03-01T09:00'), client);

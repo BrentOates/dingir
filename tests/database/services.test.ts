@@ -14,6 +14,7 @@ import {
   setBirthday,
 } from '../../src/services/UserProfileService.ts';
 import { createTestApp } from '../helpers/app.ts';
+import { nth } from '../helpers/assertions.ts';
 import { dbFixtures } from '../helpers/db.ts';
 
 const app = createTestApp();
@@ -118,7 +119,7 @@ test('setBirthday upserts without losing the activity score; clearBirthday repor
   await incrementActivityScore(db, 's1', 'u1');
   await setBirthday(db, 's1', 'u1', 3, 4);
   await setBirthday(db, 's1', 'u1', 5, 6);
-  const [profile] = allProfiles();
+  const profile = nth(allProfiles());
   assert.deepEqual([profile.birthdayMonth, profile.birthdayDay, profile.activityScore], [5, 6, 1]);
   assert.equal(allProfiles().length, 1);
 

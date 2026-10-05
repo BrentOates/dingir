@@ -8,6 +8,7 @@ import {
   createReply,
 } from '../src/framework/command.ts';
 import { fakeInteraction } from './fakes/interaction.ts';
+import { nth } from './helpers/assertions.ts';
 
 const noop = async () => {};
 
@@ -28,7 +29,7 @@ test('defineCommand applies leaf options', () => {
     options: (b) => b.addStringOption((o) => o.setName('text').setDescription('Text').setRequired(true)),
     run: noop,
   }).toJSON();
-  assert.equal(json.options?.[0].name, 'text');
+  assert.equal(nth(json.options).name, 'text');
 });
 
 test('defineCommand rejects invalid shapes with descriptive errors', () => {
@@ -163,7 +164,7 @@ test('reply uses reply() when nothing has been sent, ephemeral by default', asyn
 test('reply omits the ephemeral flag when ephemeral is false', async () => {
   const { interaction, calls } = fakeInteraction();
   await createReply(interaction)({ content: 'public', ephemeral: false });
-  assert.deepEqual(calls[0].payload, { content: 'public' });
+  assert.deepEqual(nth(calls).payload, { content: 'public' });
 });
 
 test('reply uses editReply() after deferring, then followUp() afterwards', async () => {
@@ -175,13 +176,13 @@ test('reply uses editReply() after deferring, then followUp() afterwards', async
     calls.map((c) => c.method),
     ['editReply', 'followUp']
   );
-  assert.equal(calls[0].payload.flags, undefined);
-  assert.equal(calls[1].payload.flags, MessageFlags.Ephemeral);
+  assert.equal(nth(calls).payload.flags, undefined);
+  assert.equal(nth(calls, 1).payload.flags, MessageFlags.Ephemeral);
 });
 
 test('reply uses followUp() when already replied', async () => {
   const { interaction, calls } = fakeInteraction({ replied: true });
   await createReply(interaction)({ content: 'more', allowedMentions: { parse: [] } });
-  assert.equal(calls[0].method, 'followUp');
-  assert.deepEqual(calls[0].payload.allowedMentions, { parse: [] });
+  assert.equal(nth(calls).method, 'followUp');
+  assert.deepEqual(nth(calls).payload.allowedMentions, { parse: [] });
 });

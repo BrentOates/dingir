@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { after, beforeEach, afterEach, test } from 'node:test';
-import { Collection } from 'discord.js';
+import { Collection, type PartialGuildMember } from 'discord.js';
 import guildMemberRemove from '../../src/events/guildMemberRemove.ts';
 import messageCreate from '../../src/events/messageCreate.ts';
 import messageDelete from '../../src/events/messageDelete.ts';
@@ -9,7 +9,8 @@ import { updateConfig } from '../../src/services/ConfigService.ts';
 import { incrementActivityScore } from '../../src/services/UserProfileService.ts';
 import { createTestApp } from '../helpers/app.ts';
 import { dbFixtures } from '../helpers/db.ts';
-import { auditJson, fakeAuditClient, fakeMember, fakeMessage, fakeUser } from '../fakes/messages.ts';
+import { auditJson, embedField, fakeAuditClient, fakeMember, fakeMessage, fakeUser } from '../fakes/messages.ts';
+import { nth } from '../helpers/assertions.ts';
 
 const app = createTestApp();
 const { clearProfiles, findProfile } = dbFixtures(app);
@@ -32,7 +33,7 @@ const score = async (): Promise<number | null> =>
 
 test('honeypot message bans the member and does not count activity', async () => {
   const sink = fakeAuditClient();
-  let banned: any = null;
+  let banned: unknown = null;
   const message = fakeMessage({
     channelId: 'honey-1',
     member: fakeMember('u1', {
@@ -76,12 +77,11 @@ test('messageDelete never changes the activity score', async () => {
 test('messageDelete audits uncached messages without content', async () => {
   const sink = fakeAuditClient();
   const message = fakeMessage({ partial: true, author: null, id: 'm42', channelId: 'chan-7' });
-  message.author = null;
   await messageDelete.run(app, sink.client, message);
   const embed = auditJson(sink.sent);
-  assert.match(embed.description, /not cached/);
+  assert.match(embed.description ?? '', /not cached/);
   assert.deepEqual(
-    embed.fields.map((f: any) => f.value),
+    embed.fields.map((f) => f.value),
     ['<#chan-7>', 'm42']
   );
 });
@@ -95,10 +95,9 @@ test('messageDelete handles very long content and attachments', async () => {
   });
   await messageDelete.run(app, sink.client, message);
   const embed = auditJson(sink.sent);
-  const text = embed.fields.find((f: any) => f.name === 'Message');
-  assert.ok(text.value.length <= 1024);
-  assert.equal(embed.fields.find((f: any) => f.name === 'Attachments').value, '2: a.png, b.png');
-  assert.equal(embed.fields.find((f: any) => f.name === 'Embeds').value, '1');
+  assert.ok(embedField(embed, 'Message').value.length <= 1024);
+  assert.equal(embedField(embed, 'Attachments').value, '2: a.png, b.png');
+  assert.equal(embedField(embed, 'Embeds').value, '1');
 });
 
 test('messageDelete skips bots and active honeypot enforcement', async () => {
@@ -118,10 +117,9 @@ test('messageUpdate notes an uncached previous message', async () => {
     fakeMessage({ content: 'edited' })
   );
   const embed = auditJson(sink.sent);
-  const previous = embed.fields.find((f: any) => f.name === 'Previous');
-  assert.equal(previous.value, '*(not cached)*');
-  assert.ok(embed.fields.some((f: any) => f.name === 'Jump to message'));
-  assert.ok(embed.fields.some((f: any) => f.name === 'Channel'));
+  assert.equal(embedField(embed, 'Previous').value, '*(not cached)*');
+  embedField(embed, 'Jump to message');
+  embedField(embed, 'Channel');
 });
 
 test('messageUpdate fetches partial new messages and returns when fetching fails', async () => {
@@ -162,26 +160,26 @@ test('messageUpdate truncates long content', async () => {
     fakeMessage({ content: 'b'.repeat(4000) })
   );
   assert.equal(sink.sent.length, 1);
-  assert.ok(auditJson(sink.sent).fields.every((f: any) => f.value.length <= 1024));
+  assert.ok(auditJson(sink.sent).fields.every((f) => f.value.length <= 1024));
 });
 
 test('guildMemberRemove handles partial members and deletes profile data', async () => {
   const sink = fakeAuditClient();
   await incrementActivityScore(app.db, 'guild-1', 'u1');
-  const partial = { partial: true, guild: { id: 'guild-1' }, user: fakeUser('u1') } as any;
+  const partial = { partial: true, guild: { id: 'guild-1' }, user: fakeUser('u1') } as unknown as PartialGuildMember;
   await guildMemberRemove.run(app, sink.client, partial);
   assert.equal(await score(), null);
   const embed = auditJson(sink.sent);
   assert.equal(embed.description, 'Member left');
-  assert.equal(embed.author.name, 'useru1');
-  assert.equal(embed.fields[1].value, 'Deleted');
+  assert.equal(embed.author?.name, 'useru1');
+  assert.equal(nth(embed.fields, 1).value, 'Deleted');
 });
 
 test('guildMemberRemove during honeypot enforcement only deletes data', async () => {
   const sink = fakeAuditClient();
   await incrementActivityScore(app.db, 'guild-1', 'u1');
   app.honeypot.begin('guild-1', 'u1');
-  const member = fakeMember('u1', { guild: { id: 'guild-1' } }) as any;
+  const member = fakeMember('u1', { guild: { id: 'guild-1' } });
   await guildMemberRemove.run(app, sink.client, member);
   assert.equal(await score(), null);
   assert.equal(sink.sent.length, 0);

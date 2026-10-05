@@ -3,6 +3,7 @@ import { test } from 'node:test';
 import Database from 'better-sqlite3';
 import { migrate, migrations, type Migration } from '../../src/db/migrator.ts';
 import { fakeLogger } from '../helpers/app.ts';
+import { nth } from '../helpers/assertions.ts';
 
 const { logger, logs } = fakeLogger();
 
@@ -205,7 +206,7 @@ test('002 dedupes UserProfiles and enforces uniqueness afterwards', () => {
 
     const warnings = logs.filter((entry) => entry.level === 'warn');
     assert.equal(warnings.length, 1);
-    assert.match(warnings[0].message, /Conflicting birthdays/);
+    assert.match(nth(warnings).message, /Conflicting birthdays/);
 
     const rows = db
       .prepare(

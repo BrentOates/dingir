@@ -3,12 +3,12 @@ import { after, beforeEach, test } from 'node:test';
 import mybirthday from '../../src/commands/info/mybirthday.ts';
 import profile from '../../src/commands/info/profile.ts';
 import type { EmbedBuilder, Guild } from 'discord.js';
-import type { ReplyOptions } from '../../src/framework/command.ts';
+import type { Command, ReplyOptions } from '../../src/framework/command.ts';
 import { fakeCommandContext } from '../fakes/command.ts';
 import { stub } from '../fakes/discord.ts';
 import { fakeClient, fakeGuildWithMembers } from '../fakes/guild.ts';
 import { createTestApp } from '../helpers/app.ts';
-import { rejectsUserError } from '../helpers/assertions.ts';
+import { last, nth, rejectsUserError } from '../helpers/assertions.ts';
 import { dbFixtures } from '../helpers/db.ts';
 
 const app = createTestApp();
@@ -25,7 +25,7 @@ beforeEach(() => {
 });
 
 const exec = async (
-  command: typeof mybirthday,
+  command: Command,
   opts: { subcommand?: string; options?: Record<string, unknown>; guild?: object }
 ) => {
   const config = createConfig({ serverId: 'guild-1' });
@@ -39,7 +39,7 @@ const exec = async (
   return replies;
 };
 
-const lastContent = (replies: ReplyOptions[]): string => replies[replies.length - 1].content!;
+const lastContent = (replies: ReplyOptions[]): string => last(replies).content!;
 
 test('mybirthday set stores Feb 29 as 29', async () => {
   const replies = await exec(mybirthday, { subcommand: 'set', options: { day: 29, month: 2 } });
@@ -71,7 +71,7 @@ test('mybirthday clear removes the birthday but keeps the profile', async () => 
 test('profile replies for a non-member without creating a profile', async () => {
   const guild = fakeGuildWithMembers({ id: 'guild-1', memberIds: [] });
   await rejectsUserError(
-    exec(profile as any, { options: { member: { id: 'ghost' } }, guild }),
+    exec(profile, { options: { member: { id: 'ghost' } }, guild }),
     "That user isn't a member of this server."
   );
   assert.equal(await countProfiles(), 0);
@@ -79,7 +79,8 @@ test('profile replies for a non-member without creating a profile', async () => 
 
 test('profile for a member without a profile does not create one', async () => {
   const guild = fakeGuildWithMembers({ id: 'guild-1', memberIds: ['m1'] });
-  const member = guild.members.cache.get('m1') as any;
+  const member = guild.members.cache.get('m1');
+  assert.ok(member);
   Object.assign(member, {
     nickname: null,
     pending: true,
@@ -87,9 +88,9 @@ test('profile for a member without a profile does not create one', async () => {
     user: { username: 'someone' },
     displayAvatarURL: () => 'https://example.com/a.png',
   });
-  const replies = await exec(profile as any, { options: { member: { id: 'm1' } }, guild });
-  const embed = (replies[replies.length - 1].embeds![0] as EmbedBuilder).toJSON();
-  const field = (name: string): string => embed.fields!.find((f: any) => f.name === name)!.value;
+  const replies = await exec(profile, { options: { member: { id: 'm1' } }, guild });
+  const embed = (nth(last(replies).embeds as EmbedBuilder[] | undefined)).toJSON();
+  const field = (name: string): string => embed.fields?.find((f) => f.name === name)?.value ?? '';
   assert.equal(field('Onboarding'), 'Not completed');
   assert.equal(field('Activity Score'), '0');
   assert.equal(await countProfiles(), 0);

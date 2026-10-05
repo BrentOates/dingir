@@ -20,11 +20,11 @@ export class AuditEmbed extends EmbedBuilder {
   private cut = false;
   private storedFields = 0;
 
-  public setTitle(title: string | null): this {
+  public override setTitle(title: string | null): this {
     return super.setTitle(title === null ? null : this.limit(title, LIMITS.title));
   }
 
-  public setDescription(description: string | null): this {
+  public override setDescription(description: string | null): this {
     return super.setDescription(
       description === null ? null : this.limit(description, LIMITS.description)
     );
@@ -42,7 +42,7 @@ export class AuditEmbed extends EmbedBuilder {
     return this;
   }
 
-  public toJSON(): ReturnType<EmbedBuilder['toJSON']> {
+  public override toJSON(): ReturnType<EmbedBuilder['toJSON']> {
     const data = super.toJSON();
     const fields = [...(data.fields ?? [])];
     const textLength = (): number =>

@@ -7,6 +7,7 @@ import { buildMemberListing, INLINE_LIMIT } from '../../src/services/MemberListi
 import { createTestApp, FIXED_NOW } from '../helpers/app.ts';
 import { fakeInteraction } from '../fakes/interaction.ts';
 import { fakeAuditClient, fakeMember, fakeUser, runSlash } from '../fakes/messages.ts';
+import { last, nth } from '../helpers/assertions.ts';
 
 const app = createTestApp();
 after(() => {
@@ -15,7 +16,7 @@ after(() => {
 
 const DAY = 24 * 60 * 60 * 1000;
 const members = (count: number, joined: number | null = Date.now()) =>
-  Array.from({ length: count }, (_, i) => fakeMember(String(100000000000000000 + i), { joinedTimestamp: joined })) as any[];
+  Array.from({ length: count }, (_, i) => fakeMember(String(100000000000000000 + i), { joinedTimestamp: joined }));
 
 test('small listings reply inline without mentions', () => {
   const result = buildMemberListing('**Header**', 'none', members(3));
@@ -30,7 +31,7 @@ test('large listings attach a text file with a summary line', () => {
   assert.ok(result.content!.length < INLINE_LIMIT);
   assert.match(result.content!, /200 members/);
   assert.equal(result.files!.length, 1);
-  const file = result.files![0] as any;
+  const file = nth(result.files as unknown[] | undefined) as { name: string; attachment: Buffer };
   assert.equal(file.name, 'members.txt');
   const text = file.attachment.toString('utf8');
   assert.equal(text.split('\n').length, 200);
@@ -41,7 +42,7 @@ test('null join dates are described as unknown', () => {
   const result = buildMemberListing('**Header**', 'none', members(1, null));
   assert.match(result.content!, /join date unknown/);
   const big = buildMemberListing('**Header**', 'none', members(200, null));
-  assert.match((big.files![0] as any).attachment.toString('utf8'), /join date unknown/);
+  assert.match((nth(big.files as unknown[] | undefined) as { attachment: Buffer }).attachment.toString('utf8'), /join date unknown/);
 });
 
 test('empty listing returns the empty message', () => {
@@ -65,8 +66,8 @@ test('rolesince filters by days in server and excludes bots', async () => {
   Object.assign(fake.interaction.options, { getInteger: () => 30 });
   await runSlash(app, sink.client, fake);
   assert.equal(fetched, true);
-  assert.equal(fake.calls[0].method, 'deferReply');
-  const content = fake.calls.at(-1)!.payload.content as string;
+  assert.equal(nth(fake.calls).method, 'deferReply');
+  const content = last(fake.calls).payload.content as string;
   assert.match(content, /<@1>/);
   assert.doesNotMatch(content, /<@2>/);
   assert.doesNotMatch(content, /<@3>/);
@@ -93,8 +94,8 @@ test('noroles lists only non-bot members with just the everyone role', async () 
   const sink = fakeAuditClient('a', [noroles]);
   const fake = fakeInteraction({ commandName: 'noroles', guild });
   await runSlash(app, sink.client, fake);
-  assert.equal(fake.calls[0].method, 'deferReply');
-  const content = fake.calls.at(-1)!.payload.content as string;
+  assert.equal(nth(fake.calls).method, 'deferReply');
+  const content = last(fake.calls).payload.content as string;
   assert.match(content, /<@1>/);
   assert.doesNotMatch(content, /<@2>/);
   assert.doesNotMatch(content, /<@3>/);

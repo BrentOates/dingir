@@ -16,6 +16,7 @@ import { fakeCommandContext } from './fakes/command.ts';
 import { fakeGuild } from './fakes/discord.ts';
 import { createTestApp } from './helpers/app.ts';
 import { dbFixtures } from './helpers/db.ts';
+import { nth, optionNamed, firstOption } from './helpers/assertions.ts';
 
 const app = createTestApp();
 const { clearConfigs, findConfig } = dbFixtures(app);
@@ -96,7 +97,7 @@ test('channelSetting get reports set, missing and not-set channels', async () =>
 
   const missing = makeCtx({}, []);
   await run(channelGroup, 'get')(missing.ctx);
-  assert.match(missing.replies[0].content!, /no longer exists/);
+  assert.match(nth(missing.replies).content!, /no longer exists/);
 });
 
 test('channelSetting clear nulls the field, saves, then replies', async () => {
@@ -113,12 +114,13 @@ test('channelSetting clear nulls the field, saves, then replies', async () => {
 
 test('channelSetting restricts the channel option types', () => {
   const json = defineCommand({ name: 'config', description: 'd', groups: [channelGroup] }).toJSON();
-  const group: any = json.options?.[0];
-  const set = group.options.find((o: any) => o.name === 'set');
-  assert.deepEqual(set.options[0].channel_types, [ChannelType.GuildText, ChannelType.GuildAnnouncement]);
-  assert.equal(set.options[0].required, true);
+  const group = firstOption(json);
+  const set = optionNamed(group, 'set');
+  const channel = nth(set.options);
+  assert.deepEqual(channel.channel_types, [ChannelType.GuildText, ChannelType.GuildAnnouncement]);
+  assert.equal(channel.required, true);
   assert.deepEqual(
-    group.options.map((o: any) => o.name),
+    group.options?.map((o) => o.name),
     ['set', 'get', 'clear']
   );
 });
@@ -138,8 +140,7 @@ test('booleanSetting set saves before replying; get reads the stored value', asy
 
 test('booleanSetting requires the enabled option', () => {
   const json = defineCommand({ name: 'config', description: 'd', groups: [boolGroup] }).toJSON();
-  const group: any = json.options?.[0];
-  const set = group.options.find((o: any) => o.name === 'set');
-  assert.equal(set.options[0].name, 'enabled');
-  assert.equal(set.options[0].required, true);
+  const set = optionNamed(firstOption(json), 'set');
+  assert.equal(nth(set.options).name, 'enabled');
+  assert.equal(nth(set.options).required, true);
 });

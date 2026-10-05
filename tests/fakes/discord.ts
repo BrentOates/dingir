@@ -77,14 +77,30 @@ export function fakeConfig(overrides: Partial<Record<keyof ServerConfig, unknown
   });
 }
 
+export interface EmbedJson {
+  title?: string;
+  description?: string;
+  author?: { name: string };
+  fields: { name: string; value: string; inline?: boolean }[];
+  [key: string]: unknown;
+}
+
+/** A message payload as captured from send/edit/reply calls. */
+export interface SentPayload {
+  content?: string;
+  embeds?: { toJSON(): EmbedJson }[];
+  files?: { attachment: Buffer | string }[];
+  [key: string]: unknown;
+}
+
 export interface AuditChannel {
   channel: { isSendable(): boolean; send(payload: unknown): Promise<void> };
-  sent: any[];
+  sent: SentPayload[];
 }
 
 /** A sendable channel that records payloads, or rejects every send when `failWith` is given. */
 export function fakeAuditChannel(failWith?: string): AuditChannel {
-  const sent: any[] = [];
+  const sent: SentPayload[] = [];
   return {
     sent,
     channel: {
@@ -93,7 +109,7 @@ export function fakeAuditChannel(failWith?: string): AuditChannel {
         if (failWith) {
           throw new Error(failWith);
         }
-        sent.push(payload);
+        sent.push(payload as SentPayload);
       },
     },
   };

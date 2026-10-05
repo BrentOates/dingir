@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { AttachmentBuilder } from 'discord.js';
+import { AttachmentBuilder, type GuildMember } from 'discord.js';
 import {
   complete,
   completedScreening,
@@ -9,6 +9,7 @@ import {
 } from '../../src/services/OnboardingService.ts';
 import { fakeOnboarding, role } from '../fakes/onboarding.ts';
 import { createTestApp } from '../helpers/app.ts';
+import { nth } from '../helpers/assertions.ts';
 
 const app = createTestApp();
 
@@ -23,7 +24,7 @@ test('parseRoleIds trims and drops empties', () => {
 });
 
 test('completedScreening only for pending true to false', () => {
-  const m = (pending: boolean | null | undefined) => ({ pending }) as any;
+  const m = (pending: boolean | null | undefined) => ({ pending }) as unknown as GuildMember;
   assert.equal(completedScreening(m(true), m(false)), true);
   assert.equal(completedScreening(m(false), m(false)), false);
   assert.equal(completedScreening(m(true), m(true)), false);
@@ -38,7 +39,7 @@ test('unconfigured server: audit done, roles and welcome skipped, no debug audit
   assert.match(result.roles, /^skipped:/);
   assert.match(result.welcome, /^skipped:/);
   assert.equal(env.auditSends.length, 1);
-  assert.match(JSON.stringify(env.auditSends[0].embeds[0]), /completed onboarding/);
+  assert.match(JSON.stringify(nth(nth(env.auditSends).embeds)), /completed onboarding/);
 });
 
 test('guest roles are added in one call and unassignable ones filtered', async () => {
@@ -76,7 +77,7 @@ test('a failing roles step is audited and does not stop the welcome step', async
   assert.match(result.roles, /^failed:missing permissions/);
   assert.equal(result.welcome, 'done');
   assert.equal(env.systemSends.length, 1);
-  assert.ok(env.auditSends.some((a) => /guest role/.test(JSON.stringify(a.embeds[0]))));
+  assert.ok(env.auditSends.some((a) => /guest role/.test(JSON.stringify(a.embeds?.[0]))));
 });
 
 test('audit failure does not stop later steps', async () => {
@@ -96,8 +97,8 @@ test('welcome replaces every {member} and does not ping others', async () => {
   });
   const result = await complete(app, env.client, env.member, env.config);
   assert.equal(result.welcome, 'done');
-  assert.equal(env.systemSends[0].content, '<@member-1> hello <@member-1>!');
-  assert.deepEqual(env.systemSends[0].allowedMentions, { users: ['member-1'] });
+  assert.equal(nth(env.systemSends).content, '<@member-1> hello <@member-1>!');
+  assert.deepEqual(nth(env.systemSends).allowedMentions, { users: ['member-1'] });
 });
 
 test('welcome skip reasons', async () => {
@@ -125,8 +126,8 @@ test('image failure still sends text and audits the image failure', async () => 
   const result = await complete(app, env.client, env.member, env.config, {}, { renderImage: failImage });
   assert.equal(result.welcome, 'done');
   assert.equal(env.systemSends.length, 1);
-  assert.equal(env.systemSends[0].files, undefined);
-  assert.ok(env.auditSends.some((a) => /welcome image/.test(JSON.stringify(a.embeds[0]))));
+  assert.equal(nth(env.systemSends).files, undefined);
+  assert.ok(env.auditSends.some((a) => /welcome image/.test(JSON.stringify(a.embeds?.[0]))));
 });
 
 test('image failure with no text fails the welcome step', async () => {
@@ -145,7 +146,7 @@ test('welcome send failure is audited and reported', async () => {
   });
   const result = await complete(app, env.client, env.member, env.config);
   assert.match(result.welcome, /^failed:cannot send/);
-  assert.ok(env.auditSends.some((a) => /welcome message/.test(JSON.stringify(a.embeds[0]))));
+  assert.ok(env.auditSends.some((a) => /welcome message/.test(JSON.stringify(a.embeds?.[0]))));
 });
 
 test('dryRun makes no role, send or audit calls and returns the payload', async () => {
@@ -178,7 +179,7 @@ test('debug summary audit is sent only when debug is enabled', async () => {
   const result = await complete(app, on.client, on.member, on.config);
   assert.equal(result.debug, 'done');
   assert.equal(on.auditSends.length, 2);
-  const summary = JSON.stringify(on.auditSends[1].embeds[0]);
+  const summary = JSON.stringify(nth(nth(on.auditSends, 1).embeds));
   assert.match(summary, /diagnostics/);
   assert.match(summary, /skipped:no guest roles configured/);
 });

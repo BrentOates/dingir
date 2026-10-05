@@ -1,6 +1,6 @@
 import type { Client, Guild, GuildMember } from 'discord.js';
 import type { ServerConfig } from '../../src/db/schema.ts';
-import { fakeAuditChannel, fakeConfig, fakeGuild, fakeMember, stub } from './discord.ts';
+import { fakeAuditChannel, fakeConfig, fakeGuild, fakeMember, type SentPayload, stub } from './discord.ts';
 
 export { fakeCommandContext } from './command.ts';
 
@@ -31,7 +31,7 @@ export const role = (id: string, position = 1, managed = false): FakeRole => ({
 
 export function fakeOnboarding(opts: FakeOnboardingOptions = {}) {
   const roleAdds: string[][] = [];
-  const systemSends: any[] = [];
+  const systemSends: SentPayload[] = [];
 
   const roles = new Map((opts.roles ?? []).map((r) => [r.id, r]));
   const guild: Guild = fakeGuild({
@@ -45,7 +45,7 @@ export function fakeOnboarding(opts: FakeOnboardingOptions = {}) {
               if (opts.failSystemSend) {
                 throw new Error('cannot send');
               }
-              systemSends.push(payload);
+              systemSends.push(payload as SentPayload);
             },
           },
   });
