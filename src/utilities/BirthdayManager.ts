@@ -1,7 +1,6 @@
 import { NovaClient } from '../client/NovaClient';
 import { Client, Guild, GuildMember, TextChannel } from 'discord.js';
 import { DateTime } from 'luxon';
-import _ from 'underscore';
 import { ConfigService } from './ConfigService';
 import { UserProfileService } from './UserProfileService';
 import { Logger } from './Logger';
@@ -88,18 +87,21 @@ export class BirthdayManager {
           };
         });
 
-        const sorted = _.sortBy(mapped, (o) => o.birthday).slice(0, 10);
-        const groupedSort = _.groupBy(sorted, 'birthday');
+        const sorted = mapped.sort((a, b) => a.birthday.toMillis() - b.birthday.toMillis()).slice(0, 10);
+        const groupedSort = Object.groupBy(sorted, (o) => o.birthday.toString());
 
         messageContent += "Here's the next 10 birthdays in this guild!\n";
         messageContent += 'Add your birthday using `/mybirthday`\n';
         messageContent += '-------------';
 
-        for (const group in groupedSort) {
-          const date = groupedSort[group][0].birthday.toLocaleString(DateTime.DATE_FULL);
+        for (const group of Object.values(groupedSort)) {
+          if (!group) {
+            continue;
+          }
+          const date = group[0].birthday.toLocaleString(DateTime.DATE_FULL);
           let members = '';
 
-          groupedSort[group].forEach((m) => {
+          group.forEach((m) => {
             members += `<@${m.userId}>\n`;
           });
           messageContent += `\n**${date}**\n${members}`;
@@ -161,12 +163,15 @@ export class BirthdayManager {
     Logger.writeLog('Running birthday notifications job.');
 
     const profiles = await UserProfileService.getBirthdaysToday();
-    const usersWithBirthdaysByServer = _.groupBy(profiles, 'serverId');
+    const usersWithBirthdaysByServer = Object.groupBy(profiles, (p) => p.serverId);
 
-    for (const server in usersWithBirthdaysByServer) {
+    for (const [server, serverProfiles] of Object.entries(usersWithBirthdaysByServer)) {
+      if (!serverProfiles) {
+        continue;
+      }
       const config = await ConfigService.getConfig(server);
       try {
-        await this.notifyServerBirthdays(client, usersWithBirthdaysByServer[server], config);
+        await this.notifyServerBirthdays(client, serverProfiles, config);
       } catch (err) {
         Logger.writeError(`Error sending birthday notifications for server ${server}.`, err);
       }

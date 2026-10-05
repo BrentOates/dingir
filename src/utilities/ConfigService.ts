@@ -1,23 +1,8 @@
-import { ChatInputCommandInteraction, Message } from 'discord.js';
+import type { Sequelize } from 'sequelize-typescript';
 import { ServerConfig } from '../client/models/ServerConfig';
+import { UserProfile } from '../client/models/UserProfile';
 
 export class ConfigService {
-  public static async getConfigByMessage(
-    message: Message | ChatInputCommandInteraction
-  ): Promise<ServerConfig | undefined> {
-    if (!message.guild) {
-      return undefined;
-    }
-
-    const [config] = await ServerConfig.findOrCreate({
-      where: {
-        serverId: message.guild.id,
-      },
-    });
-
-    return config;
-  }
-
   public static async getConfig(serverId: string): Promise<ServerConfig> {
     const [config] = await ServerConfig.findOrCreate({
       where: {
@@ -40,5 +25,21 @@ export class ConfigService {
     });
 
     return recordsDeleted > 0;
+  }
+
+  public static async purgeGuild(
+    serverId: string,
+    sequelize?: Sequelize
+  ): Promise<{ config: boolean; profiles: number }> {
+    const db = sequelize ?? ServerConfig.sequelize;
+    if (!db) {
+      throw new Error('ServerConfig is not bound to a Sequelize instance');
+    }
+
+    return db.transaction(async (transaction) => {
+      const profiles = await UserProfile.destroy({ where: { serverId }, transaction });
+      const configs = await ServerConfig.destroy({ where: { serverId }, transaction });
+      return { config: configs > 0, profiles };
+    });
   }
 }

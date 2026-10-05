@@ -17,19 +17,6 @@ export class UserProfileService {
     });
   }
 
-  public static async getAllBirthdays(): Promise<UserProfile[]> {
-    return UserProfile.findAll({
-      where: {
-        birthdayDay: {
-          [Op.not]: null,
-        },
-        birthdayMonth: {
-          [Op.not]: null,
-        },
-      },
-    });
-  }
-
   public static async getServerBirthdays(serverId: string): Promise<UserProfile[]> {
     return UserProfile.findAll({
       where: {
@@ -55,23 +42,16 @@ export class UserProfileService {
     return profiles;
   }
 
-  public static async incrementActivityScore(
+  public static async findUserProfile(
     serverId: string,
     userId: string
-  ): Promise<UserProfile> {
+  ): Promise<UserProfile | null> {
+    return UserProfile.findOne({ where: { serverId, userId } });
+  }
+
+  public static async incrementActivityScore(serverId: string, userId: string): Promise<void> {
     await this.getUserProfile(serverId, userId);
-    await UserProfile.increment(
-      {
-        activityScore: 1,
-      },
-      {
-        where: {
-          serverId: serverId,
-          userId: userId,
-        },
-      }
-    );
-    return this.getUserProfile(serverId, userId);
+    await UserProfile.increment({ activityScore: 1 }, { where: { serverId, userId } });
   }
 
   public static async decrementActivityScore(

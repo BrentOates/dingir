@@ -1,4 +1,3 @@
-import _ from 'underscore';
 import { NovaClient } from '../client/NovaClient';
 import { ConfigService } from './ConfigService';
 import { Logger } from './Logger';
@@ -9,7 +8,7 @@ export class DataCheck {
     Logger.writeLog('Running data checkup job.');
 
     const servers = await ConfigService.getConfigs();
-    const groupedSrvs = _.groupBy(servers, 'serverId');
+    const groupedSrvs = Object.groupBy(servers, (s) => s.serverId);
 
     for (const srv in groupedSrvs) {
       const guild = await client.guilds.fetch(srv).catch(async (err) => {
