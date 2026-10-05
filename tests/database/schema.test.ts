@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { getTableColumns, getTableName } from 'drizzle-orm';
 import type { SQLiteTable } from 'drizzle-orm/sqlite-core';
-import { serverConfigs, userProfiles } from '../../src/db/schema.ts';
+import { botState, serverConfigs, userProfiles } from '../../src/db/schema.ts';
 import { createTestApp } from '../helpers/app.ts';
 
 const columnNames = (table: SQLiteTable): string[] =>
@@ -11,7 +11,7 @@ const columnNames = (table: SQLiteTable): string[] =>
 test('Drizzle schema columns exist in the migrated database', () => {
   const app = createTestApp();
   try {
-    for (const table of [serverConfigs, userProfiles]) {
+    for (const table of [serverConfigs, userProfiles, botState]) {
       const actual = (
         app.db.$client.pragma(`table_info(\`${getTableName(table)}\`)`) as { name: string }[]
       ).map((column) => column.name);

@@ -80,6 +80,12 @@ The invite URL should include all these permissions. You can generate one in the
 
 Use `DEV_GUILD_ID` in `.env` to test commands instantly in a single guild instead of waiting 1 hour for global registration.
 
+On startup the bot hashes its command definitions and only re-registers them when the hash differs from the one stored for the target scope (global or `DEV_GUILD_ID`). To force a registration without starting the bot, run:
+
+```bash
+npm run deploy:commands
+```
+
 ## Commands
 
 Commands are organized into categories. Only **admin-only** commands require the Administrator permission; all others are available to any member.
@@ -250,6 +256,7 @@ Migrations run automatically on startup. Current migrations:
 - **001-baseline** — Initial schema (ServerConfigs and UserProfiles tables)
 - **002-userprofile-unique** — Adds a unique constraint on (serverId, userId). If duplicates exist, they are merged: the profile with the most recent birthday is kept, and activity scores are summed. **Backups are strongly recommended before upgrading from v2 to v3** because this migration is permanent and irreversible.
 - **003-serverconfig-access-tracking** — Adds access failure tracking for orphaned guild detection
+- **004-bot-state** — Adds the `BotState` key/value table (currently stores the registered command hash)
 
 ### What Gets Deleted
 
@@ -282,6 +289,8 @@ src/
     command.ts          # Command definition and resolution
     event.ts            # Event definition
     settings.ts         # Reusable /config setting groups (channel, boolean)
+  scripts/
+    deploy-commands.ts  # One-off slash command registration (npm run deploy:commands)
   services/             # Business logic (onboarding, birthdays, audit, etc.)
   utilities/            # Logging, formatting
   index.ts              # Entry point

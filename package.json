@@ -14,6 +14,7 @@
 		"test": "node --test \"tests/**/*.test.ts\"",
 		"dev": "node --watch --env-file-if-exists=.env src/index.ts",
 		"start": "node --env-file-if-exists=.env src/index.ts",
+		"deploy:commands": "node --env-file-if-exists=.env src/scripts/deploy-commands.ts",
 		"typecheck": "tsc --noEmit"
 	},
 	"dependencies": {

@@ -3,6 +3,7 @@ import type { Logger } from '../utilities/Logger.ts';
 import * as baseline from './migrations/001-baseline.ts';
 import * as userProfileUnique from './migrations/002-userprofile-unique.ts';
 import * as serverConfigAccessTracking from './migrations/003-serverconfig-access-tracking.ts';
+import * as botState from './migrations/004-bot-state.ts';
 
 export interface Migration {
   name: string;
@@ -13,6 +14,7 @@ export const migrations: Migration[] = [
   { name: '001-baseline', up: baseline.up },
   { name: '002-userprofile-unique', up: userProfileUnique.up },
   { name: '003-serverconfig-access-tracking', up: serverConfigAccessTracking.up },
+  { name: '004-bot-state', up: botState.up },
 ];
 
 /** Applies pending migrations in order, each in its own transaction, and returns their names. */

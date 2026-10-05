@@ -1,5 +1,5 @@
 import { defineEvent } from '../framework/event.ts';
-import { registerCommands } from '../framework/registrar.ts';
+import { syncCommands } from '../framework/registrar.ts';
 import { notifyBirthdays, refreshAllCalendars } from '../services/BirthdayService.ts';
 import { runDataCheck } from '../services/DataCheckService.ts';
 import { Scheduler } from '../services/Scheduler.ts';
@@ -12,7 +12,7 @@ export default defineEvent({
     client.user!.setPresence({ status: 'online' });
 
     logger.info('Online');
-    await registerCommands(app, [...client.slashCommands.values()]);
+    await syncCommands(app, [...client.slashCommands.values()]);
 
     try {
       const scheduler = new Scheduler(logger, env.jobSchedule, env.timezone, [

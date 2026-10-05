@@ -60,5 +60,11 @@ export const userProfiles = sqliteTable(
   (table) => [uniqueIndex('user_profiles_server_user_unique').on(table.serverId, table.userId)]
 );
 
+export const botState = sqliteTable('BotState', {
+  key: text('key').primaryKey(),
+  value: text('value').notNull(),
+  updatedAt: datetime('updatedAt').notNull(),
+});
+
 export type ServerConfig = typeof serverConfigs.$inferSelect;
 export type UserProfile = typeof userProfiles.$inferSelect;

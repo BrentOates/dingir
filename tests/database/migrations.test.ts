@@ -9,7 +9,7 @@ const { logger, logs } = fakeLogger();
 type Db = Database.Database;
 
 const INDEX = 'user_profiles_server_user_unique';
-const ALL = ['001-baseline', '002-userprofile-unique', '003-serverconfig-access-tracking'];
+const ALL = ['001-baseline', '002-userprofile-unique', '003-serverconfig-access-tracking', '004-bot-state'];
 
 const LEGACY_SERVER_CONFIGS =
   "CREATE TABLE `ServerConfigs` (`serverId` VARCHAR(255) PRIMARY KEY, `prefix` VARCHAR(255) DEFAULT '^', `rulesMessagePath` VARCHAR(255), `rulesMessage` VARCHAR(255), `guestRoleIds` VARCHAR(255), `adminRoleId` VARCHAR(255), `welcomeMessage` VARCHAR(255), `debug` TINYINT(1) DEFAULT 0, `auditChannelId` VARCHAR(255), `welcomeMessageBackgroundUrl` VARCHAR(255), `systemMessagesEnabled` TINYINT(1) DEFAULT 0, `announcementsChannelId` VARCHAR(255), `birthdayCalendarMessagePath` VARCHAR(255), `honeyPotChannelId` VARCHAR(255), `createdAt` DATETIME NOT NULL, `updatedAt` DATETIME NOT NULL)";
