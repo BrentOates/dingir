@@ -1,10 +1,12 @@
 import assert from 'node:assert/strict';
 import { after, beforeEach, test } from 'node:test';
-import { type CommandContext, createReply } from '../../src/framework/command.ts';
 import mybirthday from '../../src/commands/info/mybirthday.ts';
 import profile from '../../src/commands/info/profile.ts';
+import type { EmbedBuilder, Guild } from 'discord.js';
+import type { ReplyOptions } from '../../src/framework/command.ts';
+import { fakeCommandContext } from '../fakes/command.ts';
+import { stub } from '../fakes/discord.ts';
 import { fakeClient, fakeGuildWithMembers } from '../fakes/guild.ts';
-import { fakeInteraction } from '../fakes/interaction.ts';
 import { createTestApp } from '../helpers/app.ts';
 import { rejectsUserError } from '../helpers/assertions.ts';
 import { dbFixtures } from '../helpers/db.ts';
@@ -24,36 +26,27 @@ beforeEach(() => {
 
 const exec = async (
   command: typeof mybirthday,
-  opts: { subcommand?: string; options?: Record<string, unknown>; guild?: unknown }
+  opts: { subcommand?: string; options?: Record<string, unknown>; guild?: object }
 ) => {
-  const config = await createConfig({ serverId: 'guild-1' });
-  const fake = fakeInteraction({ subcommand: opts.subcommand, options: opts.options });
-  const raw = fake.interaction as any;
-  raw.options.getInteger = raw.options.getNumber;
-  raw.client = fakeClient();
-  const guild = opts.guild ?? { id: 'guild-1', name: 'Test Guild' };
-  raw.guild = guild;
-  const resolved = command.resolve(fake.interaction)!;
-  const ctx = {
-    app,
-    interaction: fake.interaction,
-    guild,
-    member: raw.member,
+  const config = createConfig({ serverId: 'guild-1' });
+  const { ctx, replies, interaction } = fakeCommandContext(app, opts.options, {
+    guild: opts.guild ? stub<Guild>(opts.guild) : undefined,
     config,
-    reply: createReply(fake.interaction),
-  } as unknown as CommandContext;
-  await resolved.run(ctx);
-  return fake.calls;
+    client: fakeClient(),
+    subcommand: opts.subcommand,
+  });
+  await command.resolve(interaction)!.run(ctx);
+  return replies;
 };
 
-const lastContent = (calls: { payload: any }[]): string => calls[calls.length - 1].payload.content;
+const lastContent = (replies: ReplyOptions[]): string => replies[replies.length - 1].content!;
 
 test('mybirthday set stores Feb 29 as 29', async () => {
-  const calls = await exec(mybirthday, { subcommand: 'set', options: { day: 29, month: 2 } });
+  const replies = await exec(mybirthday, { subcommand: 'set', options: { day: 29, month: 2 } });
   const stored = findProfile('user-1');
   assert.equal(stored?.birthdayDay, 29);
   assert.equal(stored?.birthdayMonth, 2);
-  assert.match(lastContent(calls), /^Saved. Your next birthday is /);
+  assert.match(lastContent(replies), /^Saved. Your next birthday is /);
 });
 
 test('mybirthday set rejects invalid dates', async () => {
@@ -94,9 +87,9 @@ test('profile for a member without a profile does not create one', async () => {
     user: { username: 'someone' },
     displayAvatarURL: () => 'https://example.com/a.png',
   });
-  const calls = await exec(profile as any, { options: { member: { id: 'm1' } }, guild });
-  const embed = calls[calls.length - 1].payload.embeds[0].toJSON();
-  const field = (name: string): string => embed.fields.find((f: any) => f.name === name).value;
+  const replies = await exec(profile as any, { options: { member: { id: 'm1' } }, guild });
+  const embed = (replies[replies.length - 1].embeds![0] as EmbedBuilder).toJSON();
+  const field = (name: string): string => embed.fields!.find((f: any) => f.name === name)!.value;
   assert.equal(field('Onboarding'), 'Not completed');
   assert.equal(field('Activity Score'), '0');
   assert.equal(await countProfiles(), 0);

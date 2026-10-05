@@ -1,19 +1,19 @@
 import { Collection } from 'discord.js';
 import type { Client } from 'discord.js';
+import { apiError, fakeMember, stub } from './discord.ts';
 
-export const apiError = (code: number): Error =>
-  Object.assign(new Error(`Discord error ${code}`), { code });
+export { apiError };
 
-export interface FakeMessage {
+export interface FakeEditableMessage {
   id: string;
   edits: any[];
   deleted: boolean;
-  edit(payload: unknown): Promise<FakeMessage>;
+  edit(payload: unknown): Promise<FakeEditableMessage>;
   delete(): Promise<void>;
 }
 
-export const fakeMessage = (id: string): FakeMessage => {
-  const message: FakeMessage = {
+export const fakeEditableMessage = (id: string): FakeEditableMessage => {
+  const message: FakeEditableMessage = {
     id,
     edits: [],
     deleted: false,
@@ -31,14 +31,14 @@ export const fakeMessage = (id: string): FakeMessage => {
 export interface FakeChannel {
   id: string;
   sent: any[];
-  messages: { fetch(id: string): Promise<FakeMessage> };
+  messages: { fetch(id: string): Promise<FakeEditableMessage> };
   isTextBased(): boolean;
   isDMBased(): boolean;
   isSendable(): boolean;
   send(payload: unknown): Promise<{ id: string; channelId: string }>;
 }
 
-export const fakeTextChannel = (id: string, messages: FakeMessage[] = []): FakeChannel => {
+export const fakeTextChannel = (id: string, messages: FakeEditableMessage[] = []): FakeChannel => {
   const channel: FakeChannel = {
     id,
     sent: [],
@@ -69,13 +69,8 @@ export interface FakeGuildOptions {
   membersFetchError?: Error;
 }
 
-export const fakeMember = (id: string): { id: string; toString(): string } => ({
-  id,
-  toString: () => `<@${id}>`,
-});
-
 export const fakeGuildWithMembers = (opts: FakeGuildOptions) => {
-  const members = new Collection<string, ReturnType<typeof fakeMember>>(
+  const members = new Collection(
     (opts.memberIds ?? []).map((id) => [id, fakeMember(id)])
   );
   const channels = new Collection<string, FakeChannel>((opts.channels ?? []).map((c) => [c.id, c]));
@@ -119,7 +114,7 @@ export const fakeClient = (opts: FakeClientOptions = {}): Client => {
       cache.set(id, value);
     }
   }
-  return {
+  return stub<Client>({
     guilds: {
       cache,
       fetch: async (id: string) => {
@@ -141,5 +136,5 @@ export const fakeClient = (opts: FakeClientOptions = {}): Client => {
         return channels.find((c) => c.id === id) ?? null;
       },
     },
-  } as unknown as Client;
+  });
 };

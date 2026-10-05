@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { GuildMember } from 'discord.js';
+import { fakeMember, stub } from '../fakes/discord.ts';
 import { AuditEmbed, memberAuditEmbed } from '../../src/services/AuditEmbed.ts';
 import { EmbedColours } from '../../src/resources/EmbedColours.ts';
 
@@ -93,11 +93,11 @@ test('toJSON does not mutate the builder', () => {
 });
 
 test('memberAuditEmbed sets author, colour, description and timestamp', () => {
-  const member = {
+  const member = fakeMember('1', {
     displayName: 'Alice',
-    user: { tag: 'alice#0' },
+    user: stub({ tag: 'alice#0' }),
     displayAvatarURL: () => 'https://cdn.example/a.png',
-  } as unknown as GuildMember;
+  });
   const json = memberAuditEmbed(member, EmbedColours.info, 'hello').toJSON();
   assert.equal(json.author?.name, 'Alice');
   assert.equal(json.author?.icon_url, 'https://cdn.example/a.png');

@@ -5,6 +5,7 @@ import type { DingirClient } from '../src/client/DingirClient.ts';
 import { type Command, defineCommand } from '../src/framework/command.ts';
 import { UserError } from '../src/framework/errors.ts';
 import interactionCreate from '../src/events/interactionCreate.ts';
+import { stub } from './fakes/discord.ts';
 import { fakeInteraction } from './fakes/interaction.ts';
 import { createTestApp } from './helpers/app.ts';
 
@@ -15,9 +16,7 @@ after(() => {
 });
 
 const clientWith = (...commands: Command[]) =>
-  ({
-    slashCommands: new Collection(commands.map((c) => [c.name, c])),
-  }) as unknown as DingirClient;
+  stub<DingirClient>({ slashCommands: new Collection(commands.map((c) => [c.name, c])) });
 
 const dispatch = (client: DingirClient, interaction: unknown) =>
   interactionCreate.run(app, client, interaction as never);

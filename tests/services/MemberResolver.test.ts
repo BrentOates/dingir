@@ -1,18 +1,17 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { Guild, GuildMember } from 'discord.js';
+import type { Guild } from 'discord.js';
+import { apiError, fakeMember, stub } from '../fakes/discord.ts';
 import { resolveMember, resolveTextChannel } from '../../src/services/MemberResolver.ts';
 
 const guildWith = (cached: Record<string, unknown>, fetch: (id: string) => Promise<unknown>): Guild =>
-  ({
+  stub<Guild>({
     members: { cache: new Map(Object.entries(cached)), fetch },
     channels: { cache: new Map(Object.entries(cached)), fetch },
-  }) as unknown as Guild;
-
-const apiError = (code: number): Error => Object.assign(new Error(`code ${code}`), { code });
+  });
 
 test('cache hit does not fetch', async () => {
-  const member = { id: 'u1' } as unknown as GuildMember;
+  const member = fakeMember('u1');
   const guild = guildWith({ u1: member }, async () => {
     throw new Error('should not fetch');
   });
@@ -21,9 +20,9 @@ test('cache hit does not fetch', async () => {
 });
 
 test('cache miss fetches', async () => {
-  const member = { id: 'u2' };
+  const member = fakeMember('u2');
   const guild = guildWith({}, async () => member);
-  assert.equal(await resolveMember(guild, 'u2'), member as unknown as GuildMember);
+  assert.equal(await resolveMember(guild, 'u2'), member);
 });
 
 test('Unknown Member and Unknown User resolve to null', async () => {

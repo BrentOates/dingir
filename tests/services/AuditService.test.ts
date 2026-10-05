@@ -3,14 +3,14 @@ import { test } from 'node:test';
 import { Client, EmbedBuilder } from 'discord.js';
 import type { ServerConfig } from '../../src/db/schema.ts';
 import { sendAudit } from '../../src/services/AuditService.ts';
+import { fakeConfig, stub } from '../fakes/discord.ts';
 import { createTestApp } from '../helpers/app.ts';
 
 const app = createTestApp();
 
 const config = (auditChannelId: string | null): ServerConfig =>
-  ({ serverId: 'g1', auditChannelId }) as unknown as ServerConfig;
-const clientWith = (fetch: () => Promise<unknown>): Client =>
-  ({ channels: { fetch } }) as unknown as Client;
+  fakeConfig({ serverId: 'g1', auditChannelId });
+const clientWith = (fetch: () => Promise<unknown>): Client => stub<Client>({ channels: { fetch } });
 const embed = new EmbedBuilder().setDescription('x');
 
 test('returns false without fetching when no audit channel configured', async () => {

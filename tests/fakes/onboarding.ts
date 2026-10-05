@@ -1,8 +1,8 @@
-import type { Client, GuildMember } from 'discord.js';
-import type { App } from '../../src/app.ts';
+import type { Client, Guild, GuildMember } from 'discord.js';
 import type { ServerConfig } from '../../src/db/schema.ts';
-import type { CommandContext } from '../../src/framework/command.ts';
-import { fakeInteraction } from './interaction.ts';
+import { fakeAuditChannel, fakeConfig, fakeGuild, fakeMember, stub } from './discord.ts';
+
+export { fakeCommandContext } from './command.ts';
 
 export interface FakeRole {
   id: string;
@@ -32,12 +32,9 @@ export const role = (id: string, position = 1, managed = false): FakeRole => ({
 export function fakeOnboarding(opts: FakeOnboardingOptions = {}) {
   const roleAdds: string[][] = [];
   const systemSends: any[] = [];
-  const auditSends: any[] = [];
 
   const roles = new Map((opts.roles ?? []).map((r) => [r.id, r]));
-  const guild: any = {
-    id: 'guild-1',
-    name: 'Test Guild',
+  const guild: Guild = fakeGuild({
     roles: { cache: roles, fetch: async () => null },
     members: { me: { roles: { highest: { position: opts.botPosition ?? 10 } } } },
     systemChannel:
@@ -51,15 +48,12 @@ export function fakeOnboarding(opts: FakeOnboardingOptions = {}) {
               systemSends.push(payload);
             },
           },
-  };
+  });
 
-  const member = {
-    id: 'member-1',
+  const member: GuildMember = fakeMember('member-1', {
     displayName: 'Member',
-    user: { id: 'member-1', tag: 'member#0001' },
+    user: stub({ id: 'member-1', tag: 'member#0001' }),
     guild,
-    displayAvatarURL: () => 'https://example.com/a.png',
-    toString: () => '<@member-1>',
     roles: {
       add: async (ids: string[]) => {
         if (opts.failRolesAdd) {
@@ -68,52 +62,15 @@ export function fakeOnboarding(opts: FakeOnboardingOptions = {}) {
         roleAdds.push(ids);
       },
     },
-  } as unknown as GuildMember;
+  });
 
-  const auditChannel = {
-    isSendable: () => true,
-    send: async (payload: unknown) => {
-      if (opts.failAuditSend) {
-        throw new Error('audit down');
-      }
-      auditSends.push(payload);
-    },
-  };
-  const client = {
-    channels: { fetch: async () => auditChannel },
-  } as unknown as Client;
+  const { channel, sent: auditSends } = fakeAuditChannel(opts.failAuditSend ? 'audit down' : undefined);
+  const client = stub<Client>({ channels: { fetch: async () => channel } });
 
-  const config = {
-    serverId: 'guild-1',
+  const config = fakeConfig({
     auditChannelId: opts.auditChannel === false ? null : 'audit-1',
-    guestRoleIds: null,
-    welcomeMessage: null,
-    welcomeMessageBackgroundUrl: null,
-    systemMessagesEnabled: false,
-    debug: false,
     ...opts.config,
-  } as unknown as ServerConfig;
+  });
 
   return { client, member, guild, config, roleAdds, systemSends, auditSends };
-}
-
-export function fakeCommandContext(
-  app: App,
-  options: Record<string, unknown>,
-  env: ReturnType<typeof fakeOnboarding>
-) {
-  const { interaction } = fakeInteraction({ options });
-  (interaction as any).client = env.client;
-  const replies: any[] = [];
-  const ctx = {
-    app,
-    interaction,
-    guild: env.guild,
-    member: env.member,
-    config: env.config,
-    reply: async (response: unknown) => {
-      replies.push(typeof response === 'string' ? { content: response } : response);
-    },
-  } as unknown as CommandContext;
-  return { ctx, replies };
 }

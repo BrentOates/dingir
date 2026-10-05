@@ -7,7 +7,7 @@ import {
   apiError,
   fakeClient,
   fakeGuildWithMembers,
-  fakeMessage,
+  fakeEditableMessage,
   fakeTextChannel,
 } from '../fakes/guild.ts';
 import { createTestApp, type TestApp } from '../helpers/app.ts';
@@ -53,7 +53,7 @@ test('refreshCalendar: message missing', async () => {
 
 test('refreshCalendar: edit failure reports failed', async () => {
   const config = await makeConfig({ birthdayCalendarMessagePath: 'c1/m1' });
-  const message = fakeMessage('m1');
+  const message = fakeEditableMessage('m1');
   message.edit = async () => {
     throw new Error('boom');
   };
@@ -68,7 +68,7 @@ test('refreshCalendar: edits with Feb 29 shown on Feb 28 and today counted', asy
     { serverId: 'g1', userId: 'today', birthdayMonth: 2, birthdayDay: 27 },
     { serverId: 'g1', userId: 'nobday' },
   ]);
-  const message = fakeMessage('m1');
+  const message = fakeEditableMessage('m1');
   const client = fakeClient({ channels: [fakeTextChannel('c1', [message])] });
 
   const status = await refreshCalendar(appAt('2027-02-27T10:00'), client, config);
@@ -85,7 +85,7 @@ test('refreshCalendar: edits with Feb 29 shown on Feb 28 and today counted', asy
 
 test('refreshCalendar: empty state', async () => {
   const config = await makeConfig({ birthdayCalendarMessagePath: 'c1/m1' });
-  const message = fakeMessage('m1');
+  const message = fakeEditableMessage('m1');
   const client = fakeClient({ channels: [fakeTextChannel('c1', [message])] });
   assert.equal(await refreshCalendar(appAt(), client, config), 'updated');
   assert.match(message.edits[0].content, /There are no birthdays in this server/);

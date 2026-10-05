@@ -1,5 +1,5 @@
-import { Collection } from 'discord.js';
 import type { ChatInputCommandInteraction } from 'discord.js';
+import { fakeGuild, stub } from './discord.ts';
 
 export interface Call {
   method: 'reply' | 'deferReply' | 'editReply' | 'followUp';
@@ -17,30 +17,12 @@ export interface FakeInteractionOptions {
   replied?: boolean;
   guildId?: string;
   userId?: string;
-  guild?: Record<string, unknown>;
+  guild?: unknown;
 }
 
 export interface FakeInteraction {
   interaction: ChatInputCommandInteraction<'cached'>;
   calls: Call[];
-}
-
-export function fakeGuild(channelIds: string[] = []) {
-  const cache = new Collection<string, { id: string }>(channelIds.map((id) => [id, { id }]));
-  return {
-    id: 'guild-1',
-    name: 'Test Guild',
-    channels: {
-      cache,
-      fetch: async (id: string) => {
-        const channel = cache.get(id);
-        if (!channel) {
-          throw new Error('Unknown Channel');
-        }
-        return channel;
-      },
-    },
-  };
 }
 
 export function fakeInteraction(opts: FakeInteractionOptions = {}): FakeInteraction {
@@ -86,6 +68,7 @@ export function fakeInteraction(opts: FakeInteractionOptions = {}): FakeInteract
       getUser: required,
       getRole: required,
       getNumber: required,
+      getInteger: required,
       getAttachment: required,
     },
     reply: async (payload: unknown) => {
@@ -105,5 +88,5 @@ export function fakeInteraction(opts: FakeInteractionOptions = {}): FakeInteract
     },
   };
 
-  return { interaction: state as unknown as ChatInputCommandInteraction<'cached'>, calls };
+  return { interaction: stub<ChatInputCommandInteraction<'cached'>>(state), calls };
 }

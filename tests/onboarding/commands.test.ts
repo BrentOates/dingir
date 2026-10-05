@@ -56,7 +56,7 @@ test('newroles set saves valid roles, dedupes, and audits', async () => {
   await handler(NewRolesGroup, 'set')(ctx);
   assert.equal(ctx.config.guestRoleIds, 'a,b');
   assert.equal(env.auditSends.length, 1);
-  assert.match(replies[0].content, /set to/);
+  assert.match(replies[0].content!, /set to/);
 });
 
 test('newroles get is read-only: no audit, marks missing roles', async () => {
@@ -64,13 +64,13 @@ test('newroles get is read-only: no audit, marks missing roles', async () => {
   const { ctx, replies } = fakeCommandContext(app, {}, env);
   await handler(NewRolesGroup, 'get')(ctx);
   assert.equal(env.auditSends.length, 0);
-  assert.match(replies[0].content, /<@&a>/);
-  assert.match(replies[0].content, /gone \(this role no longer exists\)/);
+  assert.match(replies[0].content!, /<@&a>/);
+  assert.match(replies[0].content!, /gone \(this role no longer exists\)/);
 
   const empty = fakeOnboarding();
   const e = fakeCommandContext(app, {}, empty);
   await handler(NewRolesGroup, 'get')(e.ctx);
-  assert.equal(e.replies[0].content, 'No new-member roles are configured.');
+  assert.equal(e.replies[0].content!, 'No new-member roles are configured.');
 });
 
 test('newroles clear nulls roles and audits', async () => {
@@ -117,8 +117,8 @@ test('welcome set-message, get and clear', async () => {
 
   const get = fakeCommandContext(app, {}, { ...env, config: set.ctx.config });
   await handler(WelcomeGroup as never, 'get')(get.ctx);
-  assert.match(get.replies[0].content, /Hi \{member\}/);
-  assert.match(get.replies[0].content, /Welcome image: Not set/);
+  assert.match(get.replies[0].content!, /Hi \{member\}/);
+  assert.match(get.replies[0].content!, /Welcome image: Not set/);
 
   const clear = fakeCommandContext(app, { which: 'all' }, { ...env, config: set.ctx.config });
   await handler(WelcomeGroup as never, 'clear')(clear.ctx);
@@ -129,7 +129,7 @@ test('welcome preview explains why nothing would be sent', async () => {
   const env = fakeOnboarding({ config: { welcomeMessage: 'hi' } });
   const { ctx, replies } = fakeCommandContext(app, {}, env);
   await handler(WelcomeGroup as never, 'preview')(ctx);
-  assert.match(replies[0].content, /disabled/);
+  assert.match(replies[0].content!, /disabled/);
   assert.equal(env.systemSends.length, 0);
 });
 
@@ -137,6 +137,6 @@ test('welcome preview shows the text without sending', async () => {
   const env = fakeOnboarding({ config: { welcomeMessage: 'hi {member} {member}', systemMessagesEnabled: true } });
   const { ctx, replies } = fakeCommandContext(app, {}, env);
   await handler(WelcomeGroup as never, 'preview')(ctx);
-  assert.match(replies[0].content, /hi <@member-1> <@member-1>/);
+  assert.match(replies[0].content!, /hi <@member-1> <@member-1>/);
   assert.equal(env.systemSends.length, 0);
 });
