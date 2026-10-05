@@ -268,8 +268,7 @@ Migrations run automatically on startup. Current migrations:
 ```
 src/
   client/               # Discord.js client setup and models
-    database/           #   SQLite schema, migrations, sequelize config
-    models/             #   ServerConfig, UserProfile ORM models
+    database/           #   Drizzle schema, better-sqlite3 setup, migrations
     NovaClient.ts       #   Main client class (intents, startup)
   config/
     env.ts              # Environment loading and validation
@@ -326,29 +325,9 @@ channelSetting({
 })
 ```
 
-Then ensure the field is defined in the ServerConfig model and add a migration to add the column if needed. For a boolean setting, use `booleanSetting()` instead.
+Then ensure the field is defined in `src/client/database/schema.ts` and add a migration to add the column if needed. For a boolean setting, use `booleanSetting()` instead.
 
-**Migrations**: If adding a new config field, create a migration file in `src/client/database/migrations/`:
-
-```typescript
-// src/client/database/migrations/004-add-myfeature.ts
-import { DataTypes } from 'sequelize';
-import type { MigrationParams } from './types';
-
-export async function up({ context }: MigrationParams): Promise<void> {
-  const columns = await context.describeTable('ServerConfigs');
-  if (!('myFeatureChannelId' in columns)) {
-    await context.addColumn('ServerConfigs', 'myFeatureChannelId', {
-      type: DataTypes.STRING,
-      allowNull: true,
-    });
-  }
-}
-
-export async function down({ context }: MigrationParams): Promise<void> {
-  await context.removeColumn('ServerConfigs', 'myFeatureChannelId');
-}
-```
+**Migrations**: If adding a new config field, add a column to `serverConfigs` in `src/client/database/schema.ts` and a migration (see [Adding a Migration](#adding-a-migration)). Update settings with `ConfigService.updateConfig(serverId, { field: value })`.
 
 ### Adding an Event
 
@@ -370,18 +349,15 @@ Set `once: true` to only listen once (useful for `clientReady`).
 
 ### Adding a Migration
 
-Migrations use Umzug and Sequelize's QueryInterface. Create a new file in `src/client/database/migrations/`:
+Migrations are plain synchronous functions over the better-sqlite3 handle. Create a new file in `src/client/database/migrations/` and register it in `src/client/database/migrator.ts`:
 
 ```typescript
-import type { MigrationParams } from './types';
+// src/client/database/migrations/004-add-myfeature.ts
+import type { Database } from 'better-sqlite3';
 
-export async function up({ context }: MigrationParams): Promise<void> {
-  // Apply the change
-}
-
-export async function down({ context }: MigrationParams): Promise<void> {
-  // Revert the change (for development; not used in production)
+export function up(db: Database): void {
+  db.exec('ALTER TABLE `ServerConfigs` ADD COLUMN `myFeatureChannelId` VARCHAR(255)');
 }
 ```
 
-Migrations run on startup in order. See `001-baseline.ts` and `002-userprofile-unique.ts` for examples.
+Migrations run on startup in order, each in its own transaction, and applied names are recorded in the `SequelizeMeta` table (kept from earlier versions). See `001-baseline.ts` and `002-userprofile-unique.ts` for examples.

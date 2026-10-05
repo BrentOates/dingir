@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { Client, EmbedBuilder } from 'discord.js';
-import { ServerConfig } from '../../src/client/models/ServerConfig';
+import type { ServerConfig } from '../../src/client/database/schema';
 import { sendAudit } from '../../src/services/AuditService';
 
 console.warn = (): void => undefined;

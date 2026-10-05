@@ -1,20 +1,20 @@
 import assert from 'node:assert/strict';
 import { after, before, test } from 'node:test';
 import { Collection } from 'discord.js';
-import type { Sequelize } from 'sequelize-typescript';
+import type { DatabaseHandle } from '../../src/client/database/db';
 import noroles from '../../src/slash-commands/Admin/noroles';
 import rolesince from '../../src/slash-commands/Admin/rolesince';
 import { buildMemberListing, INLINE_LIMIT } from '../../src/services/MemberListing';
-import { createTestDb } from '../helpers/db';
+import { closeTestDb, createTestDb } from '../helpers/db';
 import { fakeInteraction } from '../fakes/interaction';
 import { fakeAuditClient, fakeMember, fakeUser, runSlash } from '../fakes/messages';
 
-let db: Sequelize;
+let db: DatabaseHandle;
 before(async () => {
-  db = await createTestDb();
+  db = createTestDb();
 });
 after(async () => {
-  await db.close();
+  closeTestDb(db);
 });
 
 const DAY = 24 * 60 * 60 * 1000;

@@ -1,25 +1,52 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { ServerConfig } from '../../src/client/models/ServerConfig';
-import { UserProfile } from '../../src/client/models/UserProfile';
-import { createTestDb } from '../helpers/db';
+import { getTableColumns, getTableName } from 'drizzle-orm';
+import type { SQLiteTable } from 'drizzle-orm/sqlite-core';
+import { serverConfigs, userProfiles } from '../../src/client/database/schema';
+import { closeTestDb, createTestDb } from '../helpers/db';
 
-test('migrated :memory: database works with both models', async () => {
-  const db = await createTestDb();
+const columnNames = (table: SQLiteTable): string[] =>
+  Object.values(getTableColumns(table)).map((column) => column.name);
+
+test('Drizzle schema columns exist in the migrated database', () => {
+  const handle = createTestDb();
   try {
-    const [config] = await ServerConfig.findOrCreate({ where: { serverId: 's1' } });
-    await config.reload();
+    for (const table of [serverConfigs, userProfiles]) {
+      const actual = (
+        handle.sqlite.pragma(`table_info(\`${getTableName(table)}\`)`) as { name: string }[]
+      ).map((column) => column.name);
+      for (const name of columnNames(table)) {
+        assert.ok(actual.includes(name), `${getTableName(table)}.${name} missing from database`);
+      }
+    }
+  } finally {
+    closeTestDb(handle);
+  }
+});
+
+test('migrated database applies column defaults and round-trips dates', () => {
+  const handle = createTestDb();
+  try {
+    const { db } = handle;
+    db.insert(serverConfigs).values({ serverId: 's1' }).run();
+    const config = db.select().from(serverConfigs).get()!;
     assert.equal(config.systemMessagesEnabled, false);
     assert.equal(config.auditChannelId, null);
     assert.equal(config.accessFailureCount, 0);
     assert.equal(config.firstAccessFailureAt, null);
+    assert.ok(config.createdAt instanceof Date);
 
-    const profile = await UserProfile.create({ serverId: 's1', userId: 'u1' });
-    assert.equal(profile.activityScore, 0);
+    const when = new Date('2024-01-01T12:00:00.000Z');
+    db.update(serverConfigs).set({ firstAccessFailureAt: when }).run();
+    const raw = handle.sqlite.prepare('SELECT firstAccessFailureAt AS v FROM `ServerConfigs`').get() as {
+      v: string;
+    };
+    assert.equal(raw.v, '2024-01-01 12:00:00.000 +00:00');
+    assert.equal(db.select().from(serverConfigs).get()!.firstAccessFailureAt?.getTime(), when.getTime());
 
-    assert.equal(await ServerConfig.count(), 1);
-    assert.equal(await UserProfile.count(), 1);
+    db.insert(userProfiles).values({ serverId: 's1', userId: 'u1' }).run();
+    assert.equal(db.select().from(userProfiles).get()!.activityScore, 0);
   } finally {
-    await db.close();
+    closeTestDb(handle);
   }
 });

@@ -1,9 +1,10 @@
 import assert from 'node:assert/strict';
-import { after, before, beforeEach, test } from 'node:test';
+import { after, afterEach, before, beforeEach, test } from 'node:test';
 import { ChannelType } from 'discord.js';
-import type { Sequelize } from 'sequelize-typescript';
-import { createTestDb } from './helpers/db';
-import { ServerConfig } from '../src/client/models/ServerConfig';
+import type { DatabaseHandle } from '../src/client/database/db';
+import { closeTestDb, clearConfigs, createTestDb } from './helpers/db';
+import type { ServerConfig } from '../src/client/database/schema';
+import { ConfigService } from '../src/services/ConfigService';
 import { CommandContext, defineCommand, Handler } from '../src/framework/command';
 import {
   booleanSetting,
@@ -15,28 +16,33 @@ import {
 } from '../src/framework/settings';
 import { fakeGuild, fakeInteraction } from './fakes/interaction';
 
-let db: Sequelize;
+let db: DatabaseHandle;
 let config: ServerConfig;
 let events: string[];
 
 before(async () => {
-  db = await createTestDb();
+  db = createTestDb();
 });
 
 after(async () => {
-  await db.close();
+  closeTestDb(db);
 });
 
+const originalUpdate = ConfigService.updateConfig;
+
 beforeEach(async () => {
-  await ServerConfig.destroy({ where: {} });
-  [config] = await ServerConfig.findOrCreate({ where: { serverId: 'guild-1' } });
+  clearConfigs();
+  config = await ConfigService.getConfig('guild-1');
   events = [];
-  const originalSave = config.save.bind(config);
-  config.save = (async (...args: Parameters<typeof originalSave>) => {
-    const result = await originalSave(...args);
+  ConfigService.updateConfig = (async (...args: Parameters<typeof originalUpdate>) => {
+    const result = await originalUpdate.apply(ConfigService, args);
     events.push('save');
     return result;
-  }) as typeof config.save;
+  }) as typeof originalUpdate;
+});
+
+afterEach(() => {
+  ConfigService.updateConfig = originalUpdate;
 });
 
 const channelGroup = channelSetting({
@@ -89,7 +95,7 @@ test('channelSetting set saves before replying and persists', async () => {
 
   assert.deepEqual(events, ['save', 'reply']);
   assert.deepEqual(replies, ['Audit channel set to <#123>.']);
-  await config.reload();
+  config = await ConfigService.getConfig('guild-1');
   assert.equal(config.auditChannelId, '123');
 });
 
@@ -109,8 +115,7 @@ test('channelSetting get reports set, missing and not-set channels', async () =>
 });
 
 test('channelSetting clear nulls the field, saves, then replies', async () => {
-  config.auditChannelId = '123';
-  await config.save();
+  config = await ConfigService.updateConfig('guild-1', { auditChannelId: '123' });
   events.length = 0;
 
   const { ctx, replies } = makeCtx({});
@@ -118,7 +123,7 @@ test('channelSetting clear nulls the field, saves, then replies', async () => {
 
   assert.deepEqual(events, ['save', 'reply']);
   assert.deepEqual(replies, ['Audit channel cleared.']);
-  await config.reload();
+  config = await ConfigService.getConfig('guild-1');
   assert.equal(config.auditChannelId, null);
 });
 
@@ -139,7 +144,7 @@ test('booleanSetting set saves before replying; get reads the stored value', asy
   await run(boolGroup, 'set')(set.ctx);
   assert.deepEqual(events, ['save', 'reply']);
   assert.deepEqual(set.replies, ['Bot system messages: enabled']);
-  await config.reload();
+  config = await ConfigService.getConfig('guild-1');
   assert.equal(config.systemMessagesEnabled, true);
 
   const get = makeCtx({});

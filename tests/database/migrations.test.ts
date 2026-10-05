@@ -1,12 +1,10 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { QueryTypes } from 'sequelize';
-import type { Sequelize } from 'sequelize-typescript';
-import { createSequelize } from '../../src/client/database/createSequelize';
-import { createMigrator, migrate } from '../../src/client/database/migrator';
-import { ServerConfig } from '../../src/client/models/ServerConfig';
-import { UserProfile } from '../../src/client/models/UserProfile';
+import Database from 'better-sqlite3';
+import { migrate, migrations, type Migration } from '../../src/client/database/migrator';
 import { Logger } from '../../src/utilities/Logger';
+
+type Db = Database.Database;
 
 const INDEX = 'user_profiles_server_user_unique';
 const ALL = ['001-baseline', '002-userprofile-unique', '003-serverconfig-access-tracking'];
@@ -16,17 +14,20 @@ const LEGACY_SERVER_CONFIGS =
 const LEGACY_USER_PROFILES =
   'CREATE TABLE `UserProfiles` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `serverId` VARCHAR(255), `userId` VARCHAR(255), `birthdayYear` INTEGER, `birthdayMonth` INTEGER, `birthdayDay` INTEGER, `activityScore` INTEGER DEFAULT 0, `createdAt` DATETIME NOT NULL, `updatedAt` DATETIME NOT NULL)';
 
-const withDb = async (fn: (db: Sequelize) => Promise<void>): Promise<void> => {
-  const db = createSequelize(':memory:');
+const withDb = (fn: (db: Db) => void): void => {
+  const db = new Database(':memory:');
   try {
-    await fn(db);
+    fn(db);
   } finally {
-    await db.close();
+    db.close();
   }
 };
 
-const columnsOf = async (db: Sequelize, table: string): Promise<string[]> =>
-  Object.keys(await db.getQueryInterface().describeTable(table));
+const columnsOf = (db: Db, table: string): string[] =>
+  (db.pragma(`table_info(\`${table}\`)`) as { name: string }[]).map((c) => c.name);
+
+const indexesOf = (db: Db, table: string): { name: string; unique: number }[] =>
+  db.pragma(`index_list(\`${table}\`)`) as { name: string; unique: number }[];
 
 const profileRow = (
   serverId: string,
@@ -37,27 +38,25 @@ const profileRow = (
   updatedAt: string
 ) => ({ serverId, userId, month, day, score, updatedAt });
 
-const insertProfiles = async (
-  db: Sequelize,
-  rows: ReturnType<typeof profileRow>[]
-): Promise<void> => {
+const insertProfiles = (db: Db, rows: ReturnType<typeof profileRow>[]): void => {
+  const insert = db.prepare(
+    'INSERT INTO `UserProfiles` (serverId, userId, birthdayMonth, birthdayDay, activityScore, createdAt, updatedAt) VALUES (@serverId, @userId, @month, @day, @score, @updatedAt, @updatedAt)'
+  );
   for (const r of rows) {
-    await db.query(
-      'INSERT INTO `UserProfiles` (serverId, userId, birthdayMonth, birthdayDay, activityScore, createdAt, updatedAt) VALUES (:serverId, :userId, :month, :day, :score, :updatedAt, :updatedAt)',
-      { replacements: r }
-    );
+    insert.run(r);
   }
 };
 
-const runUpTo = async (db: Sequelize, to: string): Promise<void> => {
-  await createMigrator(db).up({ to });
-};
+const runUpTo = (db: Db, to: string): string[] =>
+  migrate(db, migrations.slice(0, migrations.findIndex((m) => m.name === to) + 1));
 
-test('migrations on an empty database create the expected schema', async () => {
-  await withDb(async (db) => {
-    assert.deepEqual(await migrate(db), ALL);
+const allRows = (db: Db, sql: string): unknown[] => db.prepare(sql).all();
 
-    const serverColumns = await columnsOf(db, 'ServerConfigs');
+test('migrations on an empty database create the expected schema', () => {
+  withDb((db) => {
+    assert.deepEqual(migrate(db), ALL);
+
+    const serverColumns = columnsOf(db, 'ServerConfigs');
     for (const column of [
       'serverId',
       'prefix',
@@ -71,7 +70,7 @@ test('migrations on an empty database create the expected schema', async () => {
     ]) {
       assert.ok(serverColumns.includes(column), `ServerConfigs.${column}`);
     }
-    assert.deepEqual(await columnsOf(db, 'UserProfiles'), [
+    assert.deepEqual(columnsOf(db, 'UserProfiles'), [
       'id',
       'serverId',
       'userId',
@@ -83,13 +82,9 @@ test('migrations on an empty database create the expected schema', async () => {
       'updatedAt',
     ]);
 
-    const indexes = await db.getQueryInterface().showIndex('UserProfiles');
-    const unique = (indexes as { name: string; unique: boolean }[]).find((i) => i.name === INDEX);
-    assert.ok(unique?.unique);
+    assert.ok(indexesOf(db, 'UserProfiles').find((i) => i.name === INDEX)?.unique);
 
-    const meta = await db.query<{ name: string }>('SELECT name FROM `SequelizeMeta` ORDER BY name', {
-      type: QueryTypes.SELECT,
-    });
+    const meta = allRows(db, 'SELECT name FROM `SequelizeMeta` ORDER BY name') as { name: string }[];
     assert.deepEqual(
       meta.map((m) => m.name),
       ALL
@@ -97,75 +92,98 @@ test('migrations on an empty database create the expected schema', async () => {
   });
 });
 
-test('running migrations twice is a no-op', async () => {
-  await withDb(async (db) => {
-    await migrate(db);
-    await UserProfile.create({ serverId: 's1', userId: 'u1', activityScore: 4 });
-    assert.deepEqual(await migrate(db), []);
-    assert.equal(await UserProfile.count(), 1);
+test('running migrations twice is a no-op', () => {
+  withDb((db) => {
+    migrate(db);
+    insertProfiles(db, [profileRow('s1', 'u1', null, null, 4, '2024-01-01 00:00:00.000 +00:00')]);
+    assert.deepEqual(migrate(db), []);
+    assert.equal(allRows(db, 'SELECT * FROM `UserProfiles`').length, 1);
   });
 });
 
-test('baseline is a no-op on a legacy sync() database and later migrations preserve data', async () => {
-  await withDb(async (db) => {
-    await db.query(LEGACY_SERVER_CONFIGS);
-    await db.query(LEGACY_USER_PROFILES);
-    await db.query(
+test('baseline is a no-op on a legacy sync() database and later migrations preserve data', () => {
+  withDb((db) => {
+    db.exec(LEGACY_SERVER_CONFIGS);
+    db.exec(LEGACY_USER_PROFILES);
+    db.exec(
       "INSERT INTO `ServerConfigs` (serverId, prefix, adminRoleId, auditChannelId, createdAt, updatedAt) VALUES ('s1', '!', 'admin', 'chan', '2024-01-01 00:00:00.000 +00:00', '2024-01-01 00:00:00.000 +00:00')"
     );
-    await insertProfiles(db, [
+    insertProfiles(db, [
       profileRow('s1', 'u1', 5, 6, 3, '2024-01-01 00:00:00.000 +00:00'),
       profileRow('s1', 'u2', null, null, 9, '2024-01-01 00:00:00.000 +00:00'),
     ]);
-    const before = await db.query('SELECT * FROM `UserProfiles` ORDER BY id', {
-      type: QueryTypes.SELECT,
-    });
+    const before = allRows(db, 'SELECT * FROM `UserProfiles` ORDER BY id');
 
-    await runUpTo(db, '001-baseline');
-    assert.deepEqual(
-      await db.query('SELECT * FROM `UserProfiles` ORDER BY id', { type: QueryTypes.SELECT }),
-      before
+    assert.deepEqual(runUpTo(db, '001-baseline'), ['001-baseline']);
+    assert.deepEqual(allRows(db, 'SELECT * FROM `UserProfiles` ORDER BY id'), before);
+    assert.ok(!columnsOf(db, 'ServerConfigs').includes('accessFailureCount'));
+
+    assert.deepEqual(migrate(db), ALL.slice(1));
+
+    const config = db.prepare('SELECT * FROM `ServerConfigs` WHERE serverId = ?').get('s1') as Record<
+      string,
+      unknown
+    >;
+    assert.equal(config.auditChannelId, 'chan');
+    assert.equal(config.accessFailureCount, 0);
+    assert.equal(config.firstAccessFailureAt, null);
+    assert.deepEqual(allRows(db, 'SELECT prefix, adminRoleId FROM `ServerConfigs`'), [
+      { prefix: '!', adminRoleId: 'admin' },
+    ]);
+
+    const profiles = allRows(
+      db,
+      'SELECT userId, birthdayMonth, activityScore FROM `UserProfiles` ORDER BY id'
     );
-    assert.ok(!(await columnsOf(db, 'ServerConfigs')).includes('accessFailureCount'));
-
-    assert.deepEqual(await migrate(db), ALL.slice(1));
-
-    const config = await ServerConfig.findByPk('s1');
-    assert.equal(config?.auditChannelId, 'chan');
-    assert.equal(config?.accessFailureCount, 0);
-    assert.equal(config?.firstAccessFailureAt, null);
-    const legacy = await db.query<{ prefix: string; adminRoleId: string }>(
-      'SELECT prefix, adminRoleId FROM `ServerConfigs`',
-      { type: QueryTypes.SELECT }
-    );
-    assert.deepEqual(legacy, [{ prefix: '!', adminRoleId: 'admin' }]);
-
-    const profiles = await UserProfile.findAll({ order: [['id', 'ASC']] });
-    assert.deepEqual(
-      profiles.map((p) => [p.userId, p.birthdayMonth, p.activityScore]),
-      [
-        ['u1', 5, 3],
-        ['u2', null, 9],
-      ]
-    );
+    assert.deepEqual(profiles, [
+      { userId: 'u1', birthdayMonth: 5, activityScore: 3 },
+      { userId: 'u2', birthdayMonth: null, activityScore: 9 },
+    ]);
   });
 });
 
-test('baseline adds missing nullable columns to an older schema', async () => {
-  await withDb(async (db) => {
-    await db.query(
+test('a database already migrated by the previous umzug setup runs nothing and keeps its data', () => {
+  withDb((db) => {
+    migrate(db);
+    insertProfiles(db, [profileRow('s1', 'u1', 5, 6, 3, '2024-01-01 00:00:00.000 +00:00')]);
+    db.exec(
+      "INSERT INTO `ServerConfigs` (serverId, accessFailureCount, createdAt, updatedAt) VALUES ('s1', 2, '2024-01-01 00:00:00.000 +00:00', '2024-01-01 00:00:00.000 +00:00')"
+    );
+
+    const ran: string[] = [];
+    const spies: Migration[] = migrations.map((m) => ({
+      name: m.name,
+      up: () => {
+        ran.push(m.name);
+      },
+    }));
+
+    assert.deepEqual(migrate(db, spies), []);
+    assert.deepEqual(ran, []);
+    assert.deepEqual(allRows(db, 'SELECT userId, activityScore FROM `UserProfiles`'), [
+      { userId: 'u1', activityScore: 3 },
+    ]);
+    assert.deepEqual(allRows(db, 'SELECT serverId, accessFailureCount FROM `ServerConfigs`'), [
+      { serverId: 's1', accessFailureCount: 2 },
+    ]);
+  });
+});
+
+test('baseline adds missing nullable columns to an older schema', () => {
+  withDb((db) => {
+    db.exec(
       'CREATE TABLE `ServerConfigs` (`serverId` VARCHAR(255) PRIMARY KEY, `createdAt` DATETIME NOT NULL, `updatedAt` DATETIME NOT NULL)'
     );
-    await migrate(db);
-    assert.ok((await columnsOf(db, 'ServerConfigs')).includes('honeyPotChannelId'));
-    assert.ok((await columnsOf(db, 'UserProfiles')).includes('activityScore'));
+    migrate(db);
+    assert.ok(columnsOf(db, 'ServerConfigs').includes('honeyPotChannelId'));
+    assert.ok(columnsOf(db, 'UserProfiles').includes('activityScore'));
   });
 });
 
-test('002 dedupes UserProfiles and enforces uniqueness afterwards', async () => {
-  await withDb(async (db) => {
-    await runUpTo(db, '001-baseline');
-    await insertProfiles(db, [
+test('002 dedupes UserProfiles and enforces uniqueness afterwards', () => {
+  withDb((db) => {
+    runUpTo(db, '001-baseline');
+    insertProfiles(db, [
       // a: only one has a birthday; it is older and lower score
       profileRow('s1', 'a', null, null, 10, '2024-03-01 00:00:00.000 +00:00'),
       profileRow('s1', 'a', 2, 14, 1, '2024-01-01 00:00:00.000 +00:00'),
@@ -187,7 +205,7 @@ test('002 dedupes UserProfiles and enforces uniqueness afterwards', async () => 
       warnings.push(message);
     };
     try {
-      await runUpTo(db, '002-userprofile-unique');
+      runUpTo(db, '002-userprofile-unique');
     } finally {
       Logger.warn = originalWarn;
     }
@@ -195,45 +213,37 @@ test('002 dedupes UserProfiles and enforces uniqueness afterwards', async () => 
     assert.equal(warnings.length, 1);
     assert.match(warnings[0], /Conflicting birthdays/);
 
-    const rows = await UserProfile.findAll({ order: [['serverId', 'ASC'], ['userId', 'ASC']] });
-    assert.deepEqual(
-      rows.map((r) => [r.serverId, r.userId, r.birthdayMonth, r.birthdayDay, r.activityScore]),
-      [
-        ['s1', 'a', 2, 14, 10],
-        ['s1', 'b', 7, 7, 8],
-        ['s1', 'c', null, null, 7],
-        ['s1', 'd', 4, 4, 0],
-        ['s2', 'a', 3, 3, 1],
-      ]
-    );
+    const rows = db
+      .prepare(
+        'SELECT serverId, userId, birthdayMonth, birthdayDay, activityScore FROM `UserProfiles` ORDER BY serverId, userId'
+      )
+      .raw()
+      .all();
+    assert.deepEqual(rows, [
+      ['s1', 'a', 2, 14, 10],
+      ['s1', 'b', 7, 7, 8],
+      ['s1', 'c', null, null, 7],
+      ['s1', 'd', 4, 4, 0],
+      ['s2', 'a', 3, 3, 1],
+    ]);
 
-    await assert.rejects(UserProfile.create({ serverId: 's1', userId: 'a' }));
+    assert.throws(() =>
+      insertProfiles(db, [profileRow('s1', 'a', null, null, 0, '2024-05-01 00:00:00.000 +00:00')])
+    );
   });
 });
 
-test('002 rolls back entirely when it fails', async () => {
-  await withDb(async (db) => {
-    await runUpTo(db, '001-baseline');
-    await insertProfiles(db, [
+test('002 rolls back entirely when it fails', () => {
+  withDb((db) => {
+    runUpTo(db, '001-baseline');
+    insertProfiles(db, [
       profileRow('s1', 'a', null, null, 1, '2024-01-01 00:00:00.000 +00:00'),
       profileRow('s1', 'a', null, null, 5, '2024-02-01 00:00:00.000 +00:00'),
     ]);
-    await db.query('CREATE INDEX `user_profiles_server_user_unique` ON `UserProfiles` (serverId)');
+    db.exec('CREATE INDEX `user_profiles_server_user_unique` ON `UserProfiles` (serverId)');
 
-    await assert.rejects(runUpTo(db, '002-userprofile-unique'));
-    assert.equal(await UserProfile.count(), 2);
-  });
-});
-
-test('down migrations remove the added index and columns', async () => {
-  await withDb(async (db) => {
-    await migrate(db);
-    await createMigrator(db).down({ to: '001-baseline' });
-
-    const columns = await columnsOf(db, 'ServerConfigs');
-    assert.ok(!columns.includes('accessFailureCount'));
-    assert.ok(columns.includes('serverId'));
-    const indexes = (await db.getQueryInterface().showIndex('UserProfiles')) as { name: string }[];
-    assert.ok(!indexes.some((i) => i.name === INDEX));
+    assert.throws(() => runUpTo(db, '002-userprofile-unique'));
+    assert.equal(allRows(db, 'SELECT * FROM `UserProfiles`').length, 2);
+    assert.deepEqual(allRows(db, 'SELECT name FROM `SequelizeMeta`'), [{ name: '001-baseline' }]);
   });
 });

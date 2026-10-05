@@ -1,23 +1,23 @@
 import assert from 'node:assert/strict';
 import { after, afterEach, before, beforeEach, test } from 'node:test';
 import { Collection, MessageFlags } from 'discord.js';
-import type { Sequelize } from 'sequelize-typescript';
-import { createTestDb } from './helpers/db';
+import type { DatabaseHandle } from '../src/client/database/db';
+import { closeTestDb, createTestDb } from './helpers/db';
 import type { NovaClient } from '../src/client/NovaClient';
 import { Command, defineCommand } from '../src/framework/command';
 import interactionCreate from '../src/events/interactionCreate';
 import { fakeInteraction } from './fakes/interaction';
 
-let db: Sequelize;
+let db: DatabaseHandle;
 const original = { log: console.log, warn: console.warn, error: console.error };
 let errors: string[];
 
 before(async () => {
-  db = await createTestDb();
+  db = createTestDb();
 });
 
 after(async () => {
-  await db.close();
+  closeTestDb(db);
 });
 
 beforeEach(() => {

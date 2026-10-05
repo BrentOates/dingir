@@ -1,25 +1,24 @@
 import assert from 'node:assert/strict';
 import { after, before, beforeEach, test } from 'node:test';
-import type { Sequelize } from 'sequelize-typescript';
-import { ServerConfig } from '../../src/client/models/ServerConfig';
+import type { DatabaseHandle } from '../../src/client/database/db';
 import guildMemberAdd from '../../src/events/guildMemberAdd';
 import guildMemberUpdate from '../../src/events/guildMemberUpdate';
-import { createTestDb } from '../helpers/db';
+import { clearConfigs, closeTestDb, createConfig, createTestDb } from '../helpers/db';
 import { fakeOnboarding, role } from '../fakes/onboarding';
 
-let db: Sequelize;
+let db: DatabaseHandle;
 
 before(async () => {
-  db = await createTestDb();
+  db = createTestDb();
 });
 
 after(async () => {
-  await db.close();
+  closeTestDb(db);
 });
 
 beforeEach(async () => {
-  await ServerConfig.destroy({ where: {} });
-  await ServerConfig.create({ serverId: 'guild-1', guestRoleIds: 'r1', auditChannelId: 'audit-1' });
+  clearConfigs();
+  await createConfig({ serverId: 'guild-1', guestRoleIds: 'r1', auditChannelId: 'audit-1' });
 });
 
 const update = async (oldState: Record<string, unknown>, newPending: boolean | null) => {

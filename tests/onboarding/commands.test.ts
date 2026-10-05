@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
-import { test } from 'node:test';
+import { after, before, beforeEach, test } from 'node:test';
+import type { DatabaseHandle } from '../../src/client/database/db';
 import { Handler } from '../../src/framework/command';
 import NewRolesGroup from '../../src/slash-commands/Config/Subcommands/newroles';
 import WelcomeGroup, {
@@ -8,16 +9,27 @@ import WelcomeGroup, {
   validateWelcomeMessage,
 } from '../../src/slash-commands/Config/Subcommands/welcome';
 import { fakeCommandContext, fakeOnboarding, role } from '../fakes/onboarding';
+import { clearConfigs, closeTestDb, createConfig, createTestDb } from '../helpers/db';
+
+let db: DatabaseHandle;
+
+before(() => {
+  db = createTestDb();
+});
+
+after(() => {
+  closeTestDb(db);
+});
+
+beforeEach(() => {
+  clearConfigs();
+});
 
 const handler = (group: typeof NewRolesGroup, name: string): Handler =>
   group.subcommands.find((s) => s.name === name)!.run;
 
 test('newroles set rejects @everyone, managed and too-high roles and saves nothing', async () => {
   const env = fakeOnboarding({ roles: [role('ok', 1), role('m', 1, true), role('hi', 10)] });
-  let saved = false;
-  env.config.save = (async () => {
-    saved = true;
-  }) as never;
   const { ctx, replies } = fakeCommandContext(
     {
       'role-one': env.guild.roles.cache.get('ok'),
@@ -27,25 +39,26 @@ test('newroles set rejects @everyone, managed and too-high roles and saves nothi
     env
   );
   await handler(NewRolesGroup, 'set')(ctx);
-  assert.equal(saved, false);
+  assert.equal(ctx.config, env.config);
   assert.match(replies[0].content, /managed/);
   assert.match(replies[0].content, /highest role/);
 
   const everyone = fakeCommandContext({ 'role-one': { id: 'guild-1', name: '@everyone', position: 0 } }, env);
   await handler(NewRolesGroup, 'set')(everyone.ctx);
   assert.match(everyone.replies[0].content, /everyone/);
-  assert.equal(saved, false);
+  assert.equal(everyone.ctx.config, env.config);
 });
 
 test('newroles set saves valid roles, dedupes, and audits', async () => {
   const env = fakeOnboarding({ roles: [role('a', 1), role('b', 2)] });
+  createConfig({ serverId: 'guild-1', auditChannelId: 'audit-1' });
   const a = env.guild.roles.cache.get('a');
   const { ctx, replies } = fakeCommandContext(
     { 'role-one': a, 'role-two': env.guild.roles.cache.get('b'), 'role-three': a },
     env
   );
   await handler(NewRolesGroup, 'set')(ctx);
-  assert.equal(env.config.guestRoleIds, 'a,b');
+  assert.equal(ctx.config.guestRoleIds, 'a,b');
   assert.equal(env.auditSends.length, 1);
   assert.match(replies[0].content, /set to/);
 });
@@ -66,9 +79,10 @@ test('newroles get is read-only: no audit, marks missing roles', async () => {
 
 test('newroles clear nulls roles and audits', async () => {
   const env = fakeOnboarding({ config: { guestRoleIds: 'a' } });
+  createConfig({ serverId: 'guild-1', auditChannelId: 'audit-1', guestRoleIds: 'a' });
   const { ctx } = fakeCommandContext({}, env);
   await handler(NewRolesGroup, 'clear')(ctx);
-  assert.equal(env.config.guestRoleIds, null);
+  assert.equal(ctx.config.guestRoleIds, null);
   assert.equal(env.auditSends.length, 1);
 });
 
@@ -103,16 +117,16 @@ test('welcome set-message, get and clear', async () => {
   const env = fakeOnboarding();
   const set = fakeCommandContext({ text: 'Hi {member}' }, env);
   await handler(WelcomeGroup as never, 'set-message')(set.ctx);
-  assert.equal(env.config.welcomeMessage, 'Hi {member}');
+  assert.equal(set.ctx.config.welcomeMessage, 'Hi {member}');
 
-  const get = fakeCommandContext({}, env);
+  const get = fakeCommandContext({}, { ...env, config: set.ctx.config });
   await handler(WelcomeGroup as never, 'get')(get.ctx);
   assert.match(get.replies[0].content, /Hi \{member\}/);
   assert.match(get.replies[0].content, /Welcome image: Not set/);
 
-  const clear = fakeCommandContext({ which: 'all' }, env);
+  const clear = fakeCommandContext({ which: 'all' }, { ...env, config: set.ctx.config });
   await handler(WelcomeGroup as never, 'clear')(clear.ctx);
-  assert.equal(env.config.welcomeMessage, null);
+  assert.equal(clear.ctx.config.welcomeMessage, null);
 });
 
 test('welcome preview explains why nothing would be sent', async () => {

@@ -1,9 +1,8 @@
 import assert from 'node:assert/strict';
 import { after, before, beforeEach, test } from 'node:test';
 import { DateTime } from 'luxon';
-import type { Sequelize } from 'sequelize-typescript';
-import { ServerConfig } from '../../src/client/models/ServerConfig';
-import { UserProfile } from '../../src/client/models/UserProfile';
+import type { DatabaseHandle } from '../../src/client/database/db';
+import type { ServerConfig } from '../../src/client/database/schema';
 import { notifyBirthdays, refreshCalendar } from '../../src/services/BirthdayService';
 import {
   apiError,
@@ -12,7 +11,7 @@ import {
   fakeMessage,
   fakeTextChannel,
 } from '../fakes/guild';
-import { createTestDb } from '../helpers/db';
+import { clearConfigs, clearProfiles, closeTestDb, createConfig, createProfiles, createTestDb } from '../helpers/db';
 
 console.warn = (): void => undefined;
 console.error = (): void => undefined;
@@ -21,23 +20,23 @@ console.log = (): void => undefined;
 const zone = 'Europe/London';
 const at = (iso: string): DateTime => DateTime.fromISO(iso, { zone });
 
-let db: Sequelize;
+let db: DatabaseHandle;
 
 before(async () => {
-  db = await createTestDb();
+  db = createTestDb();
 });
 
 after(async () => {
-  await db.close();
+  closeTestDb(db);
 });
 
 beforeEach(async () => {
-  await UserProfile.destroy({ where: {} });
-  await ServerConfig.destroy({ where: {} });
+  clearProfiles();
+  clearConfigs();
 });
 
-const makeConfig = (fields: Record<string, unknown> = {}): Promise<ServerConfig> =>
-  ServerConfig.create({ serverId: 'g1', ...fields });
+const makeConfig = (fields: Record<string, unknown> = {}): ServerConfig =>
+  createConfig({ serverId: 'g1', ...fields });
 
 test('refreshCalendar: not configured', async () => {
   const config = await makeConfig();
@@ -69,7 +68,7 @@ test('refreshCalendar: edit failure reports failed', async () => {
 
 test('refreshCalendar: edits with Feb 29 shown on Feb 28 and today counted', async () => {
   const config = await makeConfig({ birthdayCalendarMessagePath: 'c1/m1' });
-  await UserProfile.bulkCreate([
+  await createProfiles([
     { serverId: 'g1', userId: 'leap', birthdayMonth: 2, birthdayDay: 29 },
     { serverId: 'g1', userId: 'today', birthdayMonth: 2, birthdayDay: 27 },
     { serverId: 'g1', userId: 'nobday' },
@@ -99,7 +98,7 @@ test('refreshCalendar: empty state', async () => {
 
 test('notifyBirthdays: skips departed members and mentions only present ones', async () => {
   await makeConfig({ announcementsChannelId: 'ann' });
-  await UserProfile.bulkCreate([
+  await createProfiles([
     { serverId: 'g1', userId: 'here', birthdayMonth: 6, birthdayDay: 1 },
     { serverId: 'g1', userId: 'gone', birthdayMonth: 6, birthdayDay: 1 },
     { serverId: 'g1', userId: 'other', birthdayMonth: 6, birthdayDay: 2 },
@@ -116,7 +115,7 @@ test('notifyBirthdays: skips departed members and mentions only present ones', a
 
 test('notifyBirthdays: Feb 29 is celebrated on Feb 28 in a non-leap year', async () => {
   await makeConfig({ announcementsChannelId: 'ann' });
-  await UserProfile.bulkCreate([
+  await createProfiles([
     { serverId: 'g1', userId: 'a', birthdayMonth: 2, birthdayDay: 29 },
     { serverId: 'g1', userId: 'b', birthdayMonth: 2, birthdayDay: 28 },
   ]);
@@ -136,7 +135,7 @@ test('notifyBirthdays: Feb 29 is celebrated on Feb 28 in a non-leap year', async
 
 test('notifyBirthdays: no announcements channel sends nothing', async () => {
   await makeConfig();
-  await UserProfile.create({ serverId: 'g1', userId: 'a', birthdayMonth: 6, birthdayDay: 1 });
+  await createProfiles([{ serverId: 'g1', userId: 'a', birthdayMonth: 6, birthdayDay: 1 }]);
   const channel = fakeTextChannel('ann');
   const guild = fakeGuildWithMembers({ id: 'g1', memberIds: ['a'], channels: [channel] });
   await notifyBirthdays(fakeClient({ guilds: { g1: guild } }), { zone, now: at('2027-06-01T09:00') });

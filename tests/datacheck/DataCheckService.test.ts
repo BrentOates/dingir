@@ -1,11 +1,10 @@
 import assert from 'node:assert/strict';
 import { after, before, beforeEach, test } from 'node:test';
-import type { Sequelize } from 'sequelize-typescript';
-import { ServerConfig } from '../../src/client/models/ServerConfig';
-import { UserProfile } from '../../src/client/models/UserProfile';
+import type { DatabaseHandle } from '../../src/client/database/db';
+import type { ServerConfig } from '../../src/client/database/schema';
 import { run } from '../../src/services/DataCheckService';
 import { apiError, fakeClient, fakeGuildWithMembers } from '../fakes/guild';
-import { createTestDb } from '../helpers/db';
+import { clearConfigs, clearProfiles, closeTestDb, allProfiles, countProfiles, createConfig, createConfigs, createProfiles, createTestDb, findConfig } from '../helpers/db';
 
 console.warn = (): void => undefined;
 console.error = (): void => undefined;
@@ -15,36 +14,36 @@ const policy = { minFailures: 3, graceDays: 7 };
 const DAY = 24 * 60 * 60 * 1000;
 const t0 = new Date('2027-01-01T00:00:00Z');
 
-let db: Sequelize;
+let db: DatabaseHandle;
 
 before(async () => {
-  db = await createTestDb();
+  db = createTestDb();
 });
 
 after(async () => {
-  await db.close();
+  closeTestDb(db);
 });
 
 beforeEach(async () => {
-  await UserProfile.destroy({ where: {} });
-  await ServerConfig.destroy({ where: {} });
+  clearProfiles();
+  clearConfigs();
 });
 
-const reload = (id: string): Promise<ServerConfig | null> => ServerConfig.findByPk(id);
+const reload = (id: string): ServerConfig | null => findConfig(id);
 
 test('transient errors never purge or change counters', async () => {
-  await ServerConfig.create({ serverId: 'g1', accessFailureCount: 5, firstAccessFailureAt: t0 });
-  await UserProfile.create({ serverId: 'g1', userId: 'a' });
+  await createConfig({ serverId: 'g1', accessFailureCount: 5, firstAccessFailureAt: t0 });
+  await createProfiles([{ serverId: 'g1', userId: 'a' }]);
   const client = fakeClient({ guilds: { g1: apiError(500) } });
   await run(client, new Date(t0.getTime() + 30 * DAY), policy);
   const config = await reload('g1');
   assert.equal(config?.accessFailureCount, 5);
-  assert.equal(await UserProfile.count(), 1);
+  assert.equal(await countProfiles(), 1);
 });
 
 test('gone guild is purged only after min failures and grace period', async () => {
-  await ServerConfig.create({ serverId: 'g1' });
-  await UserProfile.create({ serverId: 'g1', userId: 'a' });
+  await createConfig({ serverId: 'g1' });
+  await createProfiles([{ serverId: 'g1', userId: 'a' }]);
   const client = fakeClient({ guilds: { g1: apiError(50001) } });
 
   await run(client, t0, policy);
@@ -52,21 +51,21 @@ test('gone guild is purged only after min failures and grace period', async () =
   await run(client, new Date(t0.getTime() + 6 * DAY), policy);
   const config = await reload('g1');
   assert.equal(config?.accessFailureCount, 3);
-  assert.equal(await UserProfile.count(), 1);
+  assert.equal(await countProfiles(), 1);
 
   await run(client, new Date(t0.getTime() + 7 * DAY), policy);
   assert.equal(await reload('g1'), null);
-  assert.equal(await UserProfile.count(), 0);
+  assert.equal(await countProfiles(), 0);
 });
 
 test('guild missing from the client entirely counts as gone', async () => {
-  await ServerConfig.create({ serverId: 'g1' });
+  await createConfig({ serverId: 'g1' });
   await run(fakeClient(), t0, policy);
   assert.equal((await reload('g1'))?.accessFailureCount, 1);
 });
 
 test('a successful fetch resets counters', async () => {
-  await ServerConfig.create({ serverId: 'g1', accessFailureCount: 2, firstAccessFailureAt: t0 });
+  await createConfig({ serverId: 'g1', accessFailureCount: 2, firstAccessFailureAt: t0 });
   const guild = fakeGuildWithMembers({ id: 'g1', memberIds: ['a'] });
   await run(fakeClient({ guilds: { g1: guild } }), new Date(t0.getTime() + DAY), policy);
   const config = await reload('g1');
@@ -75,8 +74,8 @@ test('a successful fetch resets counters', async () => {
 });
 
 test('profiles of departed members are deleted, including non-birthday ones', async () => {
-  await ServerConfig.create({ serverId: 'g1' });
-  await UserProfile.bulkCreate([
+  await createConfig({ serverId: 'g1' });
+  await createProfiles([
     { serverId: 'g1', userId: 'here' },
     { serverId: 'g1', userId: 'gone-plain' },
     { serverId: 'g1', userId: 'gone-bday', birthdayMonth: 1, birthdayDay: 1 },
@@ -84,21 +83,21 @@ test('profiles of departed members are deleted, including non-birthday ones', as
   ]);
   const guild = fakeGuildWithMembers({ id: 'g1', memberIds: ['here'] });
   await run(fakeClient({ guilds: { g1: guild } }), t0, policy);
-  const remaining = (await UserProfile.findAll()).map((p) => `${p.serverId}/${p.userId}`).sort();
+  const remaining = (await allProfiles()).map((p) => `${p.serverId}/${p.userId}`).sort();
   assert.deepEqual(remaining, ['g1/here', 'other/gone-plain']);
 });
 
 test('an empty member list does not wipe profiles', async () => {
-  await ServerConfig.create({ serverId: 'g1' });
-  await UserProfile.create({ serverId: 'g1', userId: 'a' });
+  await createConfig({ serverId: 'g1' });
+  await createProfiles([{ serverId: 'g1', userId: 'a' }]);
   const guild = fakeGuildWithMembers({ id: 'g1', memberIds: [] });
   await run(fakeClient({ guilds: { g1: guild } }), t0, policy);
-  assert.equal(await UserProfile.count(), 1);
+  assert.equal(await countProfiles(), 1);
 });
 
 test('one guild throwing does not stop the others', async () => {
-  await ServerConfig.bulkCreate([{ serverId: 'g1' }, { serverId: 'g2' }]);
-  await UserProfile.bulkCreate([
+  await createConfigs([{ serverId: 'g1' }, { serverId: 'g2' }]);
+  await createProfiles([
     { serverId: 'g1', userId: 'x' },
     { serverId: 'g2', userId: 'x' },
   ]);
@@ -109,6 +108,6 @@ test('one guild throwing does not stop the others', async () => {
   });
   const fine = fakeGuildWithMembers({ id: 'g2', memberIds: ['a'] });
   await run(fakeClient({ guilds: { g1: broken, g2: fine } }), t0, policy);
-  const remaining = (await UserProfile.findAll()).map((p) => p.serverId);
+  const remaining = (await allProfiles()).map((p) => p.serverId);
   assert.deepEqual(remaining, ['g1']);
 });

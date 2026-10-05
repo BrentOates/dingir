@@ -1,8 +1,7 @@
 import assert from 'node:assert/strict';
 import { after, afterEach, before, beforeEach, test } from 'node:test';
 import { Collection } from 'discord.js';
-import type { Sequelize } from 'sequelize-typescript';
-import { UserProfile } from '../../src/client/models/UserProfile';
+import type { DatabaseHandle } from '../../src/client/database/db';
 import guildMemberRemove from '../../src/events/guildMemberRemove';
 import messageCreate from '../../src/events/messageCreate';
 import messageDelete from '../../src/events/messageDelete';
@@ -10,20 +9,19 @@ import messageUpdate from '../../src/events/messageUpdate';
 import { ConfigService } from '../../src/services/ConfigService';
 import { HoneyPotEnforcementService } from '../../src/services/HoneyPotEnforcementService';
 import { UserProfileService } from '../../src/services/UserProfileService';
-import { createTestDb } from '../helpers/db';
+import { clearProfiles, closeTestDb, createTestDb, findProfile } from '../helpers/db';
 import { auditJson, fakeAuditClient, fakeMember, fakeMessage, fakeUser } from '../fakes/messages';
 
-let db: Sequelize;
+let db: DatabaseHandle;
 const original = { log: console.log, warn: console.warn, error: console.error };
 
 before(async () => {
-  db = await createTestDb();
-  const config = await ConfigService.getConfig('guild-1');
-  await config.update({ auditChannelId: 'audit-1', honeyPotChannelId: 'honey-1' });
+  db = createTestDb();
+  await ConfigService.updateConfig('guild-1', { auditChannelId: 'audit-1', honeyPotChannelId: 'honey-1' });
 });
 
 after(async () => {
-  await db.close();
+  closeTestDb(db);
 });
 
 beforeEach(() => {
@@ -35,11 +33,11 @@ beforeEach(() => {
 afterEach(async () => {
   Object.assign(console, original);
   HoneyPotEnforcementService.cancel('guild-1', 'u1');
-  await UserProfile.destroy({ where: {} });
+  clearProfiles();
 });
 
 const score = async (): Promise<number | null> =>
-  (await UserProfile.findOne({ where: { serverId: 'guild-1', userId: 'u1' } }))?.activityScore ?? null;
+  findProfile('u1', 'guild-1')?.activityScore ?? null;
 
 test('honeypot message bans the member and does not count activity', async () => {
   const sink = fakeAuditClient();

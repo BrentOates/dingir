@@ -1,5 +1,5 @@
 import type { Client, GuildMember } from 'discord.js';
-import type { ServerConfig } from '../../src/client/models/ServerConfig';
+import type { ServerConfig } from '../../src/client/database/schema';
 import type { CommandContext } from '../../src/framework/command';
 import { fakeInteraction } from './interaction';
 
@@ -90,7 +90,6 @@ export function fakeOnboarding(opts: FakeOnboardingOptions = {}) {
     welcomeMessageBackgroundUrl: null,
     systemMessagesEnabled: false,
     debug: false,
-    save: async () => undefined,
     ...opts.config,
   } as unknown as ServerConfig;
 

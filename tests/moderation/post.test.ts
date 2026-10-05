@@ -1,24 +1,23 @@
 import assert from 'node:assert/strict';
 import { after, before, beforeEach, test } from 'node:test';
 import { Collection, PermissionFlagsBits } from 'discord.js';
-import type { Sequelize } from 'sequelize-typescript';
+import type { DatabaseHandle } from '../../src/client/database/db';
 import post from '../../src/slash-commands/Admin/post';
 import { ConfigService } from '../../src/services/ConfigService';
-import { createTestDb } from '../helpers/db';
+import { closeTestDb, createTestDb } from '../helpers/db';
 import { fakeInteraction } from '../fakes/interaction';
 import { auditJson, fakeAuditClient, fakeMember, runSlash } from '../fakes/messages';
 
-let db: Sequelize;
+let db: DatabaseHandle;
 const original = { log: console.log, warn: console.warn, error: console.error };
 
 before(async () => {
-  db = await createTestDb();
-  const config = await ConfigService.getConfig('guild-1');
-  await config.update({ auditChannelId: 'audit-1' });
+  db = createTestDb();
+  await ConfigService.updateConfig('guild-1', { auditChannelId: 'audit-1' });
 });
 
 after(async () => {
-  await db.close();
+  closeTestDb(db);
 });
 
 beforeEach(() => {
