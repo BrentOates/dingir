@@ -8,6 +8,7 @@ A Discord bot for the Irkallu server, built with discord.js and TypeScript. Prov
 
 1. Clone the repository
 2. Install dependencies: `npm ci`
+   - Install scripts are disabled via `.npmrc` because the only native dependency (`better-sqlite3`) ships prebuilt binaries; if a future dependency needs a postinstall step, run `npm rebuild <pkg>` or revisit this setting.
 3. Copy `.env.example` to `.env` and fill in `TOKEN` and `CLIENT_ID` from the [Discord Developer Portal](https://discord.com/developers/applications)
 4. Start: `npm start` (Node runs the TypeScript source directly; there is no build step)
 
