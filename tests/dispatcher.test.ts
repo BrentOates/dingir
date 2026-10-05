@@ -193,3 +193,31 @@ test('a UserError thrown after deferring edits the deferred reply', async () => 
   );
   assert.equal(calls[1].payload.content, 'Nope.');
 });
+
+test('defers the reply before looking up the server config', async () => {
+  const order: string[] = [];
+  const spied = createTestApp();
+  const select = spied.db.select.bind(spied.db);
+  spied.db.select = ((...args: Parameters<typeof select>) => {
+    order.push('config');
+    return select(...args);
+  }) as typeof spied.db.select;
+  try {
+    const cmd = defineCommand({
+      name: 'test',
+      description: 'd',
+      defer: 'ephemeral',
+      run: async () => {},
+    });
+    const { interaction } = fakeInteraction();
+    const original = interaction.deferReply.bind(interaction);
+    interaction.deferReply = (async (...args: Parameters<typeof original>) => {
+      order.push('defer');
+      return original(...args);
+    }) as typeof interaction.deferReply;
+    await interactionCreate.run(spied, clientWith(cmd), interaction as never);
+    assert.deepEqual(order.slice(0, 2), ['defer', 'config']);
+  } finally {
+    spied.close();
+  }
+});

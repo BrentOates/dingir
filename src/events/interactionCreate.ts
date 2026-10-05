@@ -34,12 +34,12 @@ export default defineEvent({
 
     const reply = createReply(interaction);
     try {
-      const config = await getConfig(app.db, interaction.guildId);
       if (resolved.defer) {
         await interaction.deferReply(
           resolved.defer === 'ephemeral' ? { flags: MessageFlags.Ephemeral } : {}
         );
       }
+      const config = await getConfig(app.db, interaction.guildId);
       const ctx: CommandContext = {
         app,
         interaction,
