@@ -1,11 +1,11 @@
 import assert from 'node:assert/strict';
 import { after, afterEach, before, beforeEach, test } from 'node:test';
 import { ChannelType } from 'discord.js';
-import type { DatabaseHandle } from '../src/client/database/db';
-import { closeTestDb, clearConfigs, createTestDb } from './helpers/db';
-import type { ServerConfig } from '../src/client/database/schema';
-import { ConfigService } from '../src/services/ConfigService';
-import { CommandContext, defineCommand, Handler } from '../src/framework/command';
+import type { DatabaseHandle } from '../src/client/database/db.ts';
+import { closeTestDb, clearConfigs, createTestDb } from './helpers/db.ts';
+import type { ServerConfig } from '../src/client/database/schema.ts';
+import { ConfigService } from '../src/services/ConfigService.ts';
+import { type CommandContext, defineCommand, type Handler } from '../src/framework/command.ts';
 import {
   booleanSetting,
   booleanText,
@@ -13,8 +13,8 @@ import {
   channelGetText,
   channelSetText,
   channelSetting,
-} from '../src/framework/settings';
-import { fakeGuild, fakeInteraction } from './fakes/interaction';
+} from '../src/framework/settings.ts';
+import { fakeGuild, fakeInteraction } from './fakes/interaction.ts';
 
 let db: DatabaseHandle;
 let config: ServerConfig;

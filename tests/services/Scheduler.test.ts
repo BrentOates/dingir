@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { ScheduleFn, Scheduler } from '../../src/services/Scheduler';
+import { type ScheduleFn, Scheduler } from '../../src/services/Scheduler.ts';
 
 const silence = (): void => {
   console.warn = (): void => undefined;
@@ -85,18 +85,55 @@ test('start throws when the schedule is invalid', () => {
   assert.throws(() => scheduler.start(), /Invalid cron/);
 });
 
-test('stop cancels the job and clears nextInvocation', () => {
+test('stop cancels the job and clears nextInvocation', async () => {
   const fake = fakeSchedule();
   const scheduler = new Scheduler('* * * * *', 'utc', [], fake.fn);
   scheduler.start();
-  scheduler.stop();
+  await scheduler.stop();
   assert.equal(fake.cancelled(), 1);
   assert.equal(scheduler.nextInvocation(), null);
   scheduler.start();
   assert.equal(fake.calls.length, 2);
 });
 
-test('real node-schedule rejects an invalid cron string', () => {
+test('real croner schedule rejects an invalid cron string', () => {
   const scheduler = new Scheduler('not a cron', 'utc', []);
   assert.throws(() => scheduler.start());
+});
+
+test('stop during a run waits for it to finish', async () => {
+  let release: () => void = () => undefined;
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  let finished = false;
+  const scheduler = new Scheduler('* * * * *', 'utc', [
+    {
+      name: 'slow',
+      run: async () => {
+        await gate;
+        finished = true;
+      },
+    },
+  ]);
+  scheduler.start();
+  const run = scheduler.runNow();
+  let stopped = false;
+  const stopping = scheduler.stop().then(() => {
+    stopped = true;
+  });
+  await new Promise((resolve) => setImmediate(resolve));
+  assert.equal(stopped, false);
+  release();
+  await stopping;
+  await run;
+  assert.equal(finished, true);
+  assert.equal(stopped, true);
+});
+
+test('real croner schedule accepts a valid cron and reports the next run', async () => {
+  const scheduler = new Scheduler('0 9 * * *', 'Europe/London', []);
+  scheduler.start();
+  assert.ok(scheduler.nextInvocation() instanceof Date);
+  await scheduler.stop();
 });

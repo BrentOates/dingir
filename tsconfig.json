@@ -1,20 +1,18 @@
 {
 	"compilerOptions": {
 		"lib": ["ESNext"],
-		"module": "NodeNext",
-		"moduleResolution": "NodeNext",
+		"types": ["node"],
+		"module": "nodenext",
+		"moduleResolution": "nodenext",
 		"target": "ES2024",
+		"noEmit": true,
 		"strict": false,
 		"strictNullChecks": true,
-		"outDir": "dist",
-		"sourceMap": true,
-		"esModuleInterop": true,
-		"allowSyntheticDefaultImports": true,
-		"skipLibCheck": true,
-		"skipDefaultLibCheck": true,
+		"erasableSyntaxOnly": true,
+		"verbatimModuleSyntax": true,
+		"allowImportingTsExtensions": true,
 		"resolveJsonModule": true,
-		"importHelpers": true,
+		"skipLibCheck": true
 	},
-	"include": ["src"],
-	"exclude": ["node_modules", "**/*.spec.ts"]
+	"include": ["src", "tests"]
 }

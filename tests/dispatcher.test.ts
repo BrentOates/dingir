@@ -1,12 +1,12 @@
 import assert from 'node:assert/strict';
 import { after, afterEach, before, beforeEach, test } from 'node:test';
 import { Collection, MessageFlags } from 'discord.js';
-import type { DatabaseHandle } from '../src/client/database/db';
-import { closeTestDb, createTestDb } from './helpers/db';
-import type { NovaClient } from '../src/client/NovaClient';
-import { Command, defineCommand } from '../src/framework/command';
-import interactionCreate from '../src/events/interactionCreate';
-import { fakeInteraction } from './fakes/interaction';
+import type { DatabaseHandle } from '../src/client/database/db.ts';
+import { closeTestDb, createTestDb } from './helpers/db.ts';
+import type { NovaClient } from '../src/client/NovaClient.ts';
+import { type Command, defineCommand } from '../src/framework/command.ts';
+import interactionCreate from '../src/events/interactionCreate.ts';
+import { fakeInteraction } from './fakes/interaction.ts';
 
 let db: DatabaseHandle;
 const original = { log: console.log, warn: console.warn, error: console.error };

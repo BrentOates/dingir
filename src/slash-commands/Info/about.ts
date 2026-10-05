@@ -1,8 +1,8 @@
 import { EmbedBuilder } from 'discord.js';
-import { defineCommand } from '../../framework/command';
-import { EmbedColours } from '../../resources/EmbedColours';
-import { toRepoUrl, formatUptime } from '../../utilities/format';
-import * as packageJson from '../../../package.json';
+import { defineCommand } from '../../framework/command.ts';
+import { EmbedColours } from '../../resources/EmbedColours.ts';
+import { toRepoUrl, formatUptime } from '../../utilities/format.ts';
+import packageJson from '../../../package.json' with { type: 'json' };
 
 export default defineCommand({
   name: 'about',

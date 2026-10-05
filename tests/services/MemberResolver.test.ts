@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { Guild, GuildMember } from 'discord.js';
-import { resolveMember, resolveTextChannel } from '../../src/services/MemberResolver';
+import { resolveMember, resolveTextChannel } from '../../src/services/MemberResolver.ts';
 
 const guildWith = (cached: Record<string, unknown>, fetch: (id: string) => Promise<unknown>): Guild =>
   ({

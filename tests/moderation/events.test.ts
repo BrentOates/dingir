@@ -1,16 +1,16 @@
 import assert from 'node:assert/strict';
 import { after, afterEach, before, beforeEach, test } from 'node:test';
 import { Collection } from 'discord.js';
-import type { DatabaseHandle } from '../../src/client/database/db';
-import guildMemberRemove from '../../src/events/guildMemberRemove';
-import messageCreate from '../../src/events/messageCreate';
-import messageDelete from '../../src/events/messageDelete';
-import messageUpdate from '../../src/events/messageUpdate';
-import { ConfigService } from '../../src/services/ConfigService';
-import { HoneyPotEnforcementService } from '../../src/services/HoneyPotEnforcementService';
-import { UserProfileService } from '../../src/services/UserProfileService';
-import { clearProfiles, closeTestDb, createTestDb, findProfile } from '../helpers/db';
-import { auditJson, fakeAuditClient, fakeMember, fakeMessage, fakeUser } from '../fakes/messages';
+import type { DatabaseHandle } from '../../src/client/database/db.ts';
+import guildMemberRemove from '../../src/events/guildMemberRemove.ts';
+import messageCreate from '../../src/events/messageCreate.ts';
+import messageDelete from '../../src/events/messageDelete.ts';
+import messageUpdate from '../../src/events/messageUpdate.ts';
+import { ConfigService } from '../../src/services/ConfigService.ts';
+import { HoneyPotEnforcementService } from '../../src/services/HoneyPotEnforcementService.ts';
+import { UserProfileService } from '../../src/services/UserProfileService.ts';
+import { clearProfiles, closeTestDb, createTestDb, findProfile } from '../helpers/db.ts';
+import { auditJson, fakeAuditClient, fakeMember, fakeMessage, fakeUser } from '../fakes/messages.ts';
 
 let db: DatabaseHandle;
 const original = { log: console.log, warn: console.warn, error: console.error };

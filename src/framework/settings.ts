@@ -1,6 +1,6 @@
-import { ApplicationCommandOptionAllowedChannelTypes, Guild } from 'discord.js';
-import { defineSubcommandGroup, SubcommandGroupDefinition } from './command';
-import { ConfigService } from '../services/ConfigService';
+import { type ApplicationCommandOptionAllowedChannelTypes, Guild } from 'discord.js';
+import { defineSubcommandGroup, type SubcommandGroupDefinition } from './command.ts';
+import { ConfigService } from '../services/ConfigService.ts';
 
 export type ChannelField = 'auditChannelId' | 'announcementsChannelId' | 'honeyPotChannelId';
 export type BooleanField = 'debug' | 'systemMessagesEnabled';

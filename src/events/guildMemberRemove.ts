@@ -1,10 +1,10 @@
-import { defineEvent } from '../framework/event';
-import { EmbedColours } from '../resources/EmbedColours';
-import { AuditEmbed } from '../services/AuditEmbed';
-import { sendAudit } from '../services/AuditService';
-import { ConfigService } from '../services/ConfigService';
-import { HoneyPotEnforcementService } from '../services/HoneyPotEnforcementService';
-import { UserProfileService } from '../services/UserProfileService';
+import { defineEvent } from '../framework/event.ts';
+import { EmbedColours } from '../resources/EmbedColours.ts';
+import { AuditEmbed } from '../services/AuditEmbed.ts';
+import { sendAudit } from '../services/AuditService.ts';
+import { ConfigService } from '../services/ConfigService.ts';
+import { HoneyPotEnforcementService } from '../services/HoneyPotEnforcementService.ts';
+import { UserProfileService } from '../services/UserProfileService.ts';
 
 export default defineEvent({
   name: 'guildMemberRemove',

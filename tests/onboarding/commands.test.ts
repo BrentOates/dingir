@@ -1,15 +1,15 @@
 import assert from 'node:assert/strict';
 import { after, before, beforeEach, test } from 'node:test';
-import type { DatabaseHandle } from '../../src/client/database/db';
-import { Handler } from '../../src/framework/command';
-import NewRolesGroup from '../../src/slash-commands/Config/Subcommands/newroles';
+import type { DatabaseHandle } from '../../src/client/database/db.ts';
+import type { Handler } from '../../src/framework/command.ts';
+import NewRolesGroup from '../../src/slash-commands/Config/Subcommands/newroles.ts';
 import WelcomeGroup, {
   MAX_WELCOME_MESSAGE_LENGTH,
   validateImageUrl,
   validateWelcomeMessage,
-} from '../../src/slash-commands/Config/Subcommands/welcome';
-import { fakeCommandContext, fakeOnboarding, role } from '../fakes/onboarding';
-import { clearConfigs, closeTestDb, createConfig, createTestDb } from '../helpers/db';
+} from '../../src/slash-commands/Config/Subcommands/welcome.ts';
+import { fakeCommandContext, fakeOnboarding, role } from '../fakes/onboarding.ts';
+import { clearConfigs, closeTestDb, createConfig, createTestDb } from '../helpers/db.ts';
 
 let db: DatabaseHandle;
 

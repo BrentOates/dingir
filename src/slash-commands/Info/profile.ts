@@ -1,9 +1,9 @@
 import { EmbedBuilder } from 'discord.js';
 import { DateTime } from 'luxon';
-import { defineCommand } from '../../framework/command';
-import { EmbedColours } from '../../resources/EmbedColours';
-import { resolveMember } from '../../services/MemberResolver';
-import { UserProfileService } from '../../services/UserProfileService';
+import { defineCommand } from '../../framework/command.ts';
+import { EmbedColours } from '../../resources/EmbedColours.ts';
+import { resolveMember } from '../../services/MemberResolver.ts';
+import { UserProfileService } from '../../services/UserProfileService.ts';
 
 export default defineCommand({
   name: 'profile',

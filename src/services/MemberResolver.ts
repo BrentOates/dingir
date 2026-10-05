@@ -1,4 +1,4 @@
-import { Guild, GuildMember, GuildTextBasedChannel, User } from 'discord.js';
+import { Guild, GuildMember, type GuildTextBasedChannel, User } from 'discord.js';
 
 const UNKNOWN_MEMBER = 10007;
 const UNKNOWN_USER = 10013;

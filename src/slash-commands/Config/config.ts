@@ -1,10 +1,10 @@
 import { ChannelType } from 'discord.js';
-import { defineCommand } from '../../framework/command';
-import { booleanSetting, channelSetting } from '../../framework/settings';
-import BirthdaysGroup from './Subcommands/birthdays';
-import DebugGroup from './Subcommands/debug';
-import NewRolesGroup from './Subcommands/newroles';
-import WelcomeGroup from './Subcommands/welcome';
+import { defineCommand } from '../../framework/command.ts';
+import { booleanSetting, channelSetting } from '../../framework/settings.ts';
+import BirthdaysGroup from './Subcommands/birthdays.ts';
+import DebugGroup from './Subcommands/debug.ts';
+import NewRolesGroup from './Subcommands/newroles.ts';
+import WelcomeGroup from './Subcommands/welcome.ts';
 
 const textChannels = [ChannelType.GuildText, ChannelType.GuildAnnouncement] as const;
 

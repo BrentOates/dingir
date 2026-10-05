@@ -1,12 +1,12 @@
 import assert from 'node:assert/strict';
 import { after, before, beforeEach, test } from 'node:test';
 import { Collection, PermissionFlagsBits } from 'discord.js';
-import type { DatabaseHandle } from '../../src/client/database/db';
-import post from '../../src/slash-commands/Admin/post';
-import { ConfigService } from '../../src/services/ConfigService';
-import { closeTestDb, createTestDb } from '../helpers/db';
-import { fakeInteraction } from '../fakes/interaction';
-import { auditJson, fakeAuditClient, fakeMember, runSlash } from '../fakes/messages';
+import type { DatabaseHandle } from '../../src/client/database/db.ts';
+import post from '../../src/slash-commands/Admin/post.ts';
+import { ConfigService } from '../../src/services/ConfigService.ts';
+import { closeTestDb, createTestDb } from '../helpers/db.ts';
+import { fakeInteraction } from '../fakes/interaction.ts';
+import { auditJson, fakeAuditClient, fakeMember, runSlash } from '../fakes/messages.ts';
 
 let db: DatabaseHandle;
 const original = { log: console.log, warn: console.warn, error: console.error };

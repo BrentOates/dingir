@@ -1,25 +1,25 @@
 import {
-  APIEmbed,
+  type APIEmbed,
   Attachment,
   AttachmentBuilder,
-  AttachmentPayload,
+  type AttachmentPayload,
   ChatInputCommandInteraction,
   EmbedBuilder,
   Guild,
   GuildMember,
   InteractionContextType,
-  InteractionEditReplyOptions,
-  InteractionReplyOptions,
+  type InteractionEditReplyOptions,
+  type InteractionReplyOptions,
   MessageFlags,
-  MessageMentionOptions,
+  type MessageMentionOptions,
   PermissionFlagsBits,
-  RESTPostAPIChatInputApplicationCommandsJSONBody,
+  type RESTPostAPIChatInputApplicationCommandsJSONBody,
   SlashCommandBuilder,
-  SlashCommandOptionsOnlyBuilder,
+  type SlashCommandOptionsOnlyBuilder,
   SlashCommandSubcommandBuilder,
   SlashCommandSubcommandGroupBuilder,
 } from 'discord.js';
-import type { ServerConfig } from '../client/database/schema';
+import type { ServerConfig } from '../client/database/schema.ts';
 
 export type DeferMode = 'ephemeral' | 'public' | false;
 

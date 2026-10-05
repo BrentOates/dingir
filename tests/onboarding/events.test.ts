@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict';
 import { after, before, beforeEach, test } from 'node:test';
-import type { DatabaseHandle } from '../../src/client/database/db';
-import guildMemberAdd from '../../src/events/guildMemberAdd';
-import guildMemberUpdate from '../../src/events/guildMemberUpdate';
-import { clearConfigs, closeTestDb, createConfig, createTestDb } from '../helpers/db';
-import { fakeOnboarding, role } from '../fakes/onboarding';
+import type { DatabaseHandle } from '../../src/client/database/db.ts';
+import guildMemberAdd from '../../src/events/guildMemberAdd.ts';
+import guildMemberUpdate from '../../src/events/guildMemberUpdate.ts';
+import { clearConfigs, closeTestDb, createConfig, createTestDb } from '../helpers/db.ts';
+import { fakeOnboarding, role } from '../fakes/onboarding.ts';
 
 let db: DatabaseHandle;
 

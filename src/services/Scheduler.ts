@@ -1,5 +1,5 @@
-import { scheduleJob } from 'node-schedule';
-import { Logger } from '../utilities/Logger';
+import { Cron } from 'croner';
+import { Logger } from '../utilities/Logger.ts';
 
 export interface SchedulerTask {
   name: string;
@@ -16,18 +16,34 @@ export type ScheduleFn = (
   callback: () => void
 ) => ScheduledJobLike | null;
 
-const defaultScheduleFn: ScheduleFn = (spec, callback) => scheduleJob(spec, callback);
+const defaultScheduleFn: ScheduleFn = (spec, callback) => {
+  try {
+    const job = new Cron(spec.rule, { timezone: spec.tz, protect: true }, callback);
+    return { cancel: () => job.stop(), nextInvocation: () => job.nextRun() };
+  } catch {
+    return null;
+  }
+};
 
 export class Scheduler {
   private job: ScheduledJobLike | null = null;
-  private running = false;
+  private current: Promise<void> | null = null;
+  private readonly cron: string;
+  private readonly timezone: string;
+  private readonly tasks: SchedulerTask[];
+  private readonly scheduleFn: ScheduleFn;
 
   public constructor(
-    private readonly cron: string,
-    private readonly timezone: string,
-    private readonly tasks: SchedulerTask[],
-    private readonly scheduleFn: ScheduleFn = defaultScheduleFn
-  ) {}
+    cron: string,
+    timezone: string,
+    tasks: SchedulerTask[],
+    scheduleFn: ScheduleFn = defaultScheduleFn
+  ) {
+    this.cron = cron;
+    this.timezone = timezone;
+    this.tasks = tasks;
+    this.scheduleFn = scheduleFn;
+  }
 
   public start(): void {
     if (this.job) {
@@ -43,27 +59,34 @@ export class Scheduler {
     this.job = job;
   }
 
-  public stop(): void {
+  /** Cancels future runs and waits for any in-flight run to finish. */
+  public async stop(): Promise<void> {
     this.job?.cancel();
     this.job = null;
+    await this.current;
   }
 
   public async runNow(): Promise<void> {
-    if (this.running) {
+    if (this.current) {
       Logger.warn('Scheduled run skipped; previous run still in progress');
       return;
     }
-    this.running = true;
+    const run = this.runTasks();
+    this.current = run;
     try {
-      for (const task of this.tasks) {
-        try {
-          await task.run();
-        } catch (error) {
-          Logger.error('Scheduled task failed', { task: task.name }, error);
-        }
-      }
+      await run;
     } finally {
-      this.running = false;
+      this.current = null;
+    }
+  }
+
+  private async runTasks(): Promise<void> {
+    for (const task of this.tasks) {
+      try {
+        await task.run();
+      } catch (error) {
+        Logger.error('Scheduled task failed', { task: task.name }, error);
+      }
     }
   }
 

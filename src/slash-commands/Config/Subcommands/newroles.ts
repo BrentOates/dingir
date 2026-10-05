@@ -1,10 +1,10 @@
 import { Role } from 'discord.js';
-import { CommandContext, defineSubcommandGroup } from '../../../framework/command';
-import { EmbedColours } from '../../../resources/EmbedColours';
-import { AuditEmbed } from '../../../services/AuditEmbed';
-import { sendAudit } from '../../../services/AuditService';
-import { ConfigService } from '../../../services/ConfigService';
-import { parseRoleIds, roleProblem } from '../../../services/OnboardingService';
+import { type CommandContext, defineSubcommandGroup } from '../../../framework/command.ts';
+import { EmbedColours } from '../../../resources/EmbedColours.ts';
+import { AuditEmbed } from '../../../services/AuditEmbed.ts';
+import { sendAudit } from '../../../services/AuditService.ts';
+import { ConfigService } from '../../../services/ConfigService.ts';
+import { parseRoleIds, roleProblem } from '../../../services/OnboardingService.ts';
 
 const ROLE_OPTIONS = ['role-one', 'role-two', 'role-three'] as const;
 const NO_MENTIONS = { parse: [] };

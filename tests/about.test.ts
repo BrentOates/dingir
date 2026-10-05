@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { toRepoUrl, formatUptime } from '../src/utilities/format';
+import { toRepoUrl, formatUptime } from '../src/utilities/format.ts';
 
 test('toRepoUrl', async (t) => {
   await t.test('removes git+ prefix', () => {

@@ -1,7 +1,7 @@
-import { defineEvent } from '../framework/event';
-import { complete, completedScreening } from '../services/OnboardingService';
-import { ConfigService } from '../services/ConfigService';
-import { Logger } from '../utilities/Logger';
+import { defineEvent } from '../framework/event.ts';
+import { complete, completedScreening } from '../services/OnboardingService.ts';
+import { ConfigService } from '../services/ConfigService.ts';
+import { Logger } from '../utilities/Logger.ts';
 
 export default defineEvent({
   name: 'guildMemberUpdate',

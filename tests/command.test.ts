@@ -2,12 +2,12 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { MessageFlags } from 'discord.js';
 import {
-  CommandContext,
+  type CommandContext,
   defineCommand,
   defineSubcommandGroup,
   createReply,
-} from '../src/framework/command';
-import { fakeInteraction } from './fakes/interaction';
+} from '../src/framework/command.ts';
+import { fakeInteraction } from './fakes/interaction.ts';
 
 const noop = async () => {};
 

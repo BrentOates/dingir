@@ -1,4 +1,4 @@
-import { ColorResolvable, EmbedBuilder, GuildMember, User } from 'discord.js';
+import { type ColorResolvable, EmbedBuilder, GuildMember, User } from 'discord.js';
 
 const LIMITS = {
   title: 256,

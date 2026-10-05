@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict';
 import { after, before, beforeEach, test } from 'node:test';
 import { count, eq } from 'drizzle-orm';
-import type { DatabaseHandle } from '../../src/client/database/db';
-import { serverConfigs, userProfiles } from '../../src/client/database/schema';
-import { ConfigService } from '../../src/services/ConfigService';
-import { closeTestDb, createTestDb } from '../helpers/db';
+import type { DatabaseHandle } from '../../src/client/database/db.ts';
+import { serverConfigs, userProfiles } from '../../src/client/database/schema.ts';
+import { ConfigService } from '../../src/services/ConfigService.ts';
+import { closeTestDb, createTestDb } from '../helpers/db.ts';
 
 let handle: DatabaseHandle;
 

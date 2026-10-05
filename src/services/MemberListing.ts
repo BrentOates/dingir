@@ -1,6 +1,6 @@
 import { AttachmentBuilder, GuildMember } from 'discord.js';
 import { DateTime } from 'luxon';
-import type { ReplyOptions } from '../framework/command';
+import type { ReplyOptions } from '../framework/command.ts';
 
 export const INLINE_LIMIT = 2000;
 const DAY_MS = 24 * 60 * 60 * 1000;

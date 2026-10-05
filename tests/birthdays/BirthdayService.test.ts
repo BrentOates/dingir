@@ -1,17 +1,17 @@
 import assert from 'node:assert/strict';
 import { after, before, beforeEach, test } from 'node:test';
 import { DateTime } from 'luxon';
-import type { DatabaseHandle } from '../../src/client/database/db';
-import type { ServerConfig } from '../../src/client/database/schema';
-import { notifyBirthdays, refreshCalendar } from '../../src/services/BirthdayService';
+import type { DatabaseHandle } from '../../src/client/database/db.ts';
+import type { ServerConfig } from '../../src/client/database/schema.ts';
+import { notifyBirthdays, refreshCalendar } from '../../src/services/BirthdayService.ts';
 import {
   apiError,
   fakeClient,
   fakeGuildWithMembers,
   fakeMessage,
   fakeTextChannel,
-} from '../fakes/guild';
-import { clearConfigs, clearProfiles, closeTestDb, createConfig, createProfiles, createTestDb } from '../helpers/db';
+} from '../fakes/guild.ts';
+import { clearConfigs, clearProfiles, closeTestDb, createConfig, createProfiles, createTestDb } from '../helpers/db.ts';
 
 console.warn = (): void => undefined;
 console.error = (): void => undefined;

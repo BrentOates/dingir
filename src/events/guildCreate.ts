@@ -1,6 +1,6 @@
-import { defineEvent } from '../framework/event';
-import { ConfigService } from '../services/ConfigService';
-import { Logger } from '../utilities/Logger';
+import { defineEvent } from '../framework/event.ts';
+import { ConfigService } from '../services/ConfigService.ts';
+import { Logger } from '../utilities/Logger.ts';
 
 export default defineEvent({
   name: 'guildCreate',

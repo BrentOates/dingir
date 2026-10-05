@@ -9,8 +9,7 @@ A Discord bot for the Irkallu server, built with discord.js and TypeScript. Prov
 1. Clone the repository
 2. Install dependencies: `npm ci`
 3. Copy `.env.example` to `.env` and fill in `TOKEN` and `CLIENT_ID` from the [Discord Developer Portal](https://discord.com/developers/applications)
-4. Build: `npm run build`
-5. Start: `npm start`
+4. Start: `npm start` (Node runs the TypeScript source directly; there is no build step)
 
 For watch mode during development:
 ```bash
@@ -20,6 +19,7 @@ npm run dev
 Test and lint:
 ```bash
 npm test        # Run the test suite
+npm run typecheck  # Type-check src and tests
 npm run lint    # Check code style and errors
 ```
 

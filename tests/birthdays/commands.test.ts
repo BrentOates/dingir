@@ -1,12 +1,12 @@
 import assert from 'node:assert/strict';
 import { after, before, beforeEach, test } from 'node:test';
-import type { DatabaseHandle } from '../../src/client/database/db';
-import { initEnv } from '../../src/config/env';
-import { CommandContext, createReply } from '../../src/framework/command';
-import mybirthday from '../../src/slash-commands/Info/mybirthday';
-import profile from '../../src/slash-commands/Info/profile';
-import { fakeClient, fakeGuildWithMembers } from '../fakes/guild';
-import { fakeInteraction } from '../fakes/interaction';
+import type { DatabaseHandle } from '../../src/client/database/db.ts';
+import { initEnv } from '../../src/config/env.ts';
+import { type CommandContext, createReply } from '../../src/framework/command.ts';
+import mybirthday from '../../src/slash-commands/Info/mybirthday.ts';
+import profile from '../../src/slash-commands/Info/profile.ts';
+import { fakeClient, fakeGuildWithMembers } from '../fakes/guild.ts';
+import { fakeInteraction } from '../fakes/interaction.ts';
 import {
   clearConfigs,
   clearProfiles,
@@ -16,7 +16,7 @@ import {
   createProfiles,
   createTestDb,
   findProfile,
-} from '../helpers/db';
+} from '../helpers/db.ts';
 
 initEnv({ TOKEN: 't', CLIENT_ID: 'c', DB_PATH: ':memory:', BOT_TIMEZONE: 'Europe/London' });
 

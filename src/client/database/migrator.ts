@@ -1,7 +1,7 @@
 import type { Database } from 'better-sqlite3';
-import * as baseline from './migrations/001-baseline';
-import * as userProfileUnique from './migrations/002-userprofile-unique';
-import * as serverConfigAccessTracking from './migrations/003-serverconfig-access-tracking';
+import * as baseline from './migrations/001-baseline.ts';
+import * as userProfileUnique from './migrations/002-userprofile-unique.ts';
+import * as serverConfigAccessTracking from './migrations/003-serverconfig-access-tracking.ts';
 
 export interface Migration {
   name: string;

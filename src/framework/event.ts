@@ -1,12 +1,14 @@
-import { Client, ClientEvents } from 'discord.js';
-import type { NovaClient } from '../client/NovaClient';
-import { Logger } from '../utilities/Logger';
+import { Client, type ClientEvents } from 'discord.js';
+import type { NovaClient } from '../client/NovaClient.ts';
+import { Logger } from '../utilities/Logger.ts';
 
 export interface EventDefinition<K extends keyof ClientEvents> {
   name: K;
   once?: boolean;
   run(client: NovaClient, ...args: ClientEvents[K]): Promise<void>;
 }
+
+export type AnyEventDefinition = { [K in keyof ClientEvents]: EventDefinition<K> }[keyof ClientEvents];
 
 export function defineEvent<K extends keyof ClientEvents>(
   def: EventDefinition<K>

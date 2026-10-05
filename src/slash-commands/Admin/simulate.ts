@@ -1,7 +1,7 @@
 import { GuildMember, SlashCommandSubcommandBuilder } from 'discord.js';
-import { CommandContext, defineCommand } from '../../framework/command';
-import { resolveMember } from '../../services/MemberResolver';
-import { auditJoin, complete, formatOnboardingSummary } from '../../services/OnboardingService';
+import { type CommandContext, defineCommand } from '../../framework/command.ts';
+import { resolveMember } from '../../services/MemberResolver.ts';
+import { auditJoin, complete, formatOnboardingSummary } from '../../services/OnboardingService.ts';
 
 const NO_MENTIONS = { parse: [] };
 

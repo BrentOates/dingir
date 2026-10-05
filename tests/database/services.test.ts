@@ -1,15 +1,15 @@
 import assert from 'node:assert/strict';
 import { after, before, beforeEach, test } from 'node:test';
-import type { DatabaseHandle } from '../../src/client/database/db';
-import { ConfigService } from '../../src/services/ConfigService';
-import { UserProfileService } from '../../src/services/UserProfileService';
+import type { DatabaseHandle } from '../../src/client/database/db.ts';
+import { ConfigService } from '../../src/services/ConfigService.ts';
+import { UserProfileService } from '../../src/services/UserProfileService.ts';
 import {
   allProfiles,
   clearConfigs,
   clearProfiles,
   closeTestDb,
   createTestDb,
-} from '../helpers/db';
+} from '../helpers/db.ts';
 
 let db: DatabaseHandle;
 

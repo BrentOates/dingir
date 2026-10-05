@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm';
-import { getDb, type AppDatabase } from '../client/database/db';
-import { serverConfigs, userProfiles, type ServerConfig } from '../client/database/schema';
+import { getDb, type AppDatabase } from '../client/database/db.ts';
+import { serverConfigs, userProfiles, type ServerConfig } from '../client/database/schema.ts';
 
 export type ServerConfigPatch = Partial<Omit<ServerConfig, 'serverId' | 'createdAt' | 'updatedAt'>>;
 

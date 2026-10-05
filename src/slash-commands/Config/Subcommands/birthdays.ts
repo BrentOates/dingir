@@ -1,12 +1,12 @@
 import { ChannelType, PermissionFlagsBits } from 'discord.js';
-import { defineSubcommandGroup } from '../../../framework/command';
+import { defineSubcommandGroup } from '../../../framework/command.ts';
 import {
   calendarMessageUrl,
   deleteCalendarMessage,
   refreshCalendar,
-} from '../../../services/BirthdayService';
-import { ConfigService } from '../../../services/ConfigService';
-import { resolveTextChannel } from '../../../services/MemberResolver';
+} from '../../../services/BirthdayService.ts';
+import { ConfigService } from '../../../services/ConfigService.ts';
+import { resolveTextChannel } from '../../../services/MemberResolver.ts';
 
 export const BirthdaysGroup = defineSubcommandGroup({
   name: 'birthdays',

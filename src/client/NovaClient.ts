@@ -1,13 +1,14 @@
-import path from 'node:path';
-import { env } from '../config/env';
+import { env } from '../config/env.ts';
 import { Client, Collection, Partials, GatewayIntentBits } from 'discord.js';
-import { Command } from '../framework/command';
-import { bindEvent } from '../framework/event';
-import { loadCommands, loadEvents } from '../framework/loader';
-import { registerShutdownHook, runShutdownHooks } from '../framework/shutdown';
-import { Logger } from '../utilities/Logger';
-import { getDatabase } from './database/db';
-import { migrate } from './database/migrator';
+import type { Command } from '../framework/command.ts';
+import { bindEvent } from '../framework/event.ts';
+import { validateRegistry } from '../framework/registry.ts';
+import { commands } from '../slash-commands/index.ts';
+import { events } from '../events/index.ts';
+import { registerShutdownHook, runShutdownHooks } from '../framework/shutdown.ts';
+import { Logger } from '../utilities/Logger.ts';
+import { getDatabase } from './database/db.ts';
+import { migrate } from './database/migrator.ts';
 
 class NovaClient extends Client {
   public slashCommands: Collection<string, Command> = new Collection();
@@ -33,10 +34,8 @@ class NovaClient extends Client {
       sqlite.close();
     });
 
-    const [commands, events] = await Promise.all([
-      loadCommands(path.join(__dirname, '..', 'slash-commands')),
-      loadEvents(path.join(__dirname, '..', 'events')),
-    ]);
+    validateRegistry('command', commands);
+    validateRegistry('event', events);
 
     for (const command of commands) {
       this.slashCommands.set(command.name, command);

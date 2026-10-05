@@ -1,8 +1,8 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { GuildMember } from 'discord.js';
-import { AuditEmbed } from '../../src/services/AuditEmbed';
-import { EmbedColours } from '../../src/resources/EmbedColours';
+import { AuditEmbed } from '../../src/services/AuditEmbed.ts';
+import { EmbedColours } from '../../src/resources/EmbedColours.ts';
 
 const total = (json: ReturnType<AuditEmbed['toJSON']>): number =>
   (json.title?.length ?? 0) +

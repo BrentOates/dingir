@@ -1,11 +1,11 @@
-import { env } from '../config/env';
-import { defineEvent } from '../framework/event';
-import { registerShutdownHook } from '../framework/shutdown';
-import { notifyBirthdays, refreshAllCalendars } from '../services/BirthdayService';
-import { run as runDataCheck } from '../services/DataCheckService';
-import { Scheduler } from '../services/Scheduler';
-import { CommandRegistrar } from '../framework/CommandRegistrar';
-import { Logger } from '../utilities/Logger';
+import { env } from '../config/env.ts';
+import { defineEvent } from '../framework/event.ts';
+import { registerShutdownHook } from '../framework/shutdown.ts';
+import { notifyBirthdays, refreshAllCalendars } from '../services/BirthdayService.ts';
+import { run as runDataCheck } from '../services/DataCheckService.ts';
+import { Scheduler } from '../services/Scheduler.ts';
+import { CommandRegistrar } from '../framework/CommandRegistrar.ts';
+import { Logger } from '../utilities/Logger.ts';
 
 let schedulerInstalled = false;
 

@@ -1,10 +1,10 @@
 import { DateTime } from 'luxon';
-import { env } from '../../config/env';
-import { CommandContext, defineCommand } from '../../framework/command';
-import { isValidBirthday, nextOccurrence } from '../../services/BirthdayDates';
-import { refreshCalendar } from '../../services/BirthdayService';
-import { Logger } from '../../utilities/Logger';
-import { UserProfileService } from '../../services/UserProfileService';
+import { env } from '../../config/env.ts';
+import { type CommandContext, defineCommand } from '../../framework/command.ts';
+import { isValidBirthday, nextOccurrence } from '../../services/BirthdayDates.ts';
+import { refreshCalendar } from '../../services/BirthdayService.ts';
+import { Logger } from '../../utilities/Logger.ts';
+import { UserProfileService } from '../../services/UserProfileService.ts';
 
 const refresh = async (ctx: CommandContext): Promise<void> => {
   try {

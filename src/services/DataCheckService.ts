@@ -1,14 +1,14 @@
 import { Client } from 'discord.js';
-import { env } from '../config/env';
-import { ConfigService } from '../services/ConfigService';
-import { Logger } from '../utilities/Logger';
-import { UserProfileService } from '../services/UserProfileService';
+import { env } from '../config/env.ts';
+import { ConfigService } from '../services/ConfigService.ts';
+import { Logger } from '../utilities/Logger.ts';
+import { UserProfileService } from '../services/UserProfileService.ts';
 import {
-  AccessOutcome,
-  RetentionPolicyConfig,
+  type AccessOutcome,
+  type RetentionPolicyConfig,
   classifyGuildFetchError,
   nextAccessState,
-} from './RetentionPolicy';
+} from './RetentionPolicy.ts';
 
 const cleanMembers = async (
   client: Client,

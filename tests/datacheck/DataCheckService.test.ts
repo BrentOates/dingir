@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict';
 import { after, before, beforeEach, test } from 'node:test';
-import type { DatabaseHandle } from '../../src/client/database/db';
-import type { ServerConfig } from '../../src/client/database/schema';
-import { run } from '../../src/services/DataCheckService';
-import { apiError, fakeClient, fakeGuildWithMembers } from '../fakes/guild';
-import { clearConfigs, clearProfiles, closeTestDb, allProfiles, countProfiles, createConfig, createConfigs, createProfiles, createTestDb, findConfig } from '../helpers/db';
+import type { DatabaseHandle } from '../../src/client/database/db.ts';
+import type { ServerConfig } from '../../src/client/database/schema.ts';
+import { run } from '../../src/services/DataCheckService.ts';
+import { apiError, fakeClient, fakeGuildWithMembers } from '../fakes/guild.ts';
+import { clearConfigs, clearProfiles, closeTestDb, allProfiles, countProfiles, createConfig, createConfigs, createProfiles, createTestDb, findConfig } from '../helpers/db.ts';
 
 console.warn = (): void => undefined;
 console.error = (): void => undefined;

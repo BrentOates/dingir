@@ -2,10 +2,10 @@ import path from 'node:path';
 import { AttachmentBuilder, GuildMember } from 'discord.js';
 import { DateTime } from 'luxon';
 import { Canvas, createCanvas, GlobalFonts, loadImage } from '@napi-rs/canvas';
-import { env } from '../config/env';
+import { env } from '../config/env.ts';
 
 const FONT_FAMILY = 'Roboto';
-const FONT_PATH = path.join(__dirname, '..', 'resources', 'fonts', 'Roboto-Regular.ttf');
+const FONT_PATH = path.join(import.meta.dirname, '..', 'resources', 'fonts', 'Roboto-Regular.ttf');
 const DOWNLOAD_TIMEOUT_MS = 10_000;
 const MAX_DOWNLOAD_BYTES = 10 * 1024 * 1024;
 const MIN_FONT_SIZE = 8;

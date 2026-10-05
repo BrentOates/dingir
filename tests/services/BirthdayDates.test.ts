@@ -7,7 +7,7 @@ import {
   isValidBirthday,
   nextOccurrence,
   upcoming,
-} from '../../src/services/BirthdayDates';
+} from '../../src/services/BirthdayDates.ts';
 
 const LONDON = 'Europe/London';
 const at = (iso: string, zone = 'utc'): DateTime => DateTime.fromISO(iso, { zone });

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { loadEnv } from '../src/config/env';
+import { loadEnv } from '../src/config/env.ts';
 
 const valid = { TOKEN: 'abc', CLIENT_ID: '123' };
 

@@ -1,12 +1,12 @@
 import { Client } from 'discord.js';
 import { DateTime } from 'luxon';
-import type { ServerConfig } from '../client/database/schema';
-import { env } from '../config/env';
-import { ConfigService } from '../services/ConfigService';
-import { Logger } from '../utilities/Logger';
-import { UserProfileService } from '../services/UserProfileService';
-import { BirthdayProfile, isBirthdayToday, upcoming } from './BirthdayDates';
-import { resolveMember, resolveTextChannel } from './MemberResolver';
+import type { ServerConfig } from '../client/database/schema.ts';
+import { env } from '../config/env.ts';
+import { ConfigService } from '../services/ConfigService.ts';
+import { Logger } from '../utilities/Logger.ts';
+import { UserProfileService } from '../services/UserProfileService.ts';
+import { type BirthdayProfile, isBirthdayToday, upcoming } from './BirthdayDates.ts';
+import { resolveMember, resolveTextChannel } from './MemberResolver.ts';
 
 export type CalendarStatus =
   | 'updated'

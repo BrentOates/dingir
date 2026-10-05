@@ -1,6 +1,5 @@
-import 'dotenv/config';
-import { initEnv } from './config/env';
-import { Logger } from './utilities/Logger';
+import { initEnv } from './config/env.ts';
+import { Logger } from './utilities/Logger.ts';
 
 async function main(): Promise<void> {
   try {
@@ -11,7 +10,7 @@ async function main(): Promise<void> {
     process.exit(1);
   }
 
-  const { NovaClient } = await import('./client/NovaClient.js');
+  const { NovaClient } = await import('./client/NovaClient.ts');
   const novaClient = new NovaClient();
   await novaClient.start();
 }

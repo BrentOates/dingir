@@ -1,10 +1,10 @@
 import { ChannelType, Message, PermissionFlagsBits } from 'discord.js';
-import { defineCommand } from '../../framework/command';
-import { EmbedColours } from '../../resources/EmbedColours';
-import { AuditEmbed } from '../../services/AuditEmbed';
-import { sendAudit } from '../../services/AuditService';
-import { resolveTextChannel } from '../../services/MemberResolver';
-import { Logger } from '../../utilities/Logger';
+import { defineCommand } from '../../framework/command.ts';
+import { EmbedColours } from '../../resources/EmbedColours.ts';
+import { AuditEmbed } from '../../services/AuditEmbed.ts';
+import { sendAudit } from '../../services/AuditService.ts';
+import { resolveTextChannel } from '../../services/MemberResolver.ts';
+import { Logger } from '../../utilities/Logger.ts';
 
 export default defineCommand({
   name: 'post',

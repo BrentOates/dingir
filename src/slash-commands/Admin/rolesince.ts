@@ -1,5 +1,5 @@
-import { defineCommand } from '../../framework/command';
-import { buildMemberListing, wholeDaysSinceJoin } from '../../services/MemberListing';
+import { defineCommand } from '../../framework/command.ts';
+import { buildMemberListing, wholeDaysSinceJoin } from '../../services/MemberListing.ts';
 
 export default defineCommand({
   name: 'rolesince',

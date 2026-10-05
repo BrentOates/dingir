@@ -1,7 +1,7 @@
-import { CommandContext, defineSubcommandGroup } from '../../../framework/command';
-import { ConfigService, type ServerConfigPatch } from '../../../services/ConfigService';
-import { complete } from '../../../services/OnboardingService';
-import { isHttpUrl, WelcomeImage } from '../../../services/WelcomeImage';
+import { type CommandContext, defineSubcommandGroup } from '../../../framework/command.ts';
+import { ConfigService, type ServerConfigPatch } from '../../../services/ConfigService.ts';
+import { complete } from '../../../services/OnboardingService.ts';
+import { isHttpUrl, WelcomeImage } from '../../../services/WelcomeImage.ts';
 
 export const MAX_WELCOME_MESSAGE_LENGTH = 1500;
 

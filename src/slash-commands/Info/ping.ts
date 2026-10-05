@@ -1,4 +1,4 @@
-import { defineCommand } from '../../framework/command';
+import { defineCommand } from '../../framework/command.ts';
 
 export default defineCommand({
   name: 'ping',

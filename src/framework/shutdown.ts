@@ -1,4 +1,4 @@
-import { Logger } from '../utilities/Logger';
+import { Logger } from '../utilities/Logger.ts';
 
 type ShutdownHook = () => Promise<void> | void;
 

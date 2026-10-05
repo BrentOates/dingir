@@ -1,14 +1,14 @@
 import { GuildMember, Message, PermissionFlagsBits } from 'discord.js';
-import type { NovaClient } from '../client/NovaClient';
-import type { ServerConfig } from '../client/database/schema';
-import { defineEvent } from '../framework/event';
-import { EmbedColours } from '../resources/EmbedColours';
-import { AuditEmbed } from '../services/AuditEmbed';
-import { sendAudit } from '../services/AuditService';
-import { ConfigService } from '../services/ConfigService';
-import { HoneyPotEnforcementService } from '../services/HoneyPotEnforcementService';
-import { Logger } from '../utilities/Logger';
-import { UserProfileService } from '../services/UserProfileService';
+import type { NovaClient } from '../client/NovaClient.ts';
+import type { ServerConfig } from '../client/database/schema.ts';
+import { defineEvent } from '../framework/event.ts';
+import { EmbedColours } from '../resources/EmbedColours.ts';
+import { AuditEmbed } from '../services/AuditEmbed.ts';
+import { sendAudit } from '../services/AuditService.ts';
+import { ConfigService } from '../services/ConfigService.ts';
+import { HoneyPotEnforcementService } from '../services/HoneyPotEnforcementService.ts';
+import { Logger } from '../utilities/Logger.ts';
+import { UserProfileService } from '../services/UserProfileService.ts';
 
 const DELETE_MESSAGE_SECONDS = 7 * 24 * 60 * 60;
 

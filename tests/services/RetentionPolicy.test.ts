@@ -1,10 +1,10 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import {
-  AccessState,
+  type AccessState,
   classifyGuildFetchError,
   nextAccessState,
-} from '../../src/services/RetentionPolicy';
+} from '../../src/services/RetentionPolicy.ts';
 
 const policy = { minFailures: 3, graceDays: 7 };
 const day = (n: number): Date => new Date(Date.UTC(2026, 0, 1 + n));

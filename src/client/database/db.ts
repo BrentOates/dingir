@@ -1,7 +1,7 @@
 import Database from 'better-sqlite3';
 import { drizzle, type BetterSQLite3Database } from 'drizzle-orm/better-sqlite3';
-import { env } from '../../config/env';
-import * as schema from './schema';
+import { env } from '../../config/env.ts';
+import * as schema from './schema.ts';
 
 export type AppDatabase = BetterSQLite3Database<typeof schema>;
 

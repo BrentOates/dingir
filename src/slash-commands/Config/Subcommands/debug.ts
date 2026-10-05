@@ -1,4 +1,4 @@
-import { booleanSetting } from '../../../framework/settings';
+import { booleanSetting } from '../../../framework/settings.ts';
 
 export const DebugGroup = booleanSetting({
   name: 'debug',

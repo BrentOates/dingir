@@ -6,8 +6,8 @@ import {
   completedScreening,
   formatOnboardingSummary,
   parseRoleIds,
-} from '../../src/services/OnboardingService';
-import { fakeOnboarding, role } from '../fakes/onboarding';
+} from '../../src/services/OnboardingService.ts';
+import { fakeOnboarding, role } from '../fakes/onboarding.ts';
 
 const okImage = async () => new AttachmentBuilder(Buffer.from('x')).setName('welcome-image.png');
 const failImage = async () => {

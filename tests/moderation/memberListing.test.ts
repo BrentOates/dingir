@@ -1,13 +1,13 @@
 import assert from 'node:assert/strict';
 import { after, before, test } from 'node:test';
 import { Collection } from 'discord.js';
-import type { DatabaseHandle } from '../../src/client/database/db';
-import noroles from '../../src/slash-commands/Admin/noroles';
-import rolesince from '../../src/slash-commands/Admin/rolesince';
-import { buildMemberListing, INLINE_LIMIT } from '../../src/services/MemberListing';
-import { closeTestDb, createTestDb } from '../helpers/db';
-import { fakeInteraction } from '../fakes/interaction';
-import { fakeAuditClient, fakeMember, fakeUser, runSlash } from '../fakes/messages';
+import type { DatabaseHandle } from '../../src/client/database/db.ts';
+import noroles from '../../src/slash-commands/Admin/noroles.ts';
+import rolesince from '../../src/slash-commands/Admin/rolesince.ts';
+import { buildMemberListing, INLINE_LIMIT } from '../../src/services/MemberListing.ts';
+import { closeTestDb, createTestDb } from '../helpers/db.ts';
+import { fakeInteraction } from '../fakes/interaction.ts';
+import { fakeAuditClient, fakeMember, fakeUser, runSlash } from '../fakes/messages.ts';
 
 let db: DatabaseHandle;
 before(async () => {

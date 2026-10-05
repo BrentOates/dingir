@@ -2,8 +2,8 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { getTableColumns, getTableName } from 'drizzle-orm';
 import type { SQLiteTable } from 'drizzle-orm/sqlite-core';
-import { serverConfigs, userProfiles } from '../../src/client/database/schema';
-import { closeTestDb, createTestDb } from '../helpers/db';
+import { serverConfigs, userProfiles } from '../../src/client/database/schema.ts';
+import { closeTestDb, createTestDb } from '../helpers/db.ts';
 
 const columnNames = (table: SQLiteTable): string[] =>
   Object.values(getTableColumns(table)).map((column) => column.name);

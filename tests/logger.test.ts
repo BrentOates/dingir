@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { afterEach, beforeEach, test } from 'node:test';
-import { Logger, formatContext } from '../src/utilities/Logger';
+import { Logger, formatContext } from '../src/utilities/Logger.ts';
 
 type Method = 'log' | 'warn' | 'error';
 const original = { log: console.log, warn: console.warn, error: console.error };

@@ -1,10 +1,10 @@
-import { AttachmentBuilder, Client, Guild, GuildMember, PartialGuildMember, Role } from 'discord.js';
-import type { ServerConfig } from '../client/database/schema';
-import { EmbedColours } from '../resources/EmbedColours';
-import { Logger } from '../utilities/Logger';
-import { AuditEmbed } from './AuditEmbed';
-import { sendAudit } from './AuditService';
-import { WelcomeImage, WelcomeImageRenderer } from './WelcomeImage';
+import { AttachmentBuilder, Client, Guild, GuildMember, type PartialGuildMember, Role } from 'discord.js';
+import type { ServerConfig } from '../client/database/schema.ts';
+import { EmbedColours } from '../resources/EmbedColours.ts';
+import { Logger } from '../utilities/Logger.ts';
+import { AuditEmbed } from './AuditEmbed.ts';
+import { sendAudit } from './AuditService.ts';
+import { WelcomeImage, type WelcomeImageRenderer } from './WelcomeImage.ts';
 
 /** 'done' | 'skipped:<reason>' | 'failed:<message>' */
 export type StepResult = string;

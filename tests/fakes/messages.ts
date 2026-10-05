@@ -1,8 +1,8 @@
 import { Collection, User } from 'discord.js';
-import type { NovaClient } from '../../src/client/NovaClient';
-import type { Command } from '../../src/framework/command';
-import interactionCreate from '../../src/events/interactionCreate';
-import type { FakeInteraction } from './interaction';
+import type { NovaClient } from '../../src/client/NovaClient.ts';
+import type { Command } from '../../src/framework/command.ts';
+import interactionCreate from '../../src/events/interactionCreate.ts';
+import type { FakeInteraction } from './interaction.ts';
 
 export interface AuditSink {
   client: NovaClient;
