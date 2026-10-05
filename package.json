@@ -21,19 +21,17 @@
 	},
 	"dependencies": {
 		"@napi-rs/canvas": "^1.0.2",
+		"better-sqlite3": "^13.0.3",
 		"discord.js": "^14.26.5",
 		"dotenv": "^17.4.2",
+		"drizzle-orm": "^0.45.3",
 		"luxon": "^3.7.2",
 		"node-schedule": "^2.1.1",
-		"reflect-metadata": "^0.2.2",
-		"sequelize": "^6.37.8",
-		"sequelize-typescript": "^2.1.6",
-		"sqlite3": "^6.0.1",
-		"tslib": "^2.8.1",
-		"umzug": "^3.8.3"
+		"tslib": "^2.8.1"
 	},
 	"devDependencies": {
 		"@eslint/js": "^10.0.1",
+		"@types/better-sqlite3": "^9.6.0",
 		"@types/luxon": "^3.7.2",
 		"@types/node": "^24.13.3",
 		"@types/node-schedule": "^2.1.8",

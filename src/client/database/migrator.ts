@@ -1,18 +1,39 @@
-import { QueryInterface } from 'sequelize';
-import type { Sequelize } from 'sequelize-typescript';
-import { SequelizeStorage, Umzug } from 'umzug';
-import { migrations } from './migrations';
+import type { Database } from 'better-sqlite3';
+import * as baseline from './migrations/001-baseline';
+import * as userProfileUnique from './migrations/002-userprofile-unique';
+import * as serverConfigAccessTracking from './migrations/003-serverconfig-access-tracking';
 
-export function createMigrator(sequelize: Sequelize): Umzug<QueryInterface> {
-  return new Umzug<QueryInterface>({
-    migrations,
-    context: sequelize.getQueryInterface(),
-    storage: new SequelizeStorage({ sequelize, tableName: 'SequelizeMeta' }),
-    logger: undefined,
-  });
+export interface Migration {
+  name: string;
+  up: (db: Database) => void;
 }
 
-export async function migrate(sequelize: Sequelize): Promise<string[]> {
-  const applied = await createMigrator(sequelize).up();
-  return applied.map((migration) => migration.name);
+export const migrations: Migration[] = [
+  { name: '001-baseline', up: baseline.up },
+  { name: '002-userprofile-unique', up: userProfileUnique.up },
+  { name: '003-serverconfig-access-tracking', up: serverConfigAccessTracking.up },
+];
+
+/** Applies pending migrations in order, each in its own transaction, and returns their names. */
+export function migrate(db: Database, list: Migration[] = migrations): string[] {
+  db.exec('CREATE TABLE IF NOT EXISTS `SequelizeMeta` (`name` VARCHAR(255) PRIMARY KEY)');
+
+  const done = new Set(
+    (db.prepare('SELECT name FROM `SequelizeMeta`').all() as { name: string }[]).map((r) => r.name)
+  );
+  const record = db.prepare('INSERT INTO `SequelizeMeta` (name) VALUES (?)');
+  const applied: string[] = [];
+
+  for (const migration of list) {
+    if (done.has(migration.name)) {
+      continue;
+    }
+    db.transaction(() => {
+      migration.up(db);
+      record.run(migration.name);
+    })();
+    applied.push(migration.name);
+  }
+
+  return applied;
 }

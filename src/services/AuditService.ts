@@ -1,5 +1,5 @@
 import { Attachment, Client, EmbedBuilder } from 'discord.js';
-import { ServerConfig } from '../client/models/ServerConfig';
+import type { ServerConfig } from '../client/database/schema';
 import { Logger } from '../utilities/Logger';
 
 export const sendAudit = async (

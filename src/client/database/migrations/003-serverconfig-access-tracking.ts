@@ -1,25 +1,14 @@
-import { DataTypes } from 'sequelize';
-import type { MigrationParams } from './types';
+import type { Database } from 'better-sqlite3';
 
-export async function up({ context }: MigrationParams): Promise<void> {
-  const columns = await context.describeTable('ServerConfigs');
+export function up(db: Database): void {
+  const columns = new Set(
+    (db.pragma('table_info(`ServerConfigs`)') as { name: string }[]).map((column) => column.name)
+  );
 
-  if (!('accessFailureCount' in columns)) {
-    await context.addColumn('ServerConfigs', 'accessFailureCount', {
-      type: DataTypes.INTEGER,
-      allowNull: false,
-      defaultValue: 0,
-    });
+  if (!columns.has('accessFailureCount')) {
+    db.exec('ALTER TABLE `ServerConfigs` ADD COLUMN `accessFailureCount` INTEGER NOT NULL DEFAULT 0');
   }
-  if (!('firstAccessFailureAt' in columns)) {
-    await context.addColumn('ServerConfigs', 'firstAccessFailureAt', {
-      type: DataTypes.DATE,
-      allowNull: true,
-    });
+  if (!columns.has('firstAccessFailureAt')) {
+    db.exec('ALTER TABLE `ServerConfigs` ADD COLUMN `firstAccessFailureAt` DATETIME');
   }
-}
-
-export async function down({ context }: MigrationParams): Promise<void> {
-  await context.removeColumn('ServerConfigs', 'firstAccessFailureAt');
-  await context.removeColumn('ServerConfigs', 'accessFailureCount');
 }

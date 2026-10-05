@@ -1,5 +1,6 @@
 import { ApplicationCommandOptionAllowedChannelTypes, Guild } from 'discord.js';
 import { defineSubcommandGroup, SubcommandGroupDefinition } from './command';
+import { ConfigService } from '../services/ConfigService';
 
 export type ChannelField = 'auditChannelId' | 'announcementsChannelId' | 'honeyPotChannelId';
 export type BooleanField = 'debug' | 'systemMessagesEnabled';
@@ -67,8 +68,9 @@ export function channelSetting(opts: ChannelSettingOptions): SubcommandGroupDefi
           ),
         run: async (ctx) => {
           const channel = ctx.interaction.options.getChannel('channel', true);
-          ctx.config[field] = channel.id;
-          await ctx.config.save();
+          ctx.config = await ConfigService.updateConfig(ctx.config.serverId, {
+            [field]: channel.id,
+          });
           await ctx.reply(channelSetText(label, channel.id));
         },
       },
@@ -85,8 +87,7 @@ export function channelSetting(opts: ChannelSettingOptions): SubcommandGroupDefi
         name: 'clear',
         description: `Clear the ${label.toLowerCase()}`,
         run: async (ctx) => {
-          ctx.config[field] = null;
-          await ctx.config.save();
+          ctx.config = await ConfigService.updateConfig(ctx.config.serverId, { [field]: null });
           await ctx.reply(channelClearText(label));
         },
       },
@@ -109,8 +110,7 @@ export function booleanSetting(opts: BooleanSettingOptions): SubcommandGroupDefi
           ),
         run: async (ctx) => {
           const enabled = ctx.interaction.options.getBoolean('enabled', true);
-          ctx.config[field] = enabled;
-          await ctx.config.save();
+          ctx.config = await ConfigService.updateConfig(ctx.config.serverId, { [field]: enabled });
           await ctx.reply(booleanText(label, enabled));
         },
       },

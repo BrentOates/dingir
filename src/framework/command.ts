@@ -19,7 +19,7 @@ import {
   SlashCommandSubcommandBuilder,
   SlashCommandSubcommandGroupBuilder,
 } from 'discord.js';
-import type { ServerConfig } from '../client/models/ServerConfig';
+import type { ServerConfig } from '../client/database/schema';
 
 export type DeferMode = 'ephemeral' | 'public' | false;
 

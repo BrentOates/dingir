@@ -1,6 +1,6 @@
 import { Client } from 'discord.js';
 import { DateTime } from 'luxon';
-import { ServerConfig } from '../client/models/ServerConfig';
+import type { ServerConfig } from '../client/database/schema';
 import { env } from '../config/env';
 import { ConfigService } from '../services/ConfigService';
 import { Logger } from '../utilities/Logger';

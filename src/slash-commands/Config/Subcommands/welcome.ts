@@ -1,4 +1,5 @@
 import { CommandContext, defineSubcommandGroup } from '../../../framework/command';
+import { ConfigService, type ServerConfigPatch } from '../../../services/ConfigService';
 import { complete } from '../../../services/OnboardingService';
 import { isHttpUrl, WelcomeImage } from '../../../services/WelcomeImage';
 
@@ -23,8 +24,7 @@ const setMessage = async (ctx: CommandContext) => {
     await ctx.reply(problem);
     return;
   }
-  ctx.config.welcomeMessage = text;
-  await ctx.config.save();
+  ctx.config = await ConfigService.updateConfig(ctx.config.serverId, { welcomeMessage: text });
   await ctx.reply({
     content: 'Welcome message saved. Use `{member}` in the text to mention the new member.',
     allowedMentions: NO_MENTIONS,
@@ -46,8 +46,9 @@ const setImage = async (ctx: CommandContext) => {
     );
     return;
   }
-  ctx.config.welcomeMessageBackgroundUrl = url;
-  await ctx.config.save();
+  ctx.config = await ConfigService.updateConfig(ctx.config.serverId, {
+    welcomeMessageBackgroundUrl: url,
+  });
   await ctx.reply('Welcome image saved. Use /config welcome preview to see how it looks.');
 };
 
@@ -64,13 +65,14 @@ const get = async (ctx: CommandContext) => {
 
 const clear = async (ctx: CommandContext) => {
   const which = ctx.interaction.options.getString('which', true);
+  const patch: ServerConfigPatch = {};
   if (which === 'message' || which === 'all') {
-    ctx.config.welcomeMessage = null;
+    patch.welcomeMessage = null;
   }
   if (which === 'image' || which === 'all') {
-    ctx.config.welcomeMessageBackgroundUrl = null;
+    patch.welcomeMessageBackgroundUrl = null;
   }
-  await ctx.config.save();
+  ctx.config = await ConfigService.updateConfig(ctx.config.serverId, patch);
   await ctx.reply(`Cleared welcome ${which === 'all' ? 'message and image' : which}.`);
 };
 

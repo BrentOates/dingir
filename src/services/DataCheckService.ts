@@ -74,9 +74,10 @@ export const run = async (
         next.accessFailureCount !== config.accessFailureCount ||
         next.firstAccessFailureAt?.getTime() !== config.firstAccessFailureAt?.getTime()
       ) {
-        config.accessFailureCount = next.accessFailureCount;
-        config.firstAccessFailureAt = next.firstAccessFailureAt;
-        await config.save();
+        await ConfigService.updateConfig(config.serverId, {
+          accessFailureCount: next.accessFailureCount,
+          firstAccessFailureAt: next.firstAccessFailureAt,
+        });
       }
 
       if (outcome === 'ok') {

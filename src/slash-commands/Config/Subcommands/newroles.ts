@@ -3,6 +3,7 @@ import { CommandContext, defineSubcommandGroup } from '../../../framework/comman
 import { EmbedColours } from '../../../resources/EmbedColours';
 import { AuditEmbed } from '../../../services/AuditEmbed';
 import { sendAudit } from '../../../services/AuditService';
+import { ConfigService } from '../../../services/ConfigService';
 import { parseRoleIds, roleProblem } from '../../../services/OnboardingService';
 
 const ROLE_OPTIONS = ['role-one', 'role-two', 'role-three'] as const;
@@ -79,8 +80,9 @@ export const NewRolesGroup = defineSubcommandGroup({
         }
 
         const ids = [...roles.keys()];
-        ctx.config.guestRoleIds = ids.join(',');
-        await ctx.config.save();
+        ctx.config = await ConfigService.updateConfig(ctx.config.serverId, {
+          guestRoleIds: ids.join(','),
+        });
         await auditChange(ctx, 'New member roles updated', ids);
         await ctx.reply({
           content: `New-member roles set to ${ids.map((id) => `<@&${id}>`).join(', ')}.`,
@@ -92,8 +94,7 @@ export const NewRolesGroup = defineSubcommandGroup({
       name: 'clear',
       description: 'Clear the roles given to members when they complete onboarding',
       run: async (ctx) => {
-        ctx.config.guestRoleIds = null;
-        await ctx.config.save();
+        ctx.config = await ConfigService.updateConfig(ctx.config.serverId, { guestRoleIds: null });
         await auditChange(ctx, 'New member roles cleared', []);
         await ctx.reply('New-member roles cleared.');
       },

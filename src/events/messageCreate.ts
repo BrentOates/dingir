@@ -1,6 +1,6 @@
 import { GuildMember, Message, PermissionFlagsBits } from 'discord.js';
 import type { NovaClient } from '../client/NovaClient';
-import type { ServerConfig } from '../client/models/ServerConfig';
+import type { ServerConfig } from '../client/database/schema';
 import { defineEvent } from '../framework/event';
 import { EmbedColours } from '../resources/EmbedColours';
 import { AuditEmbed } from '../services/AuditEmbed';

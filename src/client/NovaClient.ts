@@ -6,8 +6,8 @@ import { bindEvent } from '../framework/event';
 import { loadCommands, loadEvents } from '../framework/loader';
 import { registerShutdownHook, runShutdownHooks } from '../framework/shutdown';
 import { Logger } from '../utilities/Logger';
+import { getDatabase } from './database/db';
 import { migrate } from './database/migrator';
-import { sequelize } from './database/sequelize';
 
 class NovaClient extends Client {
   public slashCommands: Collection<string, Command> = new Collection();
@@ -26,9 +26,12 @@ class NovaClient extends Client {
   }
 
   public async start(): Promise<void> {
-    const applied = await migrate(sequelize);
+    const { sqlite } = getDatabase();
+    const applied = migrate(sqlite);
     Logger.info('Database migrations complete', { applied: applied.length ? applied : 'none' });
-    registerShutdownHook(() => sequelize.close());
+    registerShutdownHook(() => {
+      sqlite.close();
+    });
 
     const [commands, events] = await Promise.all([
       loadCommands(path.join(__dirname, '..', 'slash-commands')),

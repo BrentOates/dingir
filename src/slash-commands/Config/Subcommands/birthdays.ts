@@ -5,6 +5,7 @@ import {
   deleteCalendarMessage,
   refreshCalendar,
 } from '../../../services/BirthdayService';
+import { ConfigService } from '../../../services/ConfigService';
 import { resolveTextChannel } from '../../../services/MemberResolver';
 
 export const BirthdaysGroup = defineSubcommandGroup({
@@ -48,8 +49,9 @@ export const BirthdaysGroup = defineSubcommandGroup({
           allowedMentions: { parse: [] },
         });
         const path = `${message.channelId}/${message.id}`;
-        ctx.config.birthdayCalendarMessagePath = path;
-        await ctx.config.save();
+        ctx.config = await ConfigService.updateConfig(ctx.config.serverId, {
+          birthdayCalendarMessagePath: path,
+        });
 
         const status = await refreshCalendar(client, ctx.config);
         const link = calendarMessageUrl(ctx.guild.id, path);
@@ -89,8 +91,9 @@ export const BirthdaysGroup = defineSubcommandGroup({
           return;
         }
         await deleteCalendarMessage(ctx.interaction.client, ctx.config.birthdayCalendarMessagePath);
-        ctx.config.birthdayCalendarMessagePath = null;
-        await ctx.config.save();
+        ctx.config = await ConfigService.updateConfig(ctx.config.serverId, {
+          birthdayCalendarMessagePath: null,
+        });
         await ctx.reply('Birthday calendar removed.');
       },
     },
