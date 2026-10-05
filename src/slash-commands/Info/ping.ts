@@ -2,7 +2,7 @@ import { defineCommand } from '../../framework/command';
 
 export default defineCommand({
   name: 'ping',
-  description: 'Pings Dingir',
+  description: 'Ping Dingir',
   defer: 'ephemeral',
   run: async (ctx) => {
     const roundTrip = Date.now() - ctx.interaction.createdTimestamp;

@@ -20,7 +20,7 @@ export default defineCommand({
     const embed = new EmbedBuilder()
       .setColor(EmbedColours.info)
       .setTitle('About Dingir')
-      .setDescription('Show information about Dingir and this server')
+      .setDescription('A Discord bot for the Irkallu server')
       .addFields(
         { name: 'Version', value: version, inline: false },
         { name: 'Source', value: repoUrl, inline: false },

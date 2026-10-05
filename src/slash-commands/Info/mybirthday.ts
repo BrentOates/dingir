@@ -59,7 +59,7 @@ export default defineCommand({
         const text = isToday
           ? 'today 🎉'
           : next.setLocale('en-GB').toLocaleString(DateTime.DATE_FULL);
-        await ctx.reply(`Saved! Your next birthday is ${text}`);
+        await ctx.reply(`Saved. Your next birthday is ${text}`);
         await refresh(ctx);
       },
     },

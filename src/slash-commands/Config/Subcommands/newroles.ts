@@ -19,7 +19,7 @@ const auditChange = (ctx: CommandContext, description: string, roleIds: string[]
 const get = async (ctx: CommandContext) => {
   const ids = parseRoleIds(ctx.config.guestRoleIds);
   if (ids.length === 0) {
-    await ctx.reply('No new-member roles configured');
+    await ctx.reply('No new-member roles are configured.');
     return;
   }
   const lines = ids.map((id) =>

@@ -61,7 +61,7 @@ test('newroles get is read-only: no audit, marks missing roles', async () => {
   const empty = fakeOnboarding();
   const e = fakeCommandContext({}, empty);
   await handler(NewRolesGroup, 'get')(e.ctx);
-  assert.equal(e.replies[0].content, 'No new-member roles configured');
+  assert.equal(e.replies[0].content, 'No new-member roles are configured.');
 });
 
 test('newroles clear nulls roles and audits', async () => {

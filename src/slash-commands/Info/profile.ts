@@ -7,7 +7,7 @@ import { UserProfileService } from '../../services/UserProfileService';
 
 export default defineCommand({
   name: 'profile',
-  description: 'Fetches profiles for server members',
+  description: 'Fetch profiles for server members',
   adminOnly: true,
   options: (b) =>
     b.addUserOption((opt) =>

@@ -62,7 +62,7 @@ test('mybirthday set stores Feb 29 as 29', async () => {
   const stored = await UserProfile.findOne({ where: { userId: 'user-1' } });
   assert.equal(stored?.birthdayDay, 29);
   assert.equal(stored?.birthdayMonth, 2);
-  assert.match(lastContent(calls), /^Saved! Your next birthday is /);
+  assert.match(lastContent(calls), /^Saved. Your next birthday is /);
 });
 
 test('mybirthday set rejects invalid dates', async () => {

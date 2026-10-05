@@ -8,7 +8,7 @@ import { Logger } from '../../utilities/Logger';
 
 export default defineCommand({
   name: 'post',
-  description: 'Posts a simple message and/or attachment to the given channel',
+  description: 'Post a simple message and/or attachment to the given channel',
   adminOnly: true,
   defer: 'ephemeral',
   options: (b) =>

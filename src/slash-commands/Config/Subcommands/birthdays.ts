@@ -13,7 +13,7 @@ export const BirthdaysGroup = defineSubcommandGroup({
   subcommands: [
     {
       name: 'create',
-      description: 'Creates or recreates a birthday calendar for this server',
+      description: 'Create or recreate a birthday calendar for this server',
       defer: 'ephemeral',
       options: (sub) =>
         sub.addChannelOption((opt) =>
@@ -62,7 +62,7 @@ export const BirthdaysGroup = defineSubcommandGroup({
     },
     {
       name: 'sync',
-      description: 'Syncs the birthday calendar for this server',
+      description: 'Sync the birthday calendar for this server',
       defer: 'ephemeral',
       run: async (ctx) => {
         const status = await refreshCalendar(ctx.interaction.client, ctx.config);
@@ -81,7 +81,7 @@ export const BirthdaysGroup = defineSubcommandGroup({
     },
     {
       name: 'remove',
-      description: 'Removes the birthday calendar for this server',
+      description: 'Remove the birthday calendar for this server',
       defer: 'ephemeral',
       run: async (ctx) => {
         if (!ctx.config.birthdayCalendarMessagePath) {

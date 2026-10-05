@@ -3,7 +3,7 @@ import { buildMemberListing } from '../../services/MemberListing';
 
 export default defineCommand({
   name: 'noroles',
-  description: 'Returns members of this guild with no roles assigned',
+  description: 'List members of this guild with no roles assigned',
   adminOnly: true,
   defer: 'ephemeral',
   run: async (ctx) => {
