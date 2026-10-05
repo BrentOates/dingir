@@ -12,6 +12,7 @@
 	"scripts": {
 		"lint": "eslint .",
 		"test": "node --test \"tests/**/*.test.ts\"",
+		"test:coverage": "node --test --experimental-test-coverage --test-coverage-lines=80 --test-coverage-branches=70 --test-coverage-functions=80 --test-coverage-include='src/**' --test-coverage-exclude='src/index.ts' --test-coverage-exclude='src/scripts/**' \"tests/**/*.test.ts\"",
 		"dev": "node --watch --env-file-if-exists=.env src/index.ts",
 		"dev:pretty": "node --watch --env-file-if-exists=.env src/index.ts | pino-pretty",
 		"start": "node --env-file-if-exists=.env src/index.ts",

@@ -21,6 +21,7 @@ Logs are structured JSON. For human-readable output while developing, use `npm r
 Test and lint:
 ```bash
 npm test        # Run the test suite
+npm run test:coverage  # Run tests and enforce coverage thresholds
 npm run typecheck  # Type-check src and tests
 npm run lint    # Check code style and errors
 ```
