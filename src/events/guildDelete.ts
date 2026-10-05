@@ -1,5 +1,5 @@
 import { defineEvent } from '../framework/event';
-import { ConfigService } from '../utilities/ConfigService';
+import { ConfigService } from '../services/ConfigService';
 import { Logger } from '../utilities/Logger';
 
 export default defineEvent({

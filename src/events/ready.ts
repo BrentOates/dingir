@@ -4,7 +4,7 @@ import { registerShutdownHook } from '../framework/shutdown';
 import { notifyBirthdays, refreshAllCalendars } from '../services/BirthdayService';
 import { run as runDataCheck } from '../services/DataCheckService';
 import { Scheduler } from '../services/Scheduler';
-import { CommandRegistrar } from '../utilities/CommandRegistrar';
+import { CommandRegistrar } from '../framework/CommandRegistrar';
 import { Logger } from '../utilities/Logger';
 
 let schedulerInstalled = false;

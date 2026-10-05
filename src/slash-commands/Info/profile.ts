@@ -3,7 +3,7 @@ import { DateTime } from 'luxon';
 import { defineCommand } from '../../framework/command';
 import { EmbedColours } from '../../resources/EmbedColours';
 import { resolveMember } from '../../services/MemberResolver';
-import { UserProfileService } from '../../utilities/UserProfileService';
+import { UserProfileService } from '../../services/UserProfileService';
 
 export default defineCommand({
   name: 'profile',

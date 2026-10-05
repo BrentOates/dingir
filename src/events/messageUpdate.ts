@@ -2,7 +2,7 @@ import { defineEvent } from '../framework/event';
 import { EmbedColours } from '../resources/EmbedColours';
 import { AuditEmbed } from '../services/AuditEmbed';
 import { sendAudit } from '../services/AuditService';
-import { ConfigService } from '../utilities/ConfigService';
+import { ConfigService } from '../services/ConfigService';
 
 export default defineEvent({
   name: 'messageUpdate',

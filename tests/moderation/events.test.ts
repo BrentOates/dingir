@@ -7,9 +7,9 @@ import guildMemberRemove from '../../src/events/guildMemberRemove';
 import messageCreate from '../../src/events/messageCreate';
 import messageDelete from '../../src/events/messageDelete';
 import messageUpdate from '../../src/events/messageUpdate';
-import { ConfigService } from '../../src/utilities/ConfigService';
-import { HoneyPotEnforcementService } from '../../src/utilities/HoneyPotEnforcementService';
-import { UserProfileService } from '../../src/utilities/UserProfileService';
+import { ConfigService } from '../../src/services/ConfigService';
+import { HoneyPotEnforcementService } from '../../src/services/HoneyPotEnforcementService';
+import { UserProfileService } from '../../src/services/UserProfileService';
 import { createTestDb } from '../helpers/db';
 import { auditJson, fakeAuditClient, fakeMember, fakeMessage, fakeUser } from '../fakes/messages';
 

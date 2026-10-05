@@ -1,7 +1,7 @@
 import { env } from '../config/env';
 import { REST, Routes } from 'discord.js';
-import { Command } from '../framework/command';
-import { Logger } from './Logger';
+import { Command } from './command';
+import { Logger } from '../utilities/Logger';
 
 export class CommandRegistrar {
   public static async register(commands: Command[]): Promise<void> {

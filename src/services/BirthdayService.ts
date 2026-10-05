@@ -2,9 +2,9 @@ import { Client } from 'discord.js';
 import { DateTime } from 'luxon';
 import { ServerConfig } from '../client/models/ServerConfig';
 import { env } from '../config/env';
-import { ConfigService } from '../utilities/ConfigService';
+import { ConfigService } from '../services/ConfigService';
 import { Logger } from '../utilities/Logger';
-import { UserProfileService } from '../utilities/UserProfileService';
+import { UserProfileService } from '../services/UserProfileService';
 import { BirthdayProfile, isBirthdayToday, upcoming } from './BirthdayDates';
 import { resolveMember, resolveTextChannel } from './MemberResolver';
 

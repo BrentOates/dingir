@@ -1,8 +1,8 @@
 import { Client } from 'discord.js';
 import { env } from '../config/env';
-import { ConfigService } from '../utilities/ConfigService';
+import { ConfigService } from '../services/ConfigService';
 import { Logger } from '../utilities/Logger';
-import { UserProfileService } from '../utilities/UserProfileService';
+import { UserProfileService } from '../services/UserProfileService';
 import {
   AccessOutcome,
   RetentionPolicyConfig,

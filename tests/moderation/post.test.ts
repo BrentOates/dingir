@@ -3,7 +3,7 @@ import { after, before, beforeEach, test } from 'node:test';
 import { Collection, PermissionFlagsBits } from 'discord.js';
 import type { Sequelize } from 'sequelize-typescript';
 import post from '../../src/slash-commands/Admin/post';
-import { ConfigService } from '../../src/utilities/ConfigService';
+import { ConfigService } from '../../src/services/ConfigService';
 import { createTestDb } from '../helpers/db';
 import { fakeInteraction } from '../fakes/interaction';
 import { auditJson, fakeAuditClient, fakeMember, runSlash } from '../fakes/messages';

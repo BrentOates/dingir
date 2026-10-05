@@ -3,7 +3,7 @@ import { after, before, beforeEach, test } from 'node:test';
 import type { Sequelize } from 'sequelize-typescript';
 import { ServerConfig } from '../../src/client/models/ServerConfig';
 import { UserProfile } from '../../src/client/models/UserProfile';
-import { ConfigService } from '../../src/utilities/ConfigService';
+import { ConfigService } from '../../src/services/ConfigService';
 import { createTestDb } from '../helpers/db';
 
 let db: Sequelize;

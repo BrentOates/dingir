@@ -4,7 +4,7 @@ import { CommandContext, defineCommand } from '../../framework/command';
 import { isValidBirthday, nextOccurrence } from '../../services/BirthdayDates';
 import { refreshCalendar } from '../../services/BirthdayService';
 import { Logger } from '../../utilities/Logger';
-import { UserProfileService } from '../../utilities/UserProfileService';
+import { UserProfileService } from '../../services/UserProfileService';
 
 const refresh = async (ctx: CommandContext): Promise<void> => {
   try {

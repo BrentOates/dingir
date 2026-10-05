@@ -1,6 +1,6 @@
 import { defineEvent } from '../framework/event';
 import { auditJoin, complete } from '../services/OnboardingService';
-import { ConfigService } from '../utilities/ConfigService';
+import { ConfigService } from '../services/ConfigService';
 
 export default defineEvent({
   name: 'guildMemberAdd',

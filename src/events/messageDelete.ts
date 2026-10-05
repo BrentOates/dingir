@@ -2,8 +2,8 @@ import { defineEvent } from '../framework/event';
 import { EmbedColours } from '../resources/EmbedColours';
 import { AuditEmbed } from '../services/AuditEmbed';
 import { sendAudit } from '../services/AuditService';
-import { ConfigService } from '../utilities/ConfigService';
-import { HoneyPotEnforcementService } from '../utilities/HoneyPotEnforcementService';
+import { ConfigService } from '../services/ConfigService';
+import { HoneyPotEnforcementService } from '../services/HoneyPotEnforcementService';
 
 export default defineEvent({
   name: 'messageDelete',
