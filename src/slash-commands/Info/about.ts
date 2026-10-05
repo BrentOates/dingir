@@ -1,27 +1,33 @@
+import { EmbedBuilder } from 'discord.js';
 import { defineCommand } from '../../framework/command';
 import { EmbedColours } from '../../resources/EmbedColours';
-import { EmbedCompatLayer } from '../../types/EmbedCompatLayer';
+import { toRepoUrl, formatUptime } from '../../utilities/format';
 import * as packageJson from '../../../package.json';
 
 export default defineCommand({
   name: 'about',
-  description: 'Returns info about the bot and server',
+  description: 'Show information about Dingir and this server',
+  defer: 'ephemeral',
   run: async (ctx) => {
-    const cmd = ctx.interaction;
     const version = packageJson.version;
-    const projectUrl = packageJson.repository;
+    const projectUrl = packageJson.repository.url;
+    const repoUrl = toRepoUrl(projectUrl);
+    const serverCount = ctx.interaction.client.guilds.cache.size;
+    const guildName = ctx.guild.name;
+    const memberCount = ctx.guild.memberCount;
+    const uptime = formatUptime(ctx.interaction.client.uptime);
 
-    const embed = new EmbedCompatLayer()
-      .setColor(EmbedColours.positive)
-      .setAuthor({
-        name: cmd.client.user.tag,
-        iconURL: cmd.client.user.displayAvatarURL(),
-      })
-      .setDescription('Dingir Discord Bot')
-      .addField('Version', version.length > 0 ? version : 'Unknown')
-      .addField('Project URL', projectUrl.url)
-      .addField('Servers', cmd.client.guilds.cache.size.toString())
-      .setTimestamp();
+    const embed = new EmbedBuilder()
+      .setColor(EmbedColours.info)
+      .setTitle('About Dingir')
+      .setDescription('Show information about Dingir and this server')
+      .addFields(
+        { name: 'Version', value: version, inline: false },
+        { name: 'Source', value: repoUrl, inline: false },
+        { name: 'Servers', value: serverCount.toString(), inline: false },
+        { name: 'This server', value: `${guildName} (${memberCount} members)`, inline: false },
+        { name: 'Uptime', value: uptime, inline: false }
+      );
 
     await ctx.reply({ embeds: [embed] });
   },
