@@ -1,0 +1,56 @@
+import assert from 'node:assert/strict';
+import { test } from 'node:test';
+import { Client, EmbedBuilder } from 'discord.js';
+import { ServerConfig } from '../../src/client/models/ServerConfig';
+import { sendAudit } from '../../src/services/AuditService';
+
+console.warn = (): void => undefined;
+
+const config = (auditChannelId: string | null): ServerConfig =>
+  ({ serverId: 'g1', auditChannelId }) as unknown as ServerConfig;
+const clientWith = (fetch: () => Promise<unknown>): Client =>
+  ({ channels: { fetch } }) as unknown as Client;
+const embed = new EmbedBuilder().setDescription('x');
+
+test('returns false without fetching when no audit channel configured', async () => {
+  let fetched = false;
+  const client = clientWith(async () => {
+    fetched = true;
+    return null;
+  });
+  assert.equal(await sendAudit(client, config(null), embed), false);
+  assert.equal(fetched, false);
+});
+
+test('returns false when fetch rejects', async () => {
+  const client = clientWith(async () => {
+    throw new Error('Missing Access');
+  });
+  assert.equal(await sendAudit(client, config('c1'), embed), false);
+});
+
+test('returns false when channel is missing or not sendable', async () => {
+  assert.equal(await sendAudit(clientWith(async () => null), config('c1'), embed), false);
+  const unsendable = clientWith(async () => ({ isSendable: () => false }));
+  assert.equal(await sendAudit(unsendable, config('c1'), embed), false);
+});
+
+test('returns false when send rejects', async () => {
+  const client = clientWith(async () => ({
+    isSendable: () => true,
+    send: async () => {
+      throw new Error('Missing Permissions');
+    },
+  }));
+  assert.equal(await sendAudit(client, config('c1'), embed), false);
+});
+
+test('sends embed and files, returns true', async () => {
+  const sent: unknown[] = [];
+  const client = clientWith(async () => ({
+    isSendable: () => true,
+    send: async (payload: unknown) => void sent.push(payload),
+  }));
+  assert.equal(await sendAudit(client, config('c1'), embed), true);
+  assert.deepEqual(sent, [{ embeds: [embed], files: undefined }]);
+});

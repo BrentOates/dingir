@@ -1,14 +1,3 @@
-import { EmbedBuilder } from 'discord.js';
+import { AuditEmbed } from '../services/AuditEmbed';
 
-export class EmbedCompatLayer extends EmbedBuilder {
-  public addField(name: string, value: string): EmbedCompatLayer {
-    this.addFields([
-      {
-        name: name,
-        value: value,
-      },
-    ]);
-
-    return this;
-  }
-}
+export class EmbedCompatLayer extends AuditEmbed {}
