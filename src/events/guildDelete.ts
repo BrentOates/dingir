@@ -6,9 +6,11 @@ export default defineEvent({
   name: 'guildDelete',
   run: async (client, guild) => {
     const result = await ConfigService.purgeGuild(guild.id);
-
-    Logger.writeLog(`Bot removed from guild: ${guild.name} (${guild.id}).`);
-    Logger.writeLog(`Config deleted: ${result.config}.`);
-    Logger.writeLog(`User profiles deleted: ${result.profiles}.`);
+    Logger.info('Bot removed from guild', {
+      guild: guild.id,
+      name: guild.name,
+      config: result.config,
+      profiles: result.profiles,
+    });
   },
 });

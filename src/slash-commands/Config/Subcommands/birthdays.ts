@@ -1,5 +1,11 @@
+import { ChannelType, PermissionFlagsBits } from 'discord.js';
 import { defineSubcommandGroup } from '../../../framework/command';
-import { BirthdayManager } from '../../../utilities/BirthdayManager';
+import {
+  calendarMessageUrl,
+  deleteCalendarMessage,
+  refreshCalendar,
+} from '../../../services/BirthdayService';
+import { resolveTextChannel } from '../../../services/MemberResolver';
 
 export const BirthdaysGroup = defineSubcommandGroup({
   name: 'birthdays',
@@ -8,44 +14,84 @@ export const BirthdaysGroup = defineSubcommandGroup({
     {
       name: 'create',
       description: 'Creates or recreates a birthday calendar for this server',
+      defer: 'ephemeral',
       options: (sub) =>
         sub.addChannelOption((opt) =>
           opt
             .setName('channel')
             .setDescription('Channel to create the birthday calendar in')
+            .addChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement)
             .setRequired(true)
         ),
       run: async (ctx) => {
         const { id } = ctx.interaction.options.getChannel('channel', true);
-        const channel = ctx.guild.channels.cache.get(id);
-
-        if (!channel || !channel.isTextBased()) {
-          await ctx.reply({ content: 'Provided channel is not a text channel', ephemeral: false });
+        const channel = await resolveTextChannel(ctx.guild, id);
+        if (!channel) {
+          await ctx.reply('I cannot post in that channel. Pick a text channel.');
+          return;
+        }
+        const me = ctx.guild.members.me;
+        const perms = me ? channel.permissionsFor(me) : null;
+        if (
+          !perms?.has(PermissionFlagsBits.ViewChannel) ||
+          !perms.has(PermissionFlagsBits.SendMessages)
+        ) {
+          await ctx.reply('I need permission to view and send messages in that channel.');
           return;
         }
 
-        const birthdaysCalendar = await channel.send({
-          content: 'Placeholder calendar message - populating...',
-        });
-        ctx.config.birthdayCalendarMessagePath = `${birthdaysCalendar.channel.id}/${birthdaysCalendar.id}`;
-        await ctx.config.save();
-        await BirthdayManager.populateCalendars(ctx.interaction.client, ctx.guild.id);
+        const client = ctx.interaction.client;
+        await deleteCalendarMessage(client, ctx.config.birthdayCalendarMessagePath);
 
-        await ctx.reply('Birthday calendar has been created.');
+        const message = await channel.send({
+          content: 'Placeholder calendar message - populating...',
+          allowedMentions: { parse: [] },
+        });
+        const path = `${message.channelId}/${message.id}`;
+        ctx.config.birthdayCalendarMessagePath = path;
+        await ctx.config.save();
+
+        const status = await refreshCalendar(client, ctx.config);
+        const link = calendarMessageUrl(ctx.guild.id, path);
+        await ctx.reply(
+          status === 'updated'
+            ? `Birthday calendar has been created: ${link}`
+            : `Birthday calendar message was created (${link}) but could not be populated yet; try \`/config birthdays sync\`.`
+        );
       },
     },
     {
       name: 'sync',
       description: 'Syncs the birthday calendar for this server',
+      defer: 'ephemeral',
       run: async (ctx) => {
-        try {
-          await BirthdayManager.populateCalendars(ctx.interaction.client, ctx.config.serverId);
-        } catch {
-          await ctx.reply('An error ocurred running the calendar sync for this server.');
+        const status = await refreshCalendar(ctx.interaction.client, ctx.config);
+        const replies = {
+          updated: `Calendar successfully synchronised for ${ctx.guild.name}.`,
+          'not-configured':
+            'The birthday calendar is not configured. Use `/config birthdays create`.',
+          'channel-missing':
+            'The calendar channel is missing or inaccessible. Recreate it with `/config birthdays create`.',
+          'message-missing':
+            'The calendar message is missing. Recreate it with `/config birthdays create`.',
+          failed: 'An error occurred syncing the calendar. Try again later.',
+        } as const;
+        await ctx.reply(replies[status]);
+      },
+    },
+    {
+      name: 'remove',
+      description: 'Removes the birthday calendar for this server',
+      defer: 'ephemeral',
+      run: async (ctx) => {
+        if (!ctx.config.birthdayCalendarMessagePath) {
+          await ctx.reply('There is no birthday calendar configured.');
           return;
         }
-
-        await ctx.reply(`Calendar successfully synchronised for ${ctx.guild.name}.`);
+        await deleteCalendarMessage(ctx.interaction.client, ctx.config.birthdayCalendarMessagePath);
+        ctx.config.birthdayCalendarMessagePath = null;
+        await ctx.config.save();
+        await ctx.reply('Birthday calendar removed.');
       },
     },
   ],

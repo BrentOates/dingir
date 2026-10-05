@@ -1,6 +1,8 @@
+import { EmbedBuilder } from 'discord.js';
+import { DateTime } from 'luxon';
 import { defineCommand } from '../../framework/command';
 import { EmbedColours } from '../../resources/EmbedColours';
-import { EmbedCompatLayer } from '../../types/EmbedCompatLayer';
+import { resolveMember } from '../../services/MemberResolver';
 import { UserProfileService } from '../../utilities/UserProfileService';
 
 export default defineCommand({
@@ -13,27 +15,37 @@ export default defineCommand({
     ),
   run: async (ctx) => {
     const user = ctx.interaction.options.getUser('member', true);
-    const guild = ctx.guild;
-    const member = guild.members.cache.get(user.id);
+    const member = await resolveMember(ctx.guild, user);
     if (!member) {
-      await ctx.reply('Could not find that member in this server.');
+      await ctx.reply("That user isn't a member of this server.");
       return;
     }
 
-    const userProfile = await UserProfileService.getUserProfile(guild.id, member.id);
+    const profile = await UserProfileService.findUserProfile(ctx.guild.id, member.id);
+    const birthday =
+      profile?.birthdayMonth && profile.birthdayDay
+        ? DateTime.utc(2024, profile.birthdayMonth, profile.birthdayDay)
+            .setLocale('en-GB')
+            .toFormat('d MMMM')
+        : null;
 
-    const embed = new EmbedCompatLayer()
+    const embed = new EmbedBuilder()
       .setThumbnail(member.displayAvatarURL())
       .setColor(EmbedColours.info)
       .setTitle('User Profile')
       .setTimestamp()
-      .addField('Member', member.toString())
-      .addField('Nickname', member.nickname ? member.nickname : 'Not set')
-      .addField('Username', member.user.tag.endsWith('#0') ? member.user.username : member.user.tag)
-      .addField('Joined', `<t:${Math.floor((member.joinedTimestamp ?? 0) / 1000)}:R>`)
-      .addField('Screening', member.pending ? 'Not completed' : 'Passed')
-      .addField('Activity Score', userProfile ? userProfile.activityScore.toString() : 'Not found')
-      .addField('ID', member.user.id);
+      .addFields(
+        { name: 'Member', value: member.toString() },
+        { name: 'Nickname', value: member.nickname ?? 'Not set' },
+        { name: 'Username', value: member.user.username },
+        { name: 'Joined', value: `<t:${Math.floor((member.joinedTimestamp ?? 0) / 1000)}:R>` },
+        { name: 'Onboarding', value: member.pending ? 'Not completed' : 'Completed' },
+        { name: 'Activity Score', value: String(profile?.activityScore ?? 0) }
+      );
+    if (birthday) {
+      embed.addFields({ name: 'Birthday', value: birthday });
+    }
+    embed.addFields({ name: 'ID', value: member.id });
 
     await ctx.reply({ embeds: [embed] });
   },

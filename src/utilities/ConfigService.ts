@@ -27,6 +27,15 @@ export class ConfigService {
     return recordsDeleted > 0;
   }
 
+  public static async resetAccessFailures(config: ServerConfig): Promise<void> {
+    if (config.accessFailureCount === 0 && config.firstAccessFailureAt === null) {
+      return;
+    }
+    config.accessFailureCount = 0;
+    config.firstAccessFailureAt = null;
+    await config.save();
+  }
+
   public static async purgeGuild(
     serverId: string,
     sequelize?: Sequelize

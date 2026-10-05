@@ -1,74 +1,83 @@
 import { DateTime } from 'luxon';
-import { defineCommand } from '../../framework/command';
-import { BirthdayManager } from '../../utilities/BirthdayManager';
+import { env } from '../../config/env';
+import { CommandContext, defineCommand } from '../../framework/command';
+import { isValidBirthday, nextOccurrence } from '../../services/BirthdayDates';
+import { refreshCalendar } from '../../services/BirthdayService';
+import { Logger } from '../../utilities/Logger';
 import { UserProfileService } from '../../utilities/UserProfileService';
+
+const refresh = async (ctx: CommandContext): Promise<void> => {
+  try {
+    const status = await refreshCalendar(ctx.interaction.client, ctx.config);
+    if (status !== 'updated' && status !== 'not-configured') {
+      Logger.warn('Birthday calendar not refreshed', { guild: ctx.guild.id, status });
+    }
+  } catch (error) {
+    Logger.error('Birthday calendar refresh failed', { guild: ctx.guild.id }, error);
+  }
+};
 
 export default defineCommand({
   name: 'mybirthday',
-  description: 'Set your birthday in this server',
-  options: (b) =>
-    b
-      .addNumberOption((opt) =>
-        opt
-          .setName('day')
-          .setDescription('Day of the month of your birthday')
-          .setRequired(true)
-          .setMinValue(1)
-          .setMaxValue(31)
-      )
-      .addNumberOption((opt) =>
-        opt
-          .setName('month')
-          .setDescription('Month of your birthday')
-          .setRequired(true)
-          .setMinValue(1)
-          .setMaxValue(12)
-      ),
-  run: async (ctx) => {
-    const cmd = ctx.interaction;
-    let day = cmd.options.getNumber('day', true);
-    const month = cmd.options.getNumber('month', true);
+  description: 'Manage your birthday in this server',
+  subcommands: [
+    {
+      name: 'set',
+      description: 'Set your birthday in this server',
+      options: (sub) =>
+        sub
+          .addIntegerOption((opt) =>
+            opt
+              .setName('day')
+              .setDescription('Day of the month of your birthday')
+              .setRequired(true)
+              .setMinValue(1)
+              .setMaxValue(31)
+          )
+          .addIntegerOption((opt) =>
+            opt
+              .setName('month')
+              .setDescription('Month of your birthday')
+              .setRequired(true)
+              .setMinValue(1)
+              .setMaxValue(12)
+          ),
+      run: async (ctx) => {
+        const day = ctx.interaction.options.getInteger('day', true);
+        const month = ctx.interaction.options.getInteger('month', true);
 
-    let alteredForLeap = false;
+        if (!isValidBirthday(month, day)) {
+          await ctx.reply('That date is invalid; check the day and month and try again.');
+          return;
+        }
 
-    const now = DateTime.local();
+        await UserProfileService.setBirthday(ctx.guild.id, ctx.interaction.user.id, month, day);
 
-    if (!now.isInLeapYear && day === 29 && month === 2) {
-      day--;
-      alteredForLeap = true;
-    }
-
-    let nextDate = DateTime.local(now.year, month, day);
-
-    if (nextDate <= now) {
-      nextDate = nextDate.plus({
-        year: 1,
-      });
-      if (nextDate.isInLeapYear && alteredForLeap) {
-        nextDate = nextDate.plus({
-          day: 1,
-        });
-      }
-    }
-
-    if (!nextDate.isValid) {
-      await ctx.reply(
-        'It looks like that date was invalid, make sure a valid day and month were given'
-      );
-      return;
-    }
-
-    const guildId = ctx.guild.id;
-    const userProfile = await UserProfileService.getUserProfile(guildId, cmd.user.id);
-
-    userProfile.birthdayDay = day;
-    userProfile.birthdayMonth = month;
-
-    await userProfile.save();
-
-    await ctx.reply(
-      `I've set your next birthday to ${nextDate.toLocaleString(DateTime.DATE_FULL)}!`
-    );
-    await BirthdayManager.populateCalendars(cmd.client, guildId);
-  },
+        const now = DateTime.now();
+        const next = nextOccurrence(month, day, now, env.timezone);
+        const isToday = next.hasSame(now.setZone(env.timezone), 'day');
+        const text = isToday
+          ? 'today 🎉'
+          : next.setLocale('en-GB').toLocaleString(DateTime.DATE_FULL);
+        await ctx.reply(`Saved! Your next birthday is ${text}`);
+        await refresh(ctx);
+      },
+    },
+    {
+      name: 'clear',
+      description: 'Remove your birthday from this server',
+      run: async (ctx) => {
+        const cleared = await UserProfileService.clearBirthday(
+          ctx.guild.id,
+          ctx.interaction.user.id
+        );
+        await ctx.reply(
+          cleared ? 'Your birthday has been removed.' : "You don't have a birthday set."
+        );
+        if (cleared) {
+          await refresh(ctx);
+        }
+      },
+    },
+  ],
 });

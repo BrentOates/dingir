@@ -1,22 +1,7 @@
-import { DateTime } from 'luxon';
 import { Op } from 'sequelize';
 import { UserProfile } from '../client/models/UserProfile';
 
 export class UserProfileService {
-  public static async getBirthdaysToday(): Promise<UserProfile[]> {
-    const today = DateTime.local();
-    const includeLeapDayInNoneLeapYear =
-      !today.isInLeapYear && today.day === 28 && today.month === 2;
-    const day = includeLeapDayInNoneLeapYear ? [28, 29] : today.day;
-
-    return UserProfile.findAll({
-      where: {
-        birthdayDay: day,
-        birthdayMonth: today.month,
-      },
-    });
-  }
-
   public static async getServerBirthdays(serverId: string): Promise<UserProfile[]> {
     return UserProfile.findAll({
       where: {
@@ -29,6 +14,44 @@ export class UserProfileService {
         serverId: serverId,
       },
     });
+  }
+
+  public static async getServerProfiles(serverId: string): Promise<UserProfile[]> {
+    return UserProfile.findAll({ where: { serverId } });
+  }
+
+  public static async setBirthday(
+    serverId: string,
+    userId: string,
+    month: number,
+    day: number
+  ): Promise<void> {
+    const profile = await this.getUserProfile(serverId, userId);
+    profile.birthdayMonth = month;
+    profile.birthdayDay = day;
+    await profile.save();
+  }
+
+  public static async clearBirthday(serverId: string, userId: string): Promise<boolean> {
+    const profile = await this.findUserProfile(serverId, userId);
+    if (!profile) {
+      return false;
+    }
+    profile.birthdayYear = null;
+    profile.birthdayMonth = null;
+    profile.birthdayDay = null;
+    await profile.save();
+    return true;
+  }
+
+  public static async deleteUsers(serverId: string, userIds: string[]): Promise<number> {
+    let removed = 0;
+    for (let i = 0; i < userIds.length; i += 500) {
+      removed += await UserProfile.destroy({
+        where: { serverId, userId: { [Op.in]: userIds.slice(i, i + 500) } },
+      });
+    }
+    return removed;
   }
 
   public static async getUserProfile(serverId: string, userId: string): Promise<UserProfile> {
