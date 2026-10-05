@@ -1,4 +1,5 @@
 import { type CommandContext, defineSubcommandGroup } from '../../../framework/command.ts';
+import { UserError } from '../../../framework/errors.ts';
 import { type ServerConfigPatch, updateConfig } from '../../../services/ConfigService.ts';
 import { complete } from '../../../services/OnboardingService.ts';
 import { isHttpUrl, render } from '../../../services/WelcomeImage.ts';
@@ -21,8 +22,7 @@ const setMessage = async (ctx: CommandContext) => {
   const text = ctx.interaction.options.getString('text', true);
   const problem = validateWelcomeMessage(text);
   if (problem) {
-    await ctx.reply(problem);
-    return;
+    throw new UserError(problem);
   }
   ctx.config = await updateConfig(ctx.app.db, ctx.config.serverId, { welcomeMessage: text });
   await ctx.reply({
@@ -35,16 +35,15 @@ const setImage = async (ctx: CommandContext) => {
   const url = ctx.interaction.options.getString('url', true).trim();
   const problem = validateImageUrl(url);
   if (problem) {
-    await ctx.reply(problem);
-    return;
+    throw new UserError(problem);
   }
   try {
     await render(ctx.app, ctx.member, url);
   } catch (error) {
-    await ctx.reply(
-      `That image could not be used: ${error instanceof Error ? error.message : String(error)}`
+    throw new UserError(
+      `That image could not be used: ${error instanceof Error ? error.message : String(error)}`,
+      { cause: error }
     );
-    return;
   }
   ctx.config = await updateConfig(ctx.app.db, ctx.config.serverId, {
     welcomeMessageBackgroundUrl: url,

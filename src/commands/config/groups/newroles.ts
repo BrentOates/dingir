@@ -1,5 +1,6 @@
 import { Role } from 'discord.js';
 import { type CommandContext, defineSubcommandGroup } from '../../../framework/command.ts';
+import { UserError } from '../../../framework/errors.ts';
 import { EmbedColours } from '../../../resources/EmbedColours.ts';
 import { memberAuditEmbed } from '../../../services/AuditEmbed.ts';
 import { sendAudit } from '../../../services/AuditService.ts';
@@ -72,11 +73,7 @@ export const NewRolesGroup = defineSubcommandGroup({
           return problem ? [`${role.name}: ${problem}`] : [];
         });
         if (problems.length > 0) {
-          await ctx.reply({
-            content: `Those roles cannot be used:\n${problems.join('\n')}`,
-            allowedMentions: NO_MENTIONS,
-          });
-          return;
+          throw new UserError(`Those roles cannot be used:\n${problems.join('\n')}`);
         }
 
         const ids = [...roles.keys()];

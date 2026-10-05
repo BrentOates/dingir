@@ -1,5 +1,6 @@
 import { ChannelType, PermissionFlagsBits } from 'discord.js';
 import { defineSubcommandGroup } from '../../../framework/command.ts';
+import { UserError } from '../../../framework/errors.ts';
 import {
   calendarMessageUrl,
   deleteCalendarMessage,
@@ -28,8 +29,7 @@ export const BirthdaysGroup = defineSubcommandGroup({
         const { id } = ctx.interaction.options.getChannel('channel', true);
         const channel = await resolveTextChannel(ctx.guild, id);
         if (!channel) {
-          await ctx.reply('I cannot post in that channel. Pick a text channel.');
-          return;
+          throw new UserError('I cannot post in that channel. Pick a text channel.');
         }
         const me = ctx.guild.members.me;
         const perms = me ? channel.permissionsFor(me) : null;
@@ -37,8 +37,7 @@ export const BirthdaysGroup = defineSubcommandGroup({
           !perms?.has(PermissionFlagsBits.ViewChannel) ||
           !perms.has(PermissionFlagsBits.SendMessages)
         ) {
-          await ctx.reply('I need permission to view and send messages in that channel.');
-          return;
+          throw new UserError('I need permission to view and send messages in that channel.');
         }
 
         const client = ctx.interaction.client;
@@ -87,8 +86,7 @@ export const BirthdaysGroup = defineSubcommandGroup({
       defer: 'ephemeral',
       run: async (ctx) => {
         if (!ctx.config.birthdayCalendarMessagePath) {
-          await ctx.reply('There is no birthday calendar configured.');
-          return;
+          throw new UserError('There is no birthday calendar configured.');
         }
         await deleteCalendarMessage(ctx.interaction.client, ctx.config.birthdayCalendarMessagePath);
         ctx.config = await updateConfig(ctx.app.db, ctx.config.serverId, {

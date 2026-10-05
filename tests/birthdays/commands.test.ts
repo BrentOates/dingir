@@ -6,6 +6,7 @@ import profile from '../../src/commands/info/profile.ts';
 import { fakeClient, fakeGuildWithMembers } from '../fakes/guild.ts';
 import { fakeInteraction } from '../fakes/interaction.ts';
 import { createTestApp } from '../helpers/app.ts';
+import { rejectsUserError } from '../helpers/assertions.ts';
 import { dbFixtures } from '../helpers/db.ts';
 
 const app = createTestApp();
@@ -56,8 +57,10 @@ test('mybirthday set stores Feb 29 as 29', async () => {
 });
 
 test('mybirthday set rejects invalid dates', async () => {
-  const calls = await exec(mybirthday, { subcommand: 'set', options: { day: 31, month: 4 } });
-  assert.match(lastContent(calls), /invalid/);
+  await rejectsUserError(
+    exec(mybirthday, { subcommand: 'set', options: { day: 31, month: 4 } }),
+    /invalid/
+  );
   assert.equal(await countProfiles(), 0);
 });
 
@@ -74,8 +77,10 @@ test('mybirthday clear removes the birthday but keeps the profile', async () => 
 
 test('profile replies for a non-member without creating a profile', async () => {
   const guild = fakeGuildWithMembers({ id: 'guild-1', memberIds: [] });
-  const calls = await exec(profile as any, { options: { member: { id: 'ghost' } }, guild });
-  assert.equal(lastContent(calls), "That user isn't a member of this server.");
+  await rejectsUserError(
+    exec(profile as any, { options: { member: { id: 'ghost' } }, guild }),
+    "That user isn't a member of this server."
+  );
   assert.equal(await countProfiles(), 0);
 });
 

@@ -1,6 +1,7 @@
 import { EmbedBuilder } from 'discord.js';
 import { DateTime } from 'luxon';
 import { defineCommand } from '../../framework/command.ts';
+import { UserError } from '../../framework/errors.ts';
 import { EmbedColours } from '../../resources/EmbedColours.ts';
 import { resolveMember } from '../../services/MemberResolver.ts';
 import { findUserProfile } from '../../services/UserProfileService.ts';
@@ -17,8 +18,7 @@ export default defineCommand({
     const user = ctx.interaction.options.getUser('member', true);
     const member = await resolveMember(ctx.guild, user);
     if (!member) {
-      await ctx.reply("That user isn't a member of this server.");
-      return;
+      throw new UserError("That user isn't a member of this server.");
     }
 
     const profile = await findUserProfile(ctx.app.db, ctx.guild.id, member.id);

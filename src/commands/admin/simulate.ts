@@ -1,18 +1,19 @@
 import { GuildMember, SlashCommandSubcommandBuilder } from 'discord.js';
 import { type CommandContext, defineCommand } from '../../framework/command.ts';
+import { UserError } from '../../framework/errors.ts';
 import { resolveMember } from '../../services/MemberResolver.ts';
 import { auditJoin, complete, formatOnboardingSummary } from '../../services/OnboardingService.ts';
 
 const NO_MENTIONS = { parse: [] };
 
-const targetOf = async (ctx: CommandContext): Promise<GuildMember | null> => {
+const targetOf = async (ctx: CommandContext): Promise<GuildMember> => {
   const user = ctx.interaction.options.getUser('member');
   if (!user) {
     return ctx.member;
   }
   const member = await resolveMember(ctx.guild, user);
   if (!member) {
-    await ctx.reply(`Could not find ${user.toString()} in this server.`);
+    throw new UserError(`Could not find ${user.toString()} in this server.`);
   }
   return member;
 };
@@ -32,9 +33,6 @@ export default defineCommand({
       options: memberOption('Member to simulate joining as (defaults to you)'),
       run: async (ctx) => {
         const target = await targetOf(ctx);
-        if (!target) {
-          return;
-        }
         const sent = await auditJoin(ctx.app, ctx.interaction.client, target, ctx.config);
         await ctx.reply({
           content: sent
@@ -51,9 +49,6 @@ export default defineCommand({
       options: memberOption('Member to simulate completing onboarding as (defaults to you)'),
       run: async (ctx) => {
         const target = await targetOf(ctx);
-        if (!target) {
-          return;
-        }
         const result = await complete(ctx.app, ctx.interaction.client, target, ctx.config, {
           dryRun: true,
         });

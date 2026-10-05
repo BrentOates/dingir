@@ -3,6 +3,7 @@ import { after, test } from 'node:test';
 import { Collection, MessageFlags } from 'discord.js';
 import type { DingirClient } from '../src/client/DingirClient.ts';
 import { type Command, defineCommand } from '../src/framework/command.ts';
+import { UserError } from '../src/framework/errors.ts';
 import interactionCreate from '../src/events/interactionCreate.ts';
 import { fakeInteraction } from './fakes/interaction.ts';
 import { createTestApp } from './helpers/app.ts';
@@ -151,4 +152,45 @@ test('a failing error reply is logged and does not throw', async () => {
   };
   await dispatch(clientWith(cmd), interaction);
   assert.ok(app.logsAt('error').some((entry) => entry.message === 'Could not send command error reply'));
+});
+
+test('a UserError replies ephemerally with its message and is not logged as an error', async () => {
+  const cmd = defineCommand({
+    name: 'test',
+    description: 'd',
+    run: async () => {
+      throw new UserError('That is not allowed.');
+    },
+  });
+  const { interaction, calls } = fakeInteraction();
+  const before = app.logs.length;
+  await dispatch(clientWith(cmd), interaction);
+
+  assert.deepEqual(calls, [
+    { method: 'reply', payload: { content: 'That is not allowed.', flags: MessageFlags.Ephemeral } },
+  ]);
+  const entries = app.logs.slice(before);
+  assert.equal(entries.filter((entry) => entry.level === 'error').length, 0);
+  assert.ok(
+    entries.some((entry) => entry.level === 'info' && entry.context?.reason === 'That is not allowed.')
+  );
+});
+
+test('a UserError thrown after deferring edits the deferred reply', async () => {
+  const cmd = defineCommand({
+    name: 'test',
+    description: 'd',
+    defer: 'ephemeral',
+    run: async () => {
+      throw new UserError('Nope.');
+    },
+  });
+  const { interaction, calls } = fakeInteraction();
+  await dispatch(clientWith(cmd), interaction);
+
+  assert.deepEqual(
+    calls.map((c) => c.method),
+    ['deferReply', 'editReply']
+  );
+  assert.equal(calls[1].payload.content, 'Nope.');
 });

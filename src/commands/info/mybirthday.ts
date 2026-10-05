@@ -1,5 +1,6 @@
 import { DateTime } from 'luxon';
 import { type CommandContext, defineCommand } from '../../framework/command.ts';
+import { UserError } from '../../framework/errors.ts';
 import { isValidBirthday, nextOccurrence } from '../../services/BirthdayDates.ts';
 import { refreshCalendar } from '../../services/BirthdayService.ts';
 import { clearBirthday, setBirthday } from '../../services/UserProfileService.ts';
@@ -45,8 +46,7 @@ export default defineCommand({
         const month = ctx.interaction.options.getInteger('month', true);
 
         if (!isValidBirthday(month, day)) {
-          await ctx.reply('That date is invalid; check the day and month and try again.');
-          return;
+          throw new UserError('That date is invalid; check the day and month and try again.');
         }
 
         await setBirthday(ctx.app.db, ctx.guild.id, ctx.interaction.user.id, month, day);

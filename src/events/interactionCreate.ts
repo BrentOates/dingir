@@ -1,5 +1,6 @@
 import { MessageFlags } from 'discord.js';
 import { type CommandContext, createReply } from '../framework/command.ts';
+import { UserError } from '../framework/errors.ts';
 import { defineEvent } from '../framework/event.ts';
 import { getConfig } from '../services/ConfigService.ts';
 
@@ -55,9 +56,15 @@ export default defineEvent({
         guild: interaction.guildId,
         user: interaction.user.id,
       };
-      app.logger.error('Command failed', context, error);
+      let message = 'Something went wrong running this command.';
+      if (error instanceof UserError) {
+        message = error.message;
+        app.logger.info('Command rejected', { ...context, reason: message });
+      } else {
+        app.logger.error('Command failed', context, error);
+      }
       try {
-        await reply('Something went wrong running this command.');
+        await reply(message);
       } catch (replyError) {
         app.logger.error('Could not send command error reply', { path: resolved.path }, replyError);
       }

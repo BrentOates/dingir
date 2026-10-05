@@ -1,5 +1,6 @@
 import { ChannelType, Message, PermissionFlagsBits } from 'discord.js';
 import { defineCommand } from '../../framework/command.ts';
+import { UserError } from '../../framework/errors.ts';
 import { EmbedColours } from '../../resources/EmbedColours.ts';
 import { memberAuditEmbed } from '../../services/AuditEmbed.ts';
 import { sendAudit } from '../../services/AuditService.ts';
@@ -32,14 +33,12 @@ export default defineCommand({
     const attachment = options.getAttachment('attachment');
 
     if (!content && !attachment) {
-      await ctx.reply('You must provide at least text or an attachment.');
-      return;
+      throw new UserError('You must provide at least text or an attachment.');
     }
 
     const channel = await resolveTextChannel(ctx.guild, target.id);
     if (!channel) {
-      await ctx.reply('The provided channel is not valid.');
-      return;
+      throw new UserError('The provided channel is not valid.');
     }
 
     const required = [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages];
@@ -52,8 +51,7 @@ export default defineCommand({
       const names = Object.entries(PermissionFlagsBits)
         .filter(([, flag]) => missing.includes(flag))
         .map(([name]) => name);
-      await ctx.reply(`I am missing permissions in ${channel.toString()}: ${names.join(', ')}.`);
-      return;
+      throw new UserError(`I am missing permissions in ${channel.toString()}: ${names.join(', ')}.`);
     }
 
     let sent: Message;
@@ -69,8 +67,7 @@ export default defineCommand({
         { guildId: ctx.guild.id, channelId: channel.id },
         error
       );
-      await ctx.reply('An error was encountered sending this message.');
-      return;
+      throw new UserError('An error was encountered sending this message.', { cause: error });
     }
 
     const audit = memberAuditEmbed(ctx.member, EmbedColours.neutral, 'Post created via Dingir')

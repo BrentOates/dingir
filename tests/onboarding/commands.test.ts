@@ -9,6 +9,7 @@ import WelcomeGroup, {
 } from '../../src/commands/config/groups/welcome.ts';
 import { fakeCommandContext, fakeOnboarding, role } from '../fakes/onboarding.ts';
 import { createTestApp } from '../helpers/app.ts';
+import { rejectsUserError } from '../helpers/assertions.ts';
 import { dbFixtures } from '../helpers/db.ts';
 
 const app = createTestApp();
@@ -35,14 +36,12 @@ test('newroles set rejects @everyone, managed and too-high roles and saves nothi
     },
     env
   );
-  await handler(NewRolesGroup, 'set')(ctx);
+  await rejectsUserError(handler(NewRolesGroup, 'set')(ctx), /managed[\s\S]*highest role/);
   assert.equal(ctx.config, env.config);
-  assert.match(replies[0].content, /managed/);
-  assert.match(replies[0].content, /highest role/);
+  assert.equal(replies.length, 0);
 
   const everyone = fakeCommandContext(app, { 'role-one': { id: 'guild-1', name: '@everyone', position: 0 } }, env);
-  await handler(NewRolesGroup, 'set')(everyone.ctx);
-  assert.match(everyone.replies[0].content, /everyone/);
+  await rejectsUserError(handler(NewRolesGroup, 'set')(everyone.ctx), /everyone/);
   assert.equal(everyone.ctx.config, env.config);
 });
 
@@ -97,16 +96,16 @@ test('welcome validators', () => {
 test('welcome set-image rejects non-http URLs without saving', async () => {
   const env = fakeOnboarding();
   const { ctx, replies } = fakeCommandContext(app, { url: 'ftp://example.com/a.png' }, env);
-  await handler(WelcomeGroup as never, 'set-image')(ctx);
-  assert.match(replies[0].content, /http/);
+  await rejectsUserError(handler(WelcomeGroup as never, 'set-image')(ctx), /http/);
+  assert.equal(replies.length, 0);
   assert.equal(env.config.welcomeMessageBackgroundUrl, null);
 });
 
 test('welcome set-image rejects an unreachable image and does not save', async () => {
   const env = fakeOnboarding();
   const { ctx, replies } = fakeCommandContext(app, { url: 'http://127.0.0.1:1/bg.png' }, env);
-  await handler(WelcomeGroup as never, 'set-image')(ctx);
-  assert.match(replies[0].content, /could not be used/);
+  await rejectsUserError(handler(WelcomeGroup as never, 'set-image')(ctx), /could not be used/);
+  assert.equal(replies.length, 0);
   assert.equal(env.config.welcomeMessageBackgroundUrl, null);
 });
 
