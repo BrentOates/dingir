@@ -2,9 +2,9 @@ import { commands } from '../commands/index.ts';
 import { loadEnv } from '../config/env.ts';
 import { commandScope, putCommands } from '../framework/registrar.ts';
 import { validateRegistry } from '../framework/registry.ts';
-import { createConsoleLogger } from '../utilities/Logger.ts';
+import { createConsoleLogger, parseLogLevel } from '../utilities/Logger.ts';
 
-const logger = createConsoleLogger();
+const logger = createConsoleLogger({ level: parseLogLevel(process.env.LOG_LEVEL?.trim()) });
 
 try {
   const env = loadEnv();

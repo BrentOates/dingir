@@ -1,4 +1,5 @@
 import { IANAZone } from 'luxon';
+import { DEFAULT_LOG_LEVEL, LOG_LEVELS, type LogLevel, parseLogLevel } from '../utilities/Logger.ts';
 
 export interface Env {
   readonly token: string;
@@ -8,6 +9,7 @@ export interface Env {
   readonly dbPath: string;
   readonly purgeMinFailures: number;
   readonly purgeGraceDays: number;
+  readonly logLevel: LogLevel;
   readonly devGuildId?: string;
 }
 
@@ -78,6 +80,17 @@ export function loadEnv(source: Source = process.env): Readonly<Env> {
     }
   }
 
+  let logLevel = DEFAULT_LOG_LEVEL;
+  const rawLogLevel = read('LOG_LEVEL');
+  if (rawLogLevel !== undefined) {
+    const parsed = parseLogLevel(rawLogLevel);
+    if (parsed === undefined) {
+      problems.push(`LOG_LEVEL must be one of ${LOG_LEVELS.join(', ')} (got "${rawLogLevel}")`);
+    } else {
+      logLevel = parsed;
+    }
+  }
+
   const devGuildId = read('DEV_GUILD_ID');
 
   if (problems.length > 0) {
@@ -92,6 +105,7 @@ export function loadEnv(source: Source = process.env): Readonly<Env> {
     dbPath,
     purgeMinFailures,
     purgeGraceDays,
+    logLevel,
     devGuildId,
   });
 }

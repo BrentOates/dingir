@@ -2,9 +2,10 @@ import { type App, createApp } from './app.ts';
 import { DingirClient } from './client/DingirClient.ts';
 import { type Env, loadEnv } from './config/env.ts';
 import { installProcessHandlers } from './framework/process.ts';
-import { createConsoleLogger } from './utilities/Logger.ts';
+import { createConsoleLogger, parseLogLevel } from './utilities/Logger.ts';
 
-const logger = createConsoleLogger();
+// Read leniently: loadEnv() reports an invalid LOG_LEVEL once the logger exists.
+const logger = createConsoleLogger({ level: parseLogLevel(process.env.LOG_LEVEL?.trim()) });
 let app: App | undefined;
 
 installProcessHandlers({

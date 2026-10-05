@@ -13,6 +13,7 @@ test('applies defaults when only required variables are set', () => {
   assert.equal(env.dbPath, 'data/dingir.sqlite');
   assert.equal(env.purgeMinFailures, 3);
   assert.equal(env.purgeGraceDays, 7);
+  assert.equal(env.logLevel, 'info');
   assert.equal(env.devGuildId, undefined);
 });
 
@@ -78,4 +79,9 @@ test('rejects malformed cron strings', () => {
 test('rejects non-integer purge settings', () => {
   assert.throws(() => loadEnv({ ...valid, PURGE_MIN_FAILURES: '2.5' }), /PURGE_MIN_FAILURES/);
   assert.throws(() => loadEnv({ ...valid, PURGE_GRACE_DAYS: 'abc' }), /PURGE_GRACE_DAYS/);
+});
+
+test('parses and validates LOG_LEVEL', () => {
+  assert.equal(loadEnv({ ...valid, LOG_LEVEL: 'debug' }).logLevel, 'debug');
+  assert.throws(() => loadEnv({ ...valid, LOG_LEVEL: 'bogus' }), /LOG_LEVEL must be one of/);
 });

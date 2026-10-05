@@ -1,43 +1,69 @@
 import assert from 'node:assert/strict';
-import { afterEach, beforeEach, test } from 'node:test';
-import { createConsoleLogger, formatContext } from '../src/utilities/Logger.ts';
+import { test } from 'node:test';
+import { createConsoleLogger, parseLogLevel, type LogLevel } from '../src/utilities/Logger.ts';
 
-type Method = 'log' | 'warn' | 'error';
-const original = { log: console.log, warn: console.warn, error: console.error };
-let lines: Record<Method, string[]>;
+const capture = (level?: LogLevel) => {
+  const lines: string[] = [];
+  const logger = createConsoleLogger({
+    level,
+    destination: {
+      write: (line: string) => {
+        lines.push(line);
+      },
+    },
+  });
+  return { logger, entries: () => lines.map((line) => JSON.parse(line) as Record<string, unknown>) };
+};
 
-beforeEach(() => {
-  lines = { log: [], warn: [], error: [] };
-  for (const method of Object.keys(lines) as Method[]) {
-    console[method] = (msg: unknown) => {
-      lines[method].push(String(msg));
-    };
-  }
+test('writes JSON lines with level, message and merged context', () => {
+  const { logger, entries } = capture();
+  logger.info('hello', { guild: '1' });
+  logger.warn('careful');
+  logger.fatal('dead');
+
+  const [info, warn, fatal] = entries();
+  assert.equal(info?.msg, 'hello');
+  assert.equal(info?.guild, '1');
+  assert.equal(info?.level, 30);
+  assert.equal(typeof info?.time, 'string');
+  assert.equal(warn?.msg, 'careful');
+  assert.equal(warn?.level, 40);
+  assert.equal(fatal?.level, 60);
 });
 
-afterEach(() => {
-  Object.assign(console, original);
+test('serialises errors under err with a stack', () => {
+  const { logger, entries } = capture();
+  logger.error('bad', { event: 'x' }, new Error('nope'));
+  logger.error('plain failure', undefined, 'just a string');
+
+  const [first, second] = entries();
+  const err = first?.err as { message: string; stack: string };
+  assert.equal(first?.event, 'x');
+  assert.equal(err.message, 'nope');
+  assert.match(err.stack, /Error: nope/);
+  assert.equal(second?.err, 'just a string');
 });
 
-test('formatContext renders key=value pairs', () => {
-  assert.equal(
-    formatContext({ guild: '123', name: 'a b', count: 3, ok: true, none: null }),
-    'guild=123 name="a b" count=3 ok=true none=null'
+test('respects the configured level', () => {
+  const { logger, entries } = capture('warn');
+  logger.debug('hidden');
+  logger.info('hidden');
+  logger.warn('shown');
+  assert.deepEqual(
+    entries().map((e) => e.msg),
+    ['shown']
   );
-  assert.equal(formatContext(), '');
 });
 
-const Logger = createConsoleLogger();
+test('defaults to info', () => {
+  const { logger, entries } = capture();
+  logger.debug('hidden');
+  logger.info('shown');
+  assert.equal(entries().length, 1);
+});
 
-test('level helpers include level, message, context and error', () => {
-  Logger.info('hello', { guild: '1' });
-  Logger.warn('careful');
-  Logger.error('bad', { event: 'x' }, new Error('nope'));
-  Logger.debug('detail');
-
-  assert.match(lines.log[0], /INFO: hello guild=1$/);
-  assert.match(lines.warn[0], /WARN: careful$/);
-  assert.match(lines.error[0], /ERROR: bad event=x$/);
-  assert.match(lines.error[1], /ERROR: Error: nope/);
-  assert.match(lines.log[1], /DEBUG: detail$/);
+test('parseLogLevel accepts only known levels', () => {
+  assert.equal(parseLogLevel('trace'), 'trace');
+  assert.equal(parseLogLevel('bogus'), undefined);
+  assert.equal(parseLogLevel(undefined), undefined);
 });

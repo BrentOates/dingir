@@ -20,7 +20,7 @@ export interface App {
 /** Builds the app, opening and migrating the database unless one is supplied. */
 export function createApp(overrides: Partial<App> = {}): App {
   const env = overrides.env ?? loadEnv();
-  const logger = overrides.logger ?? createConsoleLogger();
+  const logger = overrides.logger ?? createConsoleLogger({ level: env.logLevel });
   const shutdown = overrides.shutdown ?? createShutdownRegistry(logger);
 
   let db = overrides.db;

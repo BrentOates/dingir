@@ -1,34 +1,14 @@
+import { pino, type DestinationStream } from 'pino';
+
 type Context = Record<string, unknown>;
-type Level = 'DEBUG' | 'INFO' | 'WARN' | 'ERROR' | 'FATAL';
 
-const timestamp = (): string => new Date().toISOString();
+export const LOG_LEVELS = ['fatal', 'error', 'warn', 'info', 'debug', 'trace'] as const;
+export type LogLevel = (typeof LOG_LEVELS)[number];
 
-const formatError = (error: unknown): string =>
-  error instanceof Error ? (error.stack ?? `${error.name}: ${error.message}`) : String(error);
+export const DEFAULT_LOG_LEVEL: LogLevel = 'info';
 
-const formatValue = (value: unknown): string => {
-  if (value instanceof Error) {
-    return value.message;
-  }
-  if (typeof value === 'string') {
-    return /[\s="]/.test(value) || value === '' ? JSON.stringify(value) : value;
-  }
-  if (typeof value === 'object' && value !== null) {
-    try {
-      return JSON.stringify(value);
-    } catch {
-      return String(value);
-    }
-  }
-  return String(value);
-};
-
-export const formatContext = (context?: Context): string =>
-  context
-    ? Object.entries(context)
-        .map(([key, value]) => `${key}=${formatValue(value)}`)
-        .join(' ')
-    : '';
+export const parseLogLevel = (value: string | undefined): LogLevel | undefined =>
+  LOG_LEVELS.find((level) => level === value);
 
 export interface Logger {
   debug(message: string, context?: Context, error?: unknown): void;
@@ -38,20 +18,36 @@ export interface Logger {
   fatal(message: string, context?: Context, error?: unknown): void;
 }
 
-const emit = (level: Level, message: string, context?: Context, error?: unknown): void => {
-  const ctx = formatContext(context);
-  const line = `[${timestamp()}] ${level}: ${message}${ctx ? ` ${ctx}` : ''}`;
-  const write = level === 'ERROR' || level === 'FATAL' ? console.error : level === 'WARN' ? console.warn : console.log;
-  write(line);
-  if (error !== undefined && error !== null) {
-    write(`[${timestamp()}] ${level}: ${formatError(error)}`);
-  }
-};
+export interface LoggerOptions {
+  level?: LogLevel;
+  /** Defaults to stdout. */
+  destination?: DestinationStream;
+}
 
-export const createConsoleLogger = (): Logger => ({
-  debug: (message, context, error) => emit('DEBUG', message, context, error),
-  info: (message, context, error) => emit('INFO', message, context, error),
-  warn: (message, context, error) => emit('WARN', message, context, error),
-  error: (message, context, error) => emit('ERROR', message, context, error),
-  fatal: (message, context, error) => emit('FATAL', message, context, error),
-});
+/** Structured JSON logger (pino) writing one line per entry; pipe through pino-pretty for humans. */
+export const createConsoleLogger = ({
+  level = DEFAULT_LOG_LEVEL,
+  destination,
+}: LoggerOptions = {}): Logger => {
+  const base = pino(
+    { level, timestamp: pino.stdTimeFunctions.isoTime, base: undefined },
+    destination ?? pino.destination(1)
+  );
+  const at =
+    (method: keyof Logger): Logger[keyof Logger] =>
+    (message, context, error) => {
+      const fields = error === undefined || error === null ? context : { ...context, err: error };
+      if (fields) {
+        base[method](fields, message);
+      } else {
+        base[method](message);
+      }
+    };
+  return {
+    debug: at('debug'),
+    info: at('info'),
+    warn: at('warn'),
+    error: at('error'),
+    fatal: at('fatal'),
+  };
+};

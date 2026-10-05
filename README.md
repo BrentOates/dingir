@@ -16,6 +16,8 @@ For watch mode during development:
 npm run dev
 ```
 
+Logs are structured JSON. For human-readable output while developing, use `npm run dev:pretty` (pipes through `pino-pretty`, a dev dependency). In production, pipe `docker logs` or `npm start` through `npx pino-pretty` if you want the same.
+
 Test and lint:
 ```bash
 npm test        # Run the test suite
@@ -51,6 +53,7 @@ All configuration is managed through environment variables in `.env`. See `.env.
 | `DB_PATH` | No | `data/dingir.sqlite` | Path to SQLite database file. Use `:memory:` for throwaway runs (no persistence) |
 | `PURGE_MIN_FAILURES` | No | `3` | Minimum number of failed guild access checks before purging orphaned data (see Data & Retention) |
 | `PURGE_GRACE_DAYS` | No | `7` | Grace period (days) after first failure before purging. Data is purged only after both thresholds are met |
+| `LOG_LEVEL` | No | `info` | Log verbosity: `fatal`, `error`, `warn`, `info`, `debug` or `trace`. Logs are JSON, one object per line |
 | `DEV_GUILD_ID` | No | — | Guild ID for instant slash command registration during development (commands update immediately instead of within 1 hour). Omit in production |
 
 ## Discord Setup
