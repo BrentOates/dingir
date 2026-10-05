@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   verify:
-    name: Lint, Typecheck and Test
+    name: Format, Lint, Typecheck and Test
     runs-on: ubuntu-latest
 
     steps:
@@ -24,14 +24,16 @@ jobs:
           node-version: 24
           cache: npm
 
-      # ESLint and Prettier must be in `package.json`
       - name: Install Node.js dependencies
         run: npm ci
 
       - name: Audit dependencies
         run: npm audit --audit-level=low
 
-      - name: Run linters
+      - name: Check formatting
+        run: npm run format:check
+
+      - name: Run linter
         run: npm run lint
 
       - name: Type check

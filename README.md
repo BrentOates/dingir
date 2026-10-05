@@ -19,13 +19,17 @@ npm run dev
 
 Logs are structured JSON. For human-readable output while developing, use `npm run dev:pretty` (pipes through `pino-pretty`, a dev dependency). In production, pipe `docker logs` or `npm start` through `npx pino-pretty` if you want the same.
 
-Test and lint:
+Test, lint and format:
 
 ```bash
-npm test        # Run the test suite
+npm test               # Run the test suite
 npm run test:coverage  # Run tests and enforce coverage thresholds
-npm run typecheck  # Type-check src and tests
-npm run lint    # Check code style and errors
+npm run typecheck      # Type-check src and tests (TypeScript 7, tsc --noEmit)
+npm run lint           # Lint with oxlint (type-aware, via oxlint-tsgolint)
+npm run lint:fix       # Apply oxlint auto-fixes
+npm run format         # Format with oxfmt
+npm run format:check   # Verify formatting without writing
+npm run check          # format:check, lint, typecheck and test:coverage (what CI runs)
 ```
 
 ### Docker
