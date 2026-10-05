@@ -1,5 +1,5 @@
 type Context = Record<string, unknown>;
-type Level = 'DEBUG' | 'INFO' | 'WARN' | 'ERROR';
+type Level = 'DEBUG' | 'INFO' | 'WARN' | 'ERROR' | 'FATAL';
 
 const timestamp = (): string => new Date().toISOString();
 
@@ -35,12 +35,13 @@ export interface Logger {
   info(message: string, context?: Context, error?: unknown): void;
   warn(message: string, context?: Context, error?: unknown): void;
   error(message: string, context?: Context, error?: unknown): void;
+  fatal(message: string, context?: Context, error?: unknown): void;
 }
 
 const emit = (level: Level, message: string, context?: Context, error?: unknown): void => {
   const ctx = formatContext(context);
   const line = `[${timestamp()}] ${level}: ${message}${ctx ? ` ${ctx}` : ''}`;
-  const write = level === 'ERROR' ? console.error : level === 'WARN' ? console.warn : console.log;
+  const write = level === 'ERROR' || level === 'FATAL' ? console.error : level === 'WARN' ? console.warn : console.log;
   write(line);
   if (error !== undefined && error !== null) {
     write(`[${timestamp()}] ${level}: ${formatError(error)}`);
@@ -52,4 +53,5 @@ export const createConsoleLogger = (): Logger => ({
   info: (message, context, error) => emit('INFO', message, context, error),
   warn: (message, context, error) => emit('WARN', message, context, error),
   error: (message, context, error) => emit('ERROR', message, context, error),
+  fatal: (message, context, error) => emit('FATAL', message, context, error),
 });

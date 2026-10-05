@@ -4,7 +4,7 @@ import { openDb } from '../../src/db/db.ts';
 import { migrate } from '../../src/db/migrator.ts';
 import type { Logger } from '../../src/utilities/Logger.ts';
 
-export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
+export type LogLevel = 'debug' | 'info' | 'warn' | 'error' | 'fatal';
 
 export interface LogEntry {
   level: LogLevel;
@@ -31,7 +31,7 @@ export function fakeLogger(): { logger: Logger; logs: LogEntry[] } {
       logs.push({ level, message, context, error });
     };
   return {
-    logger: { debug: at('debug'), info: at('info'), warn: at('warn'), error: at('error') },
+    logger: { debug: at('debug'), info: at('info'), warn: at('warn'), error: at('error'), fatal: at('fatal') },
     logs,
   };
 }

@@ -1,9 +1,18 @@
-import { createApp } from './app.ts';
+import { type App, createApp } from './app.ts';
 import { DingirClient } from './client/DingirClient.ts';
 import { type Env, loadEnv } from './config/env.ts';
+import { installProcessHandlers } from './framework/process.ts';
 import { createConsoleLogger } from './utilities/Logger.ts';
 
 const logger = createConsoleLogger();
+let app: App | undefined;
+
+installProcessHandlers({
+  proc: process,
+  logger,
+  runShutdown: async () => app?.shutdown.run(),
+  exit: (code) => process.exit(code),
+});
 
 async function main(): Promise<void> {
   let env: Env;
@@ -15,11 +24,11 @@ async function main(): Promise<void> {
     process.exit(1);
   }
 
-  const app = createApp({ env, logger });
+  app = createApp({ env, logger });
   await new DingirClient(app).start();
 }
 
 main().catch((error: unknown) => {
-  logger.error('Fatal error during startup.', undefined, error);
+  logger.fatal('Fatal error during startup.', undefined, error);
   process.exit(1);
 });

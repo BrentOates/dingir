@@ -9,7 +9,6 @@ import { events } from '../events/index.ts';
 class DingirClient extends Client {
   public slashCommands: Collection<string, Command> = new Collection();
   private readonly app: App;
-  private shuttingDown = false;
 
   public constructor(app: App) {
     super({
@@ -39,33 +38,10 @@ class DingirClient extends Client {
 
     this.on('error', (error) => logger.error('Discord client error', undefined, error));
     this.on('warn', (message) => logger.warn(message));
-    process.on('unhandledRejection', (reason) =>
-      logger.error('Unhandled promise rejection', undefined, reason)
-    );
-    for (const signal of ['SIGTERM', 'SIGINT'] as const) {
-      process.on(signal, () => {
-        void this.shutdown(signal);
-      });
-    }
+    this.app.shutdown.register(() => this.destroy());
 
     await this.login(env.token);
     logger.info('Logged in');
-  }
-
-  private async shutdown(signal: string): Promise<void> {
-    const { logger } = this.app;
-    if (this.shuttingDown) {
-      return;
-    }
-    this.shuttingDown = true;
-    logger.info(`${signal} received, shutting down`);
-    try {
-      await this.destroy();
-    } catch (error) {
-      logger.error('Error destroying client', undefined, error);
-    }
-    await this.app.shutdown.run();
-    process.exit(0);
   }
 }
 
