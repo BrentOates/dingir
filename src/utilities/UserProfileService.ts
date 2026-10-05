@@ -54,25 +54,6 @@ export class UserProfileService {
     await UserProfile.increment({ activityScore: 1 }, { where: { serverId, userId } });
   }
 
-  public static async decrementActivityScore(
-    serverId: string,
-    userId: string
-  ): Promise<UserProfile> {
-    await this.getUserProfile(serverId, userId);
-    await UserProfile.increment(
-      {
-        activityScore: -1,
-      },
-      {
-        where: {
-          serverId: serverId,
-          userId: userId,
-        },
-      }
-    );
-    return this.getUserProfile(serverId, userId);
-  }
-
   public static async deleteUser(serverId: string, userId: string): Promise<boolean> {
     const recordsDeleted = await UserProfile.destroy({
       where: {

@@ -1,45 +1,49 @@
-import { EmbedColours } from '../resources/EmbedColours';
 import { defineEvent } from '../framework/event';
-import { ChannelService } from '../utilities/ChannelService';
+import { EmbedColours } from '../resources/EmbedColours';
+import { AuditEmbed } from '../services/AuditEmbed';
+import { sendAudit } from '../services/AuditService';
 import { ConfigService } from '../utilities/ConfigService';
-import { EmbedCompatLayer } from '../types/EmbedCompatLayer';
-import { UserProfileService } from '../utilities/UserProfileService';
 import { HoneyPotEnforcementService } from '../utilities/HoneyPotEnforcementService';
 
 export default defineEvent({
   name: 'messageDelete',
   run: async (client, message) => {
-    if (!message.author || !message.guild) {
+    if (!message.guildId) {
+      return;
+    }
+    if (message.author?.bot) {
+      return;
+    }
+    if (message.author && HoneyPotEnforcementService.isActive(message.guildId, message.author.id)) {
       return;
     }
 
-    if (HoneyPotEnforcementService.isActive(message.guild.id, message.author.id)) {
+    const config = await ConfigService.getConfig(message.guildId);
+
+    if (message.partial || !message.author) {
+      const audit = new AuditEmbed()
+        .setColor(EmbedColours.neutral)
+        .setDescription('A message was deleted (not cached — content unavailable)')
+        .setTimestamp()
+        .addField('Channel', `<#${message.channelId}>`)
+        .addField('Message ID', message.id);
+      await sendAudit(client, config, audit);
       return;
     }
 
-    const serverConfig = await ConfigService.getConfig(message.guild.id);
-
-    await UserProfileService.decrementActivityScore(message.guild.id, message.author.id);
-
-    const audit = new EmbedCompatLayer()
-      .setColor(EmbedColours.neutral)
-      .setAuthor({
-        name: message.author.tag,
-        iconURL: message.author.displayAvatarURL(),
-      })
-      .setDescription('A message was deleted')
-      .setTimestamp();
-
+    const audit = AuditEmbed.forMember(message.author, EmbedColours.neutral, 'A message was deleted')
+      .addField('Channel', `<#${message.channelId}>`)
+      .addField('Author ID', message.author.id);
     if (message.content) {
       audit.addField('Message', message.content);
+    }
+    if (message.attachments.size > 0) {
+      const names = [...message.attachments.values()].map((a) => a.name).join(', ');
+      audit.addField('Attachments', `${message.attachments.size}: ${names}`);
     }
     if (message.embeds.length > 0) {
       audit.addField('Embeds', message.embeds.length.toString());
     }
-    if (message.attachments.size > 0) {
-      audit.addField('Attachments', message.attachments.size.toString());
-    }
-
-    await ChannelService.sendAuditMessage(client, serverConfig, audit);
+    await sendAudit(client, config, audit);
   },
 });

@@ -1,37 +1,29 @@
-import { EmbedColours } from '../resources/EmbedColours';
 import { defineEvent } from '../framework/event';
-import { ChannelService } from '../utilities/ChannelService';
+import { EmbedColours } from '../resources/EmbedColours';
+import { AuditEmbed } from '../services/AuditEmbed';
+import { sendAudit } from '../services/AuditService';
 import { ConfigService } from '../utilities/ConfigService';
-import { EmbedCompatLayer } from '../types/EmbedCompatLayer';
-import { UserProfileService } from '../utilities/UserProfileService';
 import { HoneyPotEnforcementService } from '../utilities/HoneyPotEnforcementService';
+import { UserProfileService } from '../utilities/UserProfileService';
 
 export default defineEvent({
   name: 'guildMemberRemove',
   run: async (client, member) => {
-    if (member.user.bot) {
+    const user = member.user;
+    if (user.bot) {
       return;
     }
 
-    if (HoneyPotEnforcementService.isActive(member.guild.id, member.user.id)) {
-      await UserProfileService.deleteUser(member.guild.id, member.user.id);
+    const dataDeleted = await UserProfileService.deleteUser(member.guild.id, user.id);
+    if (HoneyPotEnforcementService.isActive(member.guild.id, user.id)) {
       return;
     }
 
-    const dataDeleted = await UserProfileService.deleteUser(member.guild.id, member.user.id);
+    const audit = AuditEmbed.forMember(member.partial ? user : member, EmbedColours.negative, 'Member left')
+      .addField('ID', user.id)
+      .addField('Member data cleanup', dataDeleted ? 'Deleted' : 'No stored member data');
 
-    const audit = new EmbedCompatLayer()
-      .setColor(EmbedColours.negative)
-      .setAuthor({
-        name: member.displayName,
-        iconURL: member.displayAvatarURL(),
-      })
-      .setDescription('Member left')
-      .addField('ID', member.user.id)
-      .addField('Member data cleanup', dataDeleted ? 'Deleted' : 'No stored member data')
-      .setTimestamp();
-
-    const serverConfig = await ConfigService.getConfig(member.guild.id);
-    await ChannelService.sendAuditMessage(client, serverConfig, audit);
+    const config = await ConfigService.getConfig(member.guild.id);
+    await sendAudit(client, config, audit);
   },
 });
