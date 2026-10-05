@@ -252,7 +252,7 @@ Members can set their birthday using `/mybirthday set <day> <month>`. Birthdays 
 
 ### Scheduled Daily Job
 
-On the schedule defined by `JOB_SCHEDULE` (default: 9:00 AM UTC), three tasks run in order:
+On the schedule defined by `JOB_SCHEDULE` (default: 9:00 AM in the configured `BOT_TIMEZONE`), three tasks run in order:
 
 1. **Data Check** — Checks access to each configured guild. If unreachable, increments the failure counter. After `PURGE_MIN_FAILURES` failures spanning `PURGE_GRACE_DAYS` days, the guild's data is purged. Transient errors (timeouts, API errors) do not count toward purging.
 2. **Birthday Notifications** — Posts birthday announcements in the announcements channel for members with birthdays today
