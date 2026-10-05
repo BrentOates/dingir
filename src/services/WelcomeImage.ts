@@ -2,7 +2,7 @@ import path from 'node:path';
 import type { GuildMember } from 'discord.js';
 import { AttachmentBuilder } from 'discord.js';
 import { DateTime } from 'luxon';
-import type { Canvas} from '@napi-rs/canvas';
+import type { Canvas } from '@napi-rs/canvas';
 import { createCanvas, GlobalFonts, loadImage } from '@napi-rs/canvas';
 import type { App } from '../app.ts';
 
@@ -49,13 +49,16 @@ const downloadImage = async (url: string): Promise<Buffer> => {
     response = await fetch(url, { signal: AbortSignal.timeout(DOWNLOAD_TIMEOUT_MS) });
   } catch (error) {
     if (error instanceof Error && (error.name === 'TimeoutError' || error.name === 'AbortError')) {
-      throw new Error(`Downloading the image timed out after ${DOWNLOAD_TIMEOUT_MS / 1000} seconds`, {
-        cause: error,
-      });
+      throw new Error(
+        `Downloading the image timed out after ${DOWNLOAD_TIMEOUT_MS / 1000} seconds`,
+        {
+          cause: error,
+        },
+      );
     }
     throw new Error(
       `Could not download the image: ${error instanceof Error ? error.message : String(error)}`,
-      { cause: error }
+      { cause: error },
     );
   }
   if (!response.ok) {
@@ -71,7 +74,7 @@ const downloadImage = async (url: string): Promise<Buffer> => {
 export type WelcomeImageRenderer = (
   app: App,
   member: GuildMember,
-  backgroundUrl: string
+  backgroundUrl: string,
 ) => Promise<AttachmentBuilder>;
 
 export const render: WelcomeImageRenderer = async (app, member, backgroundUrl) => {
@@ -90,9 +93,9 @@ export const render: WelcomeImageRenderer = async (app, member, backgroundUrl) =
 
   const canvas = createCanvas(700, 250);
   const ctx = canvas.getContext('2d');
-  const joined = DateTime.fromMillis(member.joinedTimestamp, { zone: app.env.timezone }).toLocaleString(
-    DateTime.DATE_FULL
-  );
+  const joined = DateTime.fromMillis(member.joinedTimestamp, {
+    zone: app.env.timezone,
+  }).toLocaleString(DateTime.DATE_FULL);
   const name = member.displayName;
   const welcome = `Welcome to ${member.guild.name}!`;
   const joinedText = `Joined: ${joined}`;

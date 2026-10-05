@@ -1,4 +1,4 @@
-import type { GuildMember, Message} from 'discord.js';
+import type { GuildMember, Message } from 'discord.js';
 import { PermissionFlagsBits, type Snowflake } from 'discord.js';
 import type { App } from '../app.ts';
 import type { DingirClient } from '../client/DingirClient.ts';
@@ -22,7 +22,7 @@ const auditHoneypot = async (
   member: GuildMember,
   channelId: Snowflake,
   description: string,
-  action: string
+  action: string,
 ): Promise<void> => {
   const audit = memberAuditEmbed(member, EmbedColours.negative, description)
     .addField('Member ID', member.id)
@@ -36,15 +36,14 @@ export const handleHoneypot = async (
   app: App,
   client: DingirClient,
   message: Message<true>,
-  config: ServerConfig
+  config: ServerConfig,
 ): Promise<boolean> => {
   if (!config.honeyPotChannelId || config.honeyPotChannelId !== message.channelId) {
     return false;
   }
 
   const member =
-    message.member ??
-    (await message.guild.members.fetch(message.author.id).catch(() => null));
+    message.member ?? (await message.guild.members.fetch(message.author.id).catch(() => null));
   if (!member || member.permissions.has(PermissionFlagsBits.Administrator)) {
     return true;
   }
@@ -57,7 +56,15 @@ export const handleHoneypot = async (
     app.honeypot.cancel(message.guild.id, member.id);
     const error = 'The bot cannot ban this member because of its permissions or role hierarchy.';
     app.logger.error(`Honey-pot ban failed for ${member.id}.`, undefined, error);
-    await auditHoneypot(app, client, config, member, message.channelId, 'Honey-pot ban failed', error);
+    await auditHoneypot(
+      app,
+      client,
+      config,
+      member,
+      message.channelId,
+      'Honey-pot ban failed',
+      error,
+    );
     return true;
   }
 
@@ -70,7 +77,15 @@ export const handleHoneypot = async (
     app.honeypot.cancel(message.guild.id, member.id);
     const errorMessage = formatError(error);
     app.logger.error(`Honey-pot ban failed for ${member.id}.`, undefined, errorMessage);
-    await auditHoneypot(app, client, config, member, message.channelId, 'Honey-pot ban failed', errorMessage);
+    await auditHoneypot(
+      app,
+      client,
+      config,
+      member,
+      message.channelId,
+      'Honey-pot ban failed',
+      errorMessage,
+    );
     return true;
   }
 
@@ -78,7 +93,7 @@ export const handleHoneypot = async (
     app.logger.error(
       `Could not delete profile data for honey-pot ban ${member.id}.`,
       undefined,
-      formatError(error)
+      formatError(error),
     );
   });
   await auditHoneypot(
@@ -88,7 +103,7 @@ export const handleHoneypot = async (
     member,
     message.channelId,
     'Honey-pot triggered',
-    "Banned and deleted the member's messages from the past 7 days."
+    "Banned and deleted the member's messages from the past 7 days.",
   );
   return true;
 };

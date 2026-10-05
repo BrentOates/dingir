@@ -17,7 +17,7 @@ export type ServerConfigPatch = Partial<Omit<ServerConfig, 'serverId' | 'created
 
 export async function getConfig(
   { db, configCache }: ConfigDeps,
-  serverId: Snowflake
+  serverId: Snowflake,
 ): Promise<ServerConfig> {
   const cached = configCache.get(serverId);
   if (cached) {
@@ -39,7 +39,7 @@ export async function getConfigs(db: Db): Promise<ServerConfig[]> {
 export async function updateConfig(
   { db, configCache }: ConfigDeps,
   serverId: Snowflake,
-  patch: ServerConfigPatch
+  patch: ServerConfigPatch,
 ): Promise<ServerConfig> {
   configCache.delete(serverId);
   const updated = db.transaction((tx) => {
@@ -57,7 +57,7 @@ export async function updateConfig(
 
 export async function deleteConfig(
   { db, configCache }: ConfigDeps,
-  serverId: Snowflake
+  serverId: Snowflake,
 ): Promise<boolean> {
   configCache.delete(serverId);
   const result = db.delete(serverConfigs).where(eq(serverConfigs.serverId, serverId)).run();
@@ -66,7 +66,7 @@ export async function deleteConfig(
 
 export async function resetAccessFailures(
   deps: ConfigDeps,
-  config: ServerConfig
+  config: ServerConfig,
 ): Promise<ServerConfig> {
   if (config.accessFailureCount === 0 && config.firstAccessFailureAt === null) {
     return config;
@@ -76,7 +76,7 @@ export async function resetAccessFailures(
 
 export async function purgeGuild(
   { db, configCache }: ConfigDeps,
-  serverId: Snowflake
+  serverId: Snowflake,
 ): Promise<{ config: boolean; profiles: number }> {
   configCache.delete(serverId);
   return db.transaction((tx) => {

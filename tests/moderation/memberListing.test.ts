@@ -16,7 +16,9 @@ after(() => {
 
 const DAY = 24 * 60 * 60 * 1000;
 const members = (count: number, joined: number | null = Date.now()) =>
-  Array.from({ length: count }, (_, i) => fakeMember(String(100000000000000000 + i), { joinedTimestamp: joined }));
+  Array.from({ length: count }, (_, i) =>
+    fakeMember(String(100000000000000000 + i), { joinedTimestamp: joined }),
+  );
 
 test('small listings reply inline without mentions', () => {
   const result = buildMemberListing('**Header**', 'none', members(3));
@@ -42,7 +44,10 @@ test('null join dates are described as unknown', () => {
   const result = buildMemberListing('**Header**', 'none', members(1, null));
   assert.match(result.content!, /join date unknown/);
   const big = buildMemberListing('**Header**', 'none', members(200, null));
-  assert.match((nth(big.files as unknown[] | undefined) as { attachment: Buffer }).attachment.toString('utf8'), /join date unknown/);
+  assert.match(
+    (nth(big.files as unknown[] | undefined) as { attachment: Buffer }).attachment.toString('utf8'),
+    /join date unknown/,
+  );
 });
 
 test('empty listing returns the empty message', () => {
@@ -53,7 +58,10 @@ test('rolesince filters by days in server and excludes bots', async () => {
   const now = FIXED_NOW.getTime();
   const old = fakeMember('1', { joinedTimestamp: now - 40 * DAY });
   const recent = fakeMember('2', { joinedTimestamp: now - 2 * DAY });
-  const bot = fakeMember('3', { joinedTimestamp: now - 90 * DAY, user: fakeUser('3', { bot: true }) });
+  const bot = fakeMember('3', {
+    joinedTimestamp: now - 90 * DAY,
+    user: fakeUser('3', { bot: true }),
+  });
   const role = {
     toString: () => '<@&r1>',
     members: new Collection([old, recent, bot].map((m) => [m.id, m])),
@@ -84,7 +92,12 @@ test('rolesince filters by days in server and excludes bots', async () => {
 test('noroles lists only non-bot members with just the everyone role', async () => {
   const plain = fakeMember('1');
   const withRole = fakeMember('2', {
-    roles: { cache: new Collection<string, unknown>([['e', {}], ['r', {}]]) },
+    roles: {
+      cache: new Collection<string, unknown>([
+        ['e', {}],
+        ['r', {}],
+      ]),
+    },
   });
   const bot = fakeMember('3', { user: fakeUser('3', { bot: true }) });
   const guild = {

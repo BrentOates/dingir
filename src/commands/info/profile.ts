@@ -12,7 +12,7 @@ export default defineCommand({
   adminOnly: true,
   options: (b) =>
     b.addUserOption((opt) =>
-      opt.setName('member').setDescription('Member to fetch profile for').setRequired(true)
+      opt.setName('member').setDescription('Member to fetch profile for').setRequired(true),
     ),
   run: async (ctx) => {
     const user = ctx.interaction.options.getUser('member', true);
@@ -40,7 +40,7 @@ export default defineCommand({
         { name: 'Username', value: member.user.username },
         { name: 'Joined', value: `<t:${Math.floor((member.joinedTimestamp ?? 0) / 1000)}:R>` },
         { name: 'Onboarding', value: member.pending ? 'Not completed' : 'Completed' },
-        { name: 'Activity Score', value: String(profile?.activityScore ?? 0) }
+        { name: 'Activity Score', value: String(profile?.activityScore ?? 0) },
       );
     if (birthday) {
       embed.addFields({ name: 'Birthday', value: birthday });

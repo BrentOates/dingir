@@ -23,7 +23,7 @@ export const nextAccessState = (
   state: AccessState,
   outcome: AccessOutcome,
   now: Date,
-  policy: RetentionPolicyConfig
+  policy: RetentionPolicyConfig,
 ): AccessState & { purge: boolean } => {
   if (outcome === 'ok') {
     return { accessFailureCount: 0, firstAccessFailureAt: null, purge: false };

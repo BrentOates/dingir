@@ -29,18 +29,23 @@ const handler = (group: typeof NewRolesGroup, name: string): Handler =>
 test('newroles set rejects @everyone, managed and too-high roles and saves nothing', async () => {
   const env = fakeOnboarding({ roles: [role('ok', 1), role('m', 1, true), role('hi', 10)] });
   const { ctx, replies } = fakeCommandContext(
-    app, {
+    app,
+    {
       'role-one': env.guild.roles.cache.get('ok'),
       'role-two': env.guild.roles.cache.get('m'),
       'role-three': env.guild.roles.cache.get('hi'),
     },
-    env
+    env,
   );
   await rejectsUserError(handler(NewRolesGroup, 'set')(ctx), /managed[\s\S]*highest role/);
   assert.equal(ctx.config, env.config);
   assert.equal(replies.length, 0);
 
-  const everyone = fakeCommandContext(app, { 'role-one': { id: 'guild-1', name: '@everyone', position: 0 } }, env);
+  const everyone = fakeCommandContext(
+    app,
+    { 'role-one': { id: 'guild-1', name: '@everyone', position: 0 } },
+    env,
+  );
   await rejectsUserError(handler(NewRolesGroup, 'set')(everyone.ctx), /everyone/);
   assert.equal(everyone.ctx.config, env.config);
 });
@@ -50,8 +55,9 @@ test('newroles set saves valid roles, dedupes, and audits', async () => {
   createConfig({ serverId: 'guild-1', auditChannelId: 'audit-1' });
   const a = env.guild.roles.cache.get('a');
   const { ctx, replies } = fakeCommandContext(
-    app, { 'role-one': a, 'role-two': env.guild.roles.cache.get('b'), 'role-three': a },
-    env
+    app,
+    { 'role-one': a, 'role-two': env.guild.roles.cache.get('b'), 'role-three': a },
+    env,
   );
   await handler(NewRolesGroup, 'set')(ctx);
   assert.equal(ctx.config.guestRoleIds, 'a,b');
@@ -134,7 +140,9 @@ test('welcome preview explains why nothing would be sent', async () => {
 });
 
 test('welcome preview shows the text without sending', async () => {
-  const env = fakeOnboarding({ config: { welcomeMessage: 'hi {member} {member}', systemMessagesEnabled: true } });
+  const env = fakeOnboarding({
+    config: { welcomeMessage: 'hi {member} {member}', systemMessagesEnabled: true },
+  });
   const { ctx, replies } = fakeCommandContext(app, {}, env);
   await handler(WelcomeGroup as never, 'preview')(ctx);
   assert.match(nth(replies).content!, /hi <@member-1> <@member-1>/);

@@ -1,20 +1,20 @@
 {
-	"compilerOptions": {
-		"lib": ["ESNext"],
-		"types": ["node"],
-		"module": "nodenext",
-		"moduleResolution": "nodenext",
-		"target": "ES2024",
-		"noEmit": true,
-		"strict": true,
-		"noUncheckedIndexedAccess": true,
-		"noImplicitOverride": true,
-		"noFallthroughCasesInSwitch": true,
-		"erasableSyntaxOnly": true,
-		"verbatimModuleSyntax": true,
-		"allowImportingTsExtensions": true,
-		"resolveJsonModule": true,
-		"skipLibCheck": true
-	},
-	"include": ["src", "tests"]
+  "compilerOptions": {
+    "lib": ["ESNext"],
+    "types": ["node"],
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "target": "ES2024",
+    "noEmit": true,
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+    "erasableSyntaxOnly": true,
+    "verbatimModuleSyntax": true,
+    "allowImportingTsExtensions": true,
+    "resolveJsonModule": true,
+    "skipLibCheck": true
+  },
+  "include": ["src", "tests"]
 }

@@ -25,7 +25,7 @@ const get = async (ctx: CommandContext) => {
     return;
   }
   const lines = ids.map((id) =>
-    ctx.guild.roles.cache.has(id) ? `<@&${id}>` : `${id} (this role no longer exists)`
+    ctx.guild.roles.cache.has(id) ? `<@&${id}>` : `${id} (this role no longer exists)`,
   );
   await ctx.reply({
     content: `Roles given to members when they complete onboarding:\n${lines.join('\n')}`,
@@ -51,13 +51,13 @@ export const NewRolesGroup = defineSubcommandGroup({
             option
               .setName(ROLE_OPTIONS[0])
               .setDescription('Role to give to members when they complete onboarding')
-              .setRequired(true)
+              .setRequired(true),
           )
           .addRoleOption((option) =>
-            option.setName(ROLE_OPTIONS[1]).setDescription('Optional second role to give')
+            option.setName(ROLE_OPTIONS[1]).setDescription('Optional second role to give'),
           )
           .addRoleOption((option) =>
-            option.setName(ROLE_OPTIONS[2]).setDescription('Optional third role to give')
+            option.setName(ROLE_OPTIONS[2]).setDescription('Optional third role to give'),
           ),
       run: async (ctx) => {
         const roles = new Map<string, Role>();

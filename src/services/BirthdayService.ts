@@ -1,4 +1,4 @@
-import type { Client} from 'discord.js';
+import type { Client } from 'discord.js';
 import { type Snowflake } from 'discord.js';
 import { DateTime } from 'luxon';
 import type { ServerConfig } from '../db/schema.ts';
@@ -20,7 +20,7 @@ const SEPARATOR = '-------------';
 const LOCALE = 'en-GB';
 
 export const parseCalendarPath = (
-  path: string | null | undefined
+  path: string | null | undefined,
 ): { channelId: Snowflake; messageId: Snowflake } | null => {
   const [channelId, messageId, ...rest] = (path ?? '').split('/');
   return channelId && messageId && rest.length === 0 ? { channelId, messageId } : null;
@@ -32,7 +32,7 @@ export const calendarMessageUrl = (guildId: Snowflake, path: string): string =>
 export const buildCalendarContent = (
   profiles: readonly BirthdayProfile[],
   now: DateTime,
-  zone: string
+  zone: string,
 ): string => {
   const groups = upcoming(profiles, now, zone);
   let content = ':tada: ~ Upcoming Birthdays ~ :tada:\n';
@@ -58,7 +58,7 @@ const nowOf = (app: App): DateTime => DateTime.fromJSDate(app.clock());
 export const refreshCalendar = async (
   app: App,
   client: Client,
-  config: ServerConfig
+  config: ServerConfig,
 ): Promise<CalendarStatus> => {
   const { logger } = app;
   const guild = config.serverId;
@@ -97,7 +97,7 @@ export const refreshCalendar = async (
 
 export const deleteCalendarMessage = async (
   client: Client,
-  path: string | null | undefined
+  path: string | null | undefined,
 ): Promise<void> => {
   const target = parseCalendarPath(path);
   if (!target) {
@@ -137,7 +137,7 @@ const notifyGuild = async (
   app: App,
   client: Client,
   config: ServerConfig,
-  now: DateTime
+  now: DateTime,
 ): Promise<void> => {
   const { logger } = app;
   const zone = app.env.timezone;
@@ -162,7 +162,7 @@ const notifyGuild = async (
       logger.warn(
         'Could not resolve birthday member',
         { guild: config.serverId, user: profile.userId },
-        error
+        error,
       );
     }
   }

@@ -3,12 +3,12 @@ name: Build on Tag
 on:
   push:
     tags:
-    - '*'
+      - '*'
 
 permissions:
   checks: write
   packages: write
-      
+
 jobs:
   verify:
     name: Lint, Typecheck and Test
@@ -65,6 +65,6 @@ jobs:
         with:
           push: true
           platforms: linux/amd64,linux/arm64
-          tags: | 
-              ghcr.io/brentoates/dingir:${{ github.ref_name }}
-              ghcr.io/brentoates/dingir:latest
+          tags: |
+            ghcr.io/brentoates/dingir:${{ github.ref_name }}
+            ghcr.io/brentoates/dingir:latest

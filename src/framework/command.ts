@@ -6,7 +6,8 @@ import type {
   Guild,
   GuildMember,
   SlashCommandSubcommandBuilder,
-  SlashCommandSubcommandGroupBuilder} from 'discord.js';
+  SlashCommandSubcommandGroupBuilder,
+} from 'discord.js';
 import {
   type APIEmbed,
   type AttachmentPayload,
@@ -18,7 +19,7 @@ import {
   PermissionFlagsBits,
   type RESTPostAPIChatInputApplicationCommandsJSONBody,
   SlashCommandBuilder,
-  type SlashCommandOptionsOnlyBuilder
+  type SlashCommandOptionsOnlyBuilder,
 } from 'discord.js';
 import type { App } from '../app.ts';
 import type { ServerConfig } from '../db/schema.ts';
@@ -83,7 +84,7 @@ export interface Command {
 }
 
 export function buildReplyPayload(
-  response: string | ReplyOptions
+  response: string | ReplyOptions,
 ): Omit<ReplyOptions, 'ephemeral'> & { flags?: MessageFlags.Ephemeral } {
   const { ephemeral = true, ...rest } =
     typeof response === 'string' ? { content: response } : response;
@@ -137,7 +138,9 @@ export function defineCommand(def: CommandDefinition): Command {
     throw new Error(`${where} must define either run or subcommands/groups`);
   }
   if (!isLeaf && (def.options || def.defer !== undefined)) {
-    throw new Error(`${where} sets options/defer but is not a leaf command; set them on subcommands`);
+    throw new Error(
+      `${where} sets options/defer but is not a leaf command; set them on subcommands`,
+    );
   }
 
   assertUnique('subcommand/group', where, [
@@ -153,7 +156,7 @@ export function defineCommand(def: CommandDefinition): Command {
     assertUnique(
       'subcommand',
       groupWhere,
-      group.subcommands.map((s) => s.name)
+      group.subcommands.map((s) => s.name),
     );
   }
 
@@ -217,8 +220,8 @@ export function defineCommand(def: CommandDefinition): Command {
       routes.get(
         routeKey(
           interaction.options.getSubcommandGroup(false),
-          interaction.options.getSubcommand(false)
-        )
+          interaction.options.getSubcommand(false),
+        ),
       ),
   };
 }

@@ -4,7 +4,10 @@ import type { Guild } from 'discord.js';
 import { apiError, fakeMember, stub } from '../fakes/discord.ts';
 import { resolveMember, resolveTextChannel } from '../../src/services/MemberResolver.ts';
 
-const guildWith = (cached: Record<string, unknown>, fetch: (id: string) => Promise<unknown>): Guild =>
+const guildWith = (
+  cached: Record<string, unknown>,
+  fetch: (id: string) => Promise<unknown>,
+): Guild =>
   stub<Guild>({
     members: { cache: new Map(Object.entries(cached)), fetch },
     channels: { cache: new Map(Object.entries(cached)), fetch },

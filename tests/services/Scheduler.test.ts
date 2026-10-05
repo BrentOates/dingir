@@ -5,7 +5,12 @@ import { fakeLogger } from '../helpers/app.ts';
 
 const { logger } = fakeLogger();
 
-const fakeSchedule = (): { fn: ScheduleFn; calls: unknown[]; cancelled: () => number; fire: () => void } => {
+const fakeSchedule = (): {
+  fn: ScheduleFn;
+  calls: unknown[];
+  cancelled: () => number;
+  fire: () => void;
+} => {
   const calls: unknown[] = [];
   let cancels = 0;
   let cb: () => void = () => undefined;
@@ -70,7 +75,13 @@ test('start schedules with cron and tz; second start is a no-op', () => {
 test('fired job triggers tasks', async () => {
   const fake = fakeSchedule();
   let ran = 0;
-  const scheduler = new Scheduler(logger, '* * * * *', 'utc', [{ name: 't', run: async () => void (ran += 1) }], fake.fn);
+  const scheduler = new Scheduler(
+    logger,
+    '* * * * *',
+    'utc',
+    [{ name: 't', run: async () => void (ran += 1) }],
+    fake.fn,
+  );
   scheduler.start();
   fake.fire();
   await new Promise((resolve) => setImmediate(resolve));

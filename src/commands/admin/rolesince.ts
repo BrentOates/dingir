@@ -9,13 +9,13 @@ export default defineCommand({
   options: (b) =>
     b
       .addRoleOption((opt) =>
-        opt.setName('role').setDescription('Role to search').setRequired(true)
+        opt.setName('role').setDescription('Role to search').setRequired(true),
       )
       .addIntegerOption((opt) =>
         opt
           .setName('days')
           .setDescription('Minimum number of days since the member joined the server')
-          .setMinValue(0)
+          .setMinValue(0),
       ),
   run: async (ctx) => {
     const role = ctx.interaction.options.getRole('role', true);
@@ -35,8 +35,8 @@ export default defineCommand({
       buildMemberListing(
         `**Users in ${role.toString()} that joined the server at least ${days} days ago**`,
         `There are no users in ${role.toString()} that joined the server at least ${days} days ago.`,
-        members
-      )
+        members,
+      ),
     );
   },
 });

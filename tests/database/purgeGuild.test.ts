@@ -16,7 +16,9 @@ beforeEach(() => {
   app.configCache.clear();
   db.delete(userProfiles).run();
   db.delete(serverConfigs).run();
-  db.insert(serverConfigs).values([{ serverId: 's1' }, { serverId: 's2' }]).run();
+  db.insert(serverConfigs)
+    .values([{ serverId: 's1' }, { serverId: 's2' }])
+    .run();
   db.insert(userProfiles)
     .values([
       { serverId: 's1', userId: 'a' },
@@ -36,7 +38,10 @@ const configCount = (): number => db.select({ n: count() }).from(serverConfigs).
 test('purgeGuild deletes only the target server and reports counts', async () => {
   assert.deepEqual(await purgeGuild(app, 's1'), { config: true, profiles: 2 });
 
-  assert.equal(db.select().from(serverConfigs).where(eq(serverConfigs.serverId, 's1')).get(), undefined);
+  assert.equal(
+    db.select().from(serverConfigs).where(eq(serverConfigs.serverId, 's1')).get(),
+    undefined,
+  );
   assert.ok(db.select().from(serverConfigs).where(eq(serverConfigs.serverId, 's2')).get());
   assert.equal(profileCount('s1'), 0);
   assert.equal(profileCount('s2'), 1);
@@ -50,7 +55,7 @@ test('purgeGuild on an unknown server deletes nothing', async () => {
 
 test('purgeGuild rolls back the profile delete when the config delete fails', async () => {
   db.$client.exec(
-    "CREATE TRIGGER block_config_delete BEFORE DELETE ON `ServerConfigs` BEGIN SELECT RAISE(ABORT, 'boom'); END"
+    "CREATE TRIGGER block_config_delete BEFORE DELETE ON `ServerConfigs` BEGIN SELECT RAISE(ABORT, 'boom'); END",
   );
   try {
     await assert.rejects(purgeGuild(app, 's1'), /boom/);

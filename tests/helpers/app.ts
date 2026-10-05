@@ -31,7 +31,13 @@ export function fakeLogger(): { logger: Logger; logs: LogEntry[] } {
       logs.push({ level, message, context, error });
     };
   return {
-    logger: { debug: at('debug'), info: at('info'), warn: at('warn'), error: at('error'), fatal: at('fatal') },
+    logger: {
+      debug: at('debug'),
+      info: at('info'),
+      warn: at('warn'),
+      error: at('error'),
+      fatal: at('fatal'),
+    },
     logs,
   };
 }

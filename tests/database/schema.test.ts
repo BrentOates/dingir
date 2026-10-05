@@ -38,11 +38,16 @@ test('migrated database applies column defaults and round-trips dates', () => {
 
     const when = new Date('2024-01-01T12:00:00.000Z');
     db.update(serverConfigs).set({ firstAccessFailureAt: when }).run();
-    const raw = app.db.$client.prepare('SELECT firstAccessFailureAt AS v FROM `ServerConfigs`').get() as {
+    const raw = app.db.$client
+      .prepare('SELECT firstAccessFailureAt AS v FROM `ServerConfigs`')
+      .get() as {
       v: string;
     };
     assert.equal(raw.v, '2024-01-01 12:00:00.000 +00:00');
-    assert.equal(db.select().from(serverConfigs).get()!.firstAccessFailureAt?.getTime(), when.getTime());
+    assert.equal(
+      db.select().from(serverConfigs).get()!.firstAccessFailureAt?.getTime(),
+      when.getTime(),
+    );
 
     db.insert(userProfiles).values({ serverId: 's1', userId: 'u1' }).run();
     assert.equal(db.select().from(userProfiles).get()!.activityScore, 0);

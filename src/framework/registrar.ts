@@ -25,7 +25,7 @@ const canonical = (value: unknown): unknown => {
     return Object.fromEntries(
       Object.entries(value)
         .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0))
-        .map(([key, entry]) => [key, canonical(entry)])
+        .map(([key, entry]) => [key, canonical(entry)]),
     );
   }
   return value;
@@ -40,7 +40,7 @@ export function hashCommands(commands: readonly Command[]): string {
 /** Bulk-overwrites the application's commands in the env's scope and returns how many were set. */
 export async function putCommands(
   env: Pick<Env, 'token' | 'clientId' | 'devGuildId'>,
-  commands: readonly Command[]
+  commands: readonly Command[],
 ): Promise<number> {
   const rest = new REST({ version: '10' }).setToken(env.token);
   const route = env.devGuildId
@@ -56,7 +56,7 @@ export type PutCommands = typeof putCommands;
 export async function syncCommands(
   app: Pick<App, 'env' | 'db' | 'logger' | 'clock'>,
   commands: readonly Command[],
-  put: PutCommands = putCommands
+  put: PutCommands = putCommands,
 ): Promise<'registered' | 'unchanged' | 'failed'> {
   const { env, db, logger, clock } = app;
   const scope = commandScope(env);

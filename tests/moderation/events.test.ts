@@ -9,7 +9,14 @@ import { updateConfig } from '../../src/services/ConfigService.ts';
 import { incrementActivityScore } from '../../src/services/UserProfileService.ts';
 import { createTestApp } from '../helpers/app.ts';
 import { dbFixtures } from '../helpers/db.ts';
-import { auditJson, embedField, fakeAuditClient, fakeMember, fakeMessage, fakeUser } from '../fakes/messages.ts';
+import {
+  auditJson,
+  embedField,
+  fakeAuditClient,
+  fakeMember,
+  fakeMessage,
+  fakeUser,
+} from '../fakes/messages.ts';
 import { nth } from '../helpers/assertions.ts';
 
 const app = createTestApp();
@@ -82,7 +89,7 @@ test('messageDelete audits uncached messages without content', async () => {
   assert.match(embed.description ?? '', /not cached/);
   assert.deepEqual(
     embed.fields.map((f) => f.value),
-    ['<#chan-7>', 'm42']
+    ['<#chan-7>', 'm42'],
   );
 });
 
@@ -90,7 +97,10 @@ test('messageDelete handles very long content and attachments', async () => {
   const sink = fakeAuditClient();
   const message = fakeMessage({
     content: 'x'.repeat(5000),
-    attachments: new Collection([['a', { name: 'a.png' }], ['b', { name: 'b.png' }]]),
+    attachments: new Collection([
+      ['a', { name: 'a.png' }],
+      ['b', { name: 'b.png' }],
+    ]),
     embeds: [{}],
   });
   await messageDelete.run(app, sink.client, message);
@@ -114,7 +124,7 @@ test('messageUpdate notes an uncached previous message', async () => {
     app,
     sink.client,
     fakeMessage({ partial: true, content: null }),
-    fakeMessage({ content: 'edited' })
+    fakeMessage({ content: 'edited' }),
   );
   const embed = auditJson(sink.sent);
   assert.equal(embedField(embed, 'Previous').value, '*(not cached)*');
@@ -146,7 +156,7 @@ test('messageUpdate skips unchanged content and bots', async () => {
     app,
     sink.client,
     fakeMessage({ content: 'a' }),
-    fakeMessage({ content: 'b', author: fakeUser('u1', { bot: true }) })
+    fakeMessage({ content: 'b', author: fakeUser('u1', { bot: true }) }),
   );
   assert.equal(sink.sent.length, 0);
 });
@@ -157,7 +167,7 @@ test('messageUpdate truncates long content', async () => {
     app,
     sink.client,
     fakeMessage({ content: 'a'.repeat(4000) }),
-    fakeMessage({ content: 'b'.repeat(4000) })
+    fakeMessage({ content: 'b'.repeat(4000) }),
   );
   assert.equal(sink.sent.length, 1);
   assert.ok(auditJson(sink.sent).fields.every((f) => f.value.length <= 1024));
@@ -166,7 +176,11 @@ test('messageUpdate truncates long content', async () => {
 test('guildMemberRemove handles partial members and deletes profile data', async () => {
   const sink = fakeAuditClient();
   await incrementActivityScore(app.db, 'guild-1', 'u1');
-  const partial = { partial: true, guild: { id: 'guild-1' }, user: fakeUser('u1') } as unknown as PartialGuildMember;
+  const partial = {
+    partial: true,
+    guild: { id: 'guild-1' },
+    user: fakeUser('u1'),
+  } as unknown as PartialGuildMember;
   await guildMemberRemove.run(app, sink.client, partial);
   assert.equal(await score(), null);
   const embed = auditJson(sink.sent);

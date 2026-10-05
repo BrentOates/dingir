@@ -57,7 +57,7 @@ export const userProfiles = sqliteTable(
       .notNull()
       .$defaultFn(() => new Date()),
   },
-  (table) => [uniqueIndex('user_profiles_server_user_unique').on(table.serverId, table.userId)]
+  (table) => [uniqueIndex('user_profiles_server_user_unique').on(table.serverId, table.userId)],
 );
 
 export const botState = sqliteTable('BotState', {

@@ -9,10 +9,10 @@ export default defineCommand({
   run: async (ctx) => {
     const all = await ctx.guild.members.fetch();
     const members = [...all.values()].filter(
-      (member) => !member.user.bot && member.roles.cache.size === 1
+      (member) => !member.user.bot && member.roles.cache.size === 1,
     );
     await ctx.reply(
-      buildMemberListing('**Users with no roles**', 'There are no users with no roles.', members)
+      buildMemberListing('**Users with no roles**', 'There are no users with no roles.', members),
     );
   },
 });

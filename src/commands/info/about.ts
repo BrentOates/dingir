@@ -26,7 +26,7 @@ export default defineCommand({
         { name: 'Source', value: repoUrl, inline: false },
         { name: 'Servers', value: serverCount.toString(), inline: false },
         { name: 'This server', value: `${guildName} (${memberCount} members)`, inline: false },
-        { name: 'Uptime', value: uptime, inline: false }
+        { name: 'Uptime', value: uptime, inline: false },
       );
 
     await ctx.reply({ embeds: [embed] });

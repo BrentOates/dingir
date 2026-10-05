@@ -31,7 +31,7 @@ export default defineCommand({
               .setDescription('Day of the month of your birthday')
               .setRequired(true)
               .setMinValue(1)
-              .setMaxValue(31)
+              .setMaxValue(31),
           )
           .addIntegerOption((opt) =>
             opt
@@ -39,7 +39,7 @@ export default defineCommand({
               .setDescription('Month of your birthday')
               .setRequired(true)
               .setMinValue(1)
-              .setMaxValue(12)
+              .setMaxValue(12),
           ),
       run: async (ctx) => {
         const day = ctx.interaction.options.getInteger('day', true);
@@ -66,13 +66,9 @@ export default defineCommand({
       name: 'clear',
       description: 'Remove your birthday from this server',
       run: async (ctx) => {
-        const cleared = await clearBirthday(
-          ctx.app.db,
-          ctx.guild.id,
-          ctx.interaction.user.id
-        );
+        const cleared = await clearBirthday(ctx.app.db, ctx.guild.id, ctx.interaction.user.id);
         await ctx.reply(
-          cleared ? 'Your birthday has been removed.' : "You don't have a birthday set."
+          cleared ? 'Your birthday has been removed.' : "You don't have a birthday set.",
         );
         if (cleared) {
           await refresh(ctx);

@@ -7,7 +7,7 @@ export const sendAudit = async (
   client: Client,
   config: ServerConfig,
   embed: EmbedBuilder,
-  files?: Attachment[]
+  files?: Attachment[],
 ): Promise<boolean> => {
   const channelId = config.auditChannelId;
   if (!channelId) {

@@ -66,7 +66,7 @@ test('reports every problem in a single error', () => {
         assert.match(err.message, new RegExp(expected));
       }
       return true;
-    }
+    },
   );
 });
 

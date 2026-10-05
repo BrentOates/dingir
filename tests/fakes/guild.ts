@@ -70,9 +70,7 @@ export interface FakeGuildOptions {
 }
 
 export const fakeGuildWithMembers = (opts: FakeGuildOptions) => {
-  const members = new Collection(
-    (opts.memberIds ?? []).map((id) => [id, fakeMember(id)])
-  );
+  const members = new Collection((opts.memberIds ?? []).map((id) => [id, fakeMember(id)]));
   const channels = new Collection<string, FakeChannel>((opts.channels ?? []).map((c) => [c.id, c]));
   return {
     id: opts.id,

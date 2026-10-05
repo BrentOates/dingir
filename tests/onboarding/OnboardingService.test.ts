@@ -34,7 +34,14 @@ test('completedScreening only for pending true to false', () => {
 
 test('unconfigured server: audit done, roles and welcome skipped, no debug audit', async () => {
   const env = fakeOnboarding();
-  const result = await complete(app, env.client, env.member, env.config, {}, { renderImage: okImage });
+  const result = await complete(
+    app,
+    env.client,
+    env.member,
+    env.config,
+    {},
+    { renderImage: okImage },
+  );
   assert.equal(result.audit, 'done');
   assert.match(result.roles, /^skipped:/);
   assert.match(result.welcome, /^skipped:/);
@@ -44,16 +51,31 @@ test('unconfigured server: audit done, roles and welcome skipped, no debug audit
 
 test('guest roles are added in one call and unassignable ones filtered', async () => {
   const env = fakeOnboarding({
-    roles: [role('ok1', 1), role('ok2', 2), role('managed', 1, true), role('high', 10), role('guild-1', 0)],
+    roles: [
+      role('ok1', 1),
+      role('ok2', 2),
+      role('managed', 1, true),
+      role('high', 10),
+      role('guild-1', 0),
+    ],
     config: { guestRoleIds: 'ok1,ok2,managed,high,guild-1,gone' },
   });
-  const result = await complete(app, env.client, env.member, env.config, {}, { renderImage: okImage });
+  const result = await complete(
+    app,
+    env.client,
+    env.member,
+    env.config,
+    {},
+    { renderImage: okImage },
+  );
   assert.equal(result.roles, 'done');
   assert.deepEqual(env.roleAdds, [['ok1', 'ok2']]);
-  assert.deepEqual(
-    result.rolesSkipped.map((s) => s.id).sort(),
-    ['gone', 'guild-1', 'high', 'managed']
-  );
+  assert.deepEqual(result.rolesSkipped.map((s) => s.id).sort(), [
+    'gone',
+    'guild-1',
+    'high',
+    'managed',
+  ]);
 });
 
 test('no assignable roles skips the roles step without calling add', async () => {
@@ -103,16 +125,25 @@ test('welcome replaces every {member} and does not ping others', async () => {
 
 test('welcome skip reasons', async () => {
   const disabled = fakeOnboarding({ config: { welcomeMessage: 'hi' } });
-  assert.match((await complete(app, disabled.client, disabled.member, disabled.config)).welcome, /disabled/);
+  assert.match(
+    (await complete(app, disabled.client, disabled.member, disabled.config)).welcome,
+    /disabled/,
+  );
 
   const empty = fakeOnboarding({ config: { systemMessagesEnabled: true } });
-  assert.match((await complete(app, empty.client, empty.member, empty.config)).welcome, /^skipped:/);
+  assert.match(
+    (await complete(app, empty.client, empty.member, empty.config)).welcome,
+    /^skipped:/,
+  );
 
   const noChannel = fakeOnboarding({
     systemChannel: false,
     config: { systemMessagesEnabled: true, welcomeMessage: 'hi' },
   });
-  assert.match((await complete(app, noChannel.client, noChannel.member, noChannel.config)).welcome, /no system channel/);
+  assert.match(
+    (await complete(app, noChannel.client, noChannel.member, noChannel.config)).welcome,
+    /no system channel/,
+  );
 });
 
 test('image failure still sends text and audits the image failure', async () => {
@@ -123,7 +154,14 @@ test('image failure still sends text and audits the image failure', async () => 
       welcomeMessageBackgroundUrl: 'https://example.com/bg.png',
     },
   });
-  const result = await complete(app, env.client, env.member, env.config, {}, { renderImage: failImage });
+  const result = await complete(
+    app,
+    env.client,
+    env.member,
+    env.config,
+    {},
+    { renderImage: failImage },
+  );
   assert.equal(result.welcome, 'done');
   assert.equal(env.systemSends.length, 1);
   assert.equal(nth(env.systemSends).files, undefined);
@@ -132,9 +170,19 @@ test('image failure still sends text and audits the image failure', async () => 
 
 test('image failure with no text fails the welcome step', async () => {
   const env = fakeOnboarding({
-    config: { systemMessagesEnabled: true, welcomeMessageBackgroundUrl: 'https://example.com/bg.png' },
+    config: {
+      systemMessagesEnabled: true,
+      welcomeMessageBackgroundUrl: 'https://example.com/bg.png',
+    },
   });
-  const result = await complete(app, env.client, env.member, env.config, {}, { renderImage: failImage });
+  const result = await complete(
+    app,
+    env.client,
+    env.member,
+    env.config,
+    {},
+    { renderImage: failImage },
+  );
   assert.match(result.welcome, /^failed:/);
   assert.equal(env.systemSends.length, 0);
 });
@@ -160,7 +208,14 @@ test('dryRun makes no role, send or audit calls and returns the payload', async 
       welcomeMessageBackgroundUrl: 'https://example.com/bg.png',
     },
   });
-  const result = await complete(app, env.client, env.member, env.config, { dryRun: true }, { renderImage: okImage });
+  const result = await complete(
+    app,
+    env.client,
+    env.member,
+    env.config,
+    { dryRun: true },
+    { renderImage: okImage },
+  );
   assert.equal(env.roleAdds.length, 0);
   assert.equal(env.systemSends.length, 0);
   assert.equal(env.auditSends.length, 0);

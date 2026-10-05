@@ -42,7 +42,7 @@ const setImage = async (ctx: CommandContext) => {
   } catch (error) {
     throw new UserError(
       `That image could not be used: ${error instanceof Error ? error.message : String(error)}`,
-      { cause: error }
+      { cause: error },
     );
   }
   ctx.config = await updateConfig(ctx.app, ctx.config.serverId, {
@@ -76,7 +76,9 @@ const clear = async (ctx: CommandContext) => {
 };
 
 const preview = async (ctx: CommandContext) => {
-  const result = await complete(ctx.app, ctx.interaction.client, ctx.member, ctx.config, { dryRun: true });
+  const result = await complete(ctx.app, ctx.interaction.client, ctx.member, ctx.config, {
+    dryRun: true,
+  });
   const payload = result.welcomePayload;
   if (!payload) {
     await ctx.reply(`Nothing would be sent: ${result.welcome.replace(/^(skipped|failed):/, '')}.`);
@@ -103,7 +105,7 @@ export const WelcomeGroup = defineSubcommandGroup({
             .setName('text')
             .setDescription('The welcome text; use {member} to mention the new member')
             .setMaxLength(MAX_WELCOME_MESSAGE_LENGTH)
-            .setRequired(true)
+            .setRequired(true),
         ),
       run: setMessage,
     },
@@ -113,7 +115,10 @@ export const WelcomeGroup = defineSubcommandGroup({
       defer: 'ephemeral',
       options: (sub) =>
         sub.addStringOption((opt) =>
-          opt.setName('url').setDescription('http(s) URL of the background image').setRequired(true)
+          opt
+            .setName('url')
+            .setDescription('http(s) URL of the background image')
+            .setRequired(true),
         ),
       run: setImage,
     },
@@ -134,8 +139,8 @@ export const WelcomeGroup = defineSubcommandGroup({
             .addChoices(
               { name: 'Welcome message', value: 'message' },
               { name: 'Welcome image', value: 'image' },
-              { name: 'Both', value: 'all' }
-            )
+              { name: 'Both', value: 'all' },
+            ),
         ),
       run: clear,
     },

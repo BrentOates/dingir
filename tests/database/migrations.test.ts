@@ -10,7 +10,12 @@ const { logger, logs } = fakeLogger();
 type Db = Database.Database;
 
 const INDEX = 'user_profiles_server_user_unique';
-const ALL = ['001-baseline', '002-userprofile-unique', '003-serverconfig-access-tracking', '004-bot-state'];
+const ALL = [
+  '001-baseline',
+  '002-userprofile-unique',
+  '003-serverconfig-access-tracking',
+  '004-bot-state',
+];
 
 const LEGACY_SERVER_CONFIGS =
   "CREATE TABLE `ServerConfigs` (`serverId` VARCHAR(255) PRIMARY KEY, `prefix` VARCHAR(255) DEFAULT '^', `rulesMessagePath` VARCHAR(255), `rulesMessage` VARCHAR(255), `guestRoleIds` VARCHAR(255), `adminRoleId` VARCHAR(255), `welcomeMessage` VARCHAR(255), `debug` TINYINT(1) DEFAULT 0, `auditChannelId` VARCHAR(255), `welcomeMessageBackgroundUrl` VARCHAR(255), `systemMessagesEnabled` TINYINT(1) DEFAULT 0, `announcementsChannelId` VARCHAR(255), `birthdayCalendarMessagePath` VARCHAR(255), `honeyPotChannelId` VARCHAR(255), `createdAt` DATETIME NOT NULL, `updatedAt` DATETIME NOT NULL)";
@@ -38,12 +43,12 @@ const profileRow = (
   month: number | null,
   day: number | null,
   score: number,
-  updatedAt: string
+  updatedAt: string,
 ) => ({ serverId, userId, month, day, score, updatedAt });
 
 const insertProfiles = (db: Db, rows: ReturnType<typeof profileRow>[]): void => {
   const insert = db.prepare(
-    'INSERT INTO `UserProfiles` (serverId, userId, birthdayMonth, birthdayDay, activityScore, createdAt, updatedAt) VALUES (@serverId, @userId, @month, @day, @score, @updatedAt, @updatedAt)'
+    'INSERT INTO `UserProfiles` (serverId, userId, birthdayMonth, birthdayDay, activityScore, createdAt, updatedAt) VALUES (@serverId, @userId, @month, @day, @score, @updatedAt, @updatedAt)',
   );
   for (const r of rows) {
     insert.run(r);
@@ -87,10 +92,12 @@ test('migrations on an empty database create the expected schema', () => {
 
     assert.ok(indexesOf(db, 'UserProfiles').find((i) => i.name === INDEX)?.unique);
 
-    const meta = allRows(db, 'SELECT name FROM `SequelizeMeta` ORDER BY name') as { name: string }[];
+    const meta = allRows(db, 'SELECT name FROM `SequelizeMeta` ORDER BY name') as {
+      name: string;
+    }[];
     assert.deepEqual(
       meta.map((m) => m.name),
-      ALL
+      ALL,
     );
   });
 });
@@ -109,7 +116,7 @@ test('baseline is a no-op on a legacy sync() database and later migrations prese
     db.exec(LEGACY_SERVER_CONFIGS);
     db.exec(LEGACY_USER_PROFILES);
     db.exec(
-      "INSERT INTO `ServerConfigs` (serverId, prefix, adminRoleId, auditChannelId, createdAt, updatedAt) VALUES ('s1', '!', 'admin', 'chan', '2024-01-01 00:00:00.000 +00:00', '2024-01-01 00:00:00.000 +00:00')"
+      "INSERT INTO `ServerConfigs` (serverId, prefix, adminRoleId, auditChannelId, createdAt, updatedAt) VALUES ('s1', '!', 'admin', 'chan', '2024-01-01 00:00:00.000 +00:00', '2024-01-01 00:00:00.000 +00:00')",
     );
     insertProfiles(db, [
       profileRow('s1', 'u1', 5, 6, 3, '2024-01-01 00:00:00.000 +00:00'),
@@ -123,10 +130,9 @@ test('baseline is a no-op on a legacy sync() database and later migrations prese
 
     assert.deepEqual(migrate(db, logger), ALL.slice(1));
 
-    const config = db.prepare('SELECT * FROM `ServerConfigs` WHERE serverId = ?').get('s1') as Record<
-      string,
-      unknown
-    >;
+    const config = db
+      .prepare('SELECT * FROM `ServerConfigs` WHERE serverId = ?')
+      .get('s1') as Record<string, unknown>;
     assert.equal(config.auditChannelId, 'chan');
     assert.equal(config.accessFailureCount, 0);
     assert.equal(config.firstAccessFailureAt, null);
@@ -136,7 +142,7 @@ test('baseline is a no-op on a legacy sync() database and later migrations prese
 
     const profiles = allRows(
       db,
-      'SELECT userId, birthdayMonth, activityScore FROM `UserProfiles` ORDER BY id'
+      'SELECT userId, birthdayMonth, activityScore FROM `UserProfiles` ORDER BY id',
     );
     assert.deepEqual(profiles, [
       { userId: 'u1', birthdayMonth: 5, activityScore: 3 },
@@ -150,7 +156,7 @@ test('a database already migrated by the previous umzug setup runs nothing and k
     migrate(db, logger);
     insertProfiles(db, [profileRow('s1', 'u1', 5, 6, 3, '2024-01-01 00:00:00.000 +00:00')]);
     db.exec(
-      "INSERT INTO `ServerConfigs` (serverId, accessFailureCount, createdAt, updatedAt) VALUES ('s1', 2, '2024-01-01 00:00:00.000 +00:00', '2024-01-01 00:00:00.000 +00:00')"
+      "INSERT INTO `ServerConfigs` (serverId, accessFailureCount, createdAt, updatedAt) VALUES ('s1', 2, '2024-01-01 00:00:00.000 +00:00', '2024-01-01 00:00:00.000 +00:00')",
     );
 
     const ran: string[] = [];
@@ -175,7 +181,7 @@ test('a database already migrated by the previous umzug setup runs nothing and k
 test('baseline adds missing nullable columns to an older schema', () => {
   withDb((db) => {
     db.exec(
-      'CREATE TABLE `ServerConfigs` (`serverId` VARCHAR(255) PRIMARY KEY, `createdAt` DATETIME NOT NULL, `updatedAt` DATETIME NOT NULL)'
+      'CREATE TABLE `ServerConfigs` (`serverId` VARCHAR(255) PRIMARY KEY, `createdAt` DATETIME NOT NULL, `updatedAt` DATETIME NOT NULL)',
     );
     migrate(db, logger);
     assert.ok(columnsOf(db, 'ServerConfigs').includes('honeyPotChannelId'));
@@ -210,7 +216,7 @@ test('002 dedupes UserProfiles and enforces uniqueness afterwards', () => {
 
     const rows = db
       .prepare(
-        'SELECT serverId, userId, birthdayMonth, birthdayDay, activityScore FROM `UserProfiles` ORDER BY serverId, userId'
+        'SELECT serverId, userId, birthdayMonth, birthdayDay, activityScore FROM `UserProfiles` ORDER BY serverId, userId',
       )
       .raw()
       .all();
@@ -223,7 +229,7 @@ test('002 dedupes UserProfiles and enforces uniqueness afterwards', () => {
     ]);
 
     assert.throws(() =>
-      insertProfiles(db, [profileRow('s1', 'a', null, null, 0, '2024-05-01 00:00:00.000 +00:00')])
+      insertProfiles(db, [profileRow('s1', 'a', null, null, 0, '2024-05-01 00:00:00.000 +00:00')]),
     );
   });
 });

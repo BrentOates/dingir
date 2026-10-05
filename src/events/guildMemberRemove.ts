@@ -18,7 +18,11 @@ export default defineEvent({
       return;
     }
 
-    const audit = memberAuditEmbed(member.partial ? user : member, EmbedColours.negative, 'Member left')
+    const audit = memberAuditEmbed(
+      member.partial ? user : member,
+      EmbedColours.negative,
+      'Member left',
+    )
       .addField('ID', user.id)
       .addField('Member data cleanup', dataDeleted ? 'Deleted' : 'No stored member data');
 

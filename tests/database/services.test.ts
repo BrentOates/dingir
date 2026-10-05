@@ -91,7 +91,10 @@ test('updateConfig refreshes the cached config', async () => {
 });
 
 test('resetAccessFailures updates the cache', async () => {
-  const config = await updateConfig(app, 's1', { accessFailureCount: 2, firstAccessFailureAt: new Date() });
+  const config = await updateConfig(app, 's1', {
+    accessFailureCount: 2,
+    firstAccessFailureAt: new Date(),
+  });
   const reset = await resetAccessFailures(app, config);
   assert.equal(reset.accessFailureCount, 0);
   assert.equal((await getConfig(app, 's1')).accessFailureCount, 0);

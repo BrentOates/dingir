@@ -1,4 +1,4 @@
-import type { Client} from 'discord.js';
+import type { Client } from 'discord.js';
 import { type ClientEvents } from 'discord.js';
 import type { App } from '../app.ts';
 import type { DingirClient } from '../client/DingirClient.ts';
@@ -9,10 +9,12 @@ export interface EventDefinition<K extends keyof ClientEvents> {
   run(app: App, client: DingirClient, ...args: ClientEvents[K]): Promise<void>;
 }
 
-export type AnyEventDefinition = { [K in keyof ClientEvents]: EventDefinition<K> }[keyof ClientEvents];
+export type AnyEventDefinition = {
+  [K in keyof ClientEvents]: EventDefinition<K>;
+}[keyof ClientEvents];
 
 export function defineEvent<K extends keyof ClientEvents>(
-  def: EventDefinition<K>
+  def: EventDefinition<K>,
 ): EventDefinition<K> {
   return def;
 }
@@ -30,11 +32,15 @@ const guildIdOf = (arg: unknown): string | undefined => {
 export function bindEvent<K extends keyof ClientEvents>(
   app: App,
   client: DingirClient,
-  def: EventDefinition<K>
+  def: EventDefinition<K>,
 ): void {
   const listener = (...args: ClientEvents[K]): void => {
     def.run(app, client, ...args).catch((error: unknown) => {
-      app.logger.error('Event handler failed', { event: def.name, guild: guildIdOf(args[0]) }, error);
+      app.logger.error(
+        'Event handler failed',
+        { event: def.name, guild: guildIdOf(args[0]) },
+        error,
+      );
     });
   };
   const target: Client = client;

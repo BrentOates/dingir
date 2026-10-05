@@ -30,7 +30,7 @@ test('empty and whitespace values render as *(empty)*', () => {
   const json = new AuditEmbed().addField('A', '').addField('B', '   ').toJSON();
   assert.deepEqual(
     json.fields?.map((f) => f.value),
-    ['*(empty)*', '*(empty)*']
+    ['*(empty)*', '*(empty)*'],
   );
   assert.equal(json.fields?.length, 2);
 });
@@ -81,7 +81,10 @@ test('7000 total chars are trimmed to 6000 or less, dropping trailing fields', (
 
 test('oversized description plus fields still fits', () => {
   const embed = new AuditEmbed().setDescription('d'.repeat(4096));
-  embed.addField('a', 'v'.repeat(1024)).addField('b', 'v'.repeat(1024)).addField('c', 'v'.repeat(1024));
+  embed
+    .addField('a', 'v'.repeat(1024))
+    .addField('b', 'v'.repeat(1024))
+    .addField('c', 'v'.repeat(1024));
   assert.ok(total(embed.toJSON()) <= 6000);
 });
 

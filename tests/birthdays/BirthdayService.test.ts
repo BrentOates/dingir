@@ -101,7 +101,11 @@ test('notifyBirthdays: skips departed members and mentions only present ones', a
     { serverId: 'g1', userId: 'other', birthdayMonth: 6, birthdayDay: 2 },
   ]);
   const channel = fakeTextChannel('ann');
-  const guild = fakeGuildWithMembers({ id: 'g1', memberIds: ['here', 'other'], channels: [channel] });
+  const guild = fakeGuildWithMembers({
+    id: 'g1',
+    memberIds: ['here', 'other'],
+    channels: [channel],
+  });
   const client = fakeClient({ guilds: { g1: guild } });
 
   await notifyBirthdays(appAt('2027-06-01T09:00'), client);

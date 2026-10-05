@@ -41,7 +41,7 @@ export function dbFixtures({ db, configCache }: ConfigDeps) {
     countProfiles: (): number => allProfiles().length,
     findProfile: (userId: string, serverId?: string): UserProfile | null =>
       allProfiles().find(
-        (p) => p.userId === userId && (serverId === undefined || p.serverId === serverId)
+        (p) => p.userId === userId && (serverId === undefined || p.serverId === serverId),
       ) ?? null,
   };
 }

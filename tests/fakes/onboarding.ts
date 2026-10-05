@@ -1,6 +1,13 @@
 import type { Client, Guild, GuildMember } from 'discord.js';
 import type { ServerConfig } from '../../src/db/schema.ts';
-import { fakeAuditChannel, fakeConfig, fakeGuild, fakeMember, type SentPayload, stub } from './discord.ts';
+import {
+  fakeAuditChannel,
+  fakeConfig,
+  fakeGuild,
+  fakeMember,
+  type SentPayload,
+  stub,
+} from './discord.ts';
 
 export { fakeCommandContext } from './command.ts';
 
@@ -64,7 +71,9 @@ export function fakeOnboarding(opts: FakeOnboardingOptions = {}) {
     },
   });
 
-  const { channel, sent: auditSends } = fakeAuditChannel(opts.failAuditSend ? 'audit down' : undefined);
+  const { channel, sent: auditSends } = fakeAuditChannel(
+    opts.failAuditSend ? 'audit down' : undefined,
+  );
   const client = stub<Client>({ channels: { fetch: async () => channel } });
 
   const config = fakeConfig({

@@ -19,7 +19,7 @@ export const isValidBirthday = (month: number, day: number): boolean =>
 export const celebrationDate = (
   month: number,
   day: number,
-  year: number
+  year: number,
 ): { year: number; month: number; day: number } => {
   if (month === 2 && day === 29 && !DateTime.utc(year).isInLeapYear) {
     return { year, month: 2, day: 28 };
@@ -33,7 +33,7 @@ export const nextOccurrence = (
   month: number,
   day: number,
   now: DateTime,
-  zone: string
+  zone: string,
 ): DateTime => {
   const start = startOfToday(now, zone);
   for (let year = start.year; year <= start.year + 8; year += 1) {
@@ -49,7 +49,7 @@ export const isBirthdayToday = (
   month: number,
   day: number,
   now: DateTime,
-  zone: string
+  zone: string,
 ): boolean => {
   const start = startOfToday(now, zone);
   const celebration = celebrationDate(month, day, start.year);
@@ -61,7 +61,7 @@ export const upcoming = (
   profiles: readonly BirthdayProfile[],
   now: DateTime,
   zone: string,
-  limit = 10
+  limit = 10,
 ): UpcomingGroup[] => {
   const byDate = new Map<number, UpcomingGroup>();
   for (const profile of profiles) {

@@ -29,7 +29,7 @@ async function runBounded(run: () => Promise<void>, ms: number, logger: Logger):
     (error: unknown) => {
       logger.error('Shutdown failed', undefined, error);
       return true as const;
-    }
+    },
   );
   try {
     return await Promise.race([finished, timeout]);

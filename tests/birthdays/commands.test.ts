@@ -26,7 +26,7 @@ beforeEach(() => {
 
 const exec = async (
   command: Command,
-  opts: { subcommand?: string; options?: Record<string, unknown>; guild?: object }
+  opts: { subcommand?: string; options?: Record<string, unknown>; guild?: object },
 ) => {
   const config = createConfig({ serverId: 'guild-1' });
   const { ctx, replies, interaction } = fakeCommandContext(app, opts.options, {
@@ -52,7 +52,7 @@ test('mybirthday set stores Feb 29 as 29', async () => {
 test('mybirthday set rejects invalid dates', async () => {
   await rejectsUserError(
     exec(mybirthday, { subcommand: 'set', options: { day: 31, month: 4 } }),
-    /invalid/
+    /invalid/,
   );
   assert.equal(countProfiles(), 0);
 });
@@ -72,7 +72,7 @@ test('profile replies for a non-member without creating a profile', async () => 
   const guild = fakeGuildWithMembers({ id: 'guild-1', memberIds: [] });
   await rejectsUserError(
     exec(profile, { options: { member: { id: 'ghost' } }, guild }),
-    "That user isn't a member of this server."
+    "That user isn't a member of this server.",
   );
   assert.equal(countProfiles(), 0);
 });
@@ -89,7 +89,7 @@ test('profile for a member without a profile does not create one', async () => {
     displayAvatarURL: () => 'https://example.com/a.png',
   });
   const replies = await exec(profile, { options: { member: { id: 'm1' } }, guild });
-  const embed = (nth(last(replies).embeds as EmbedBuilder[] | undefined)).toJSON();
+  const embed = nth(last(replies).embeds as EmbedBuilder[] | undefined).toJSON();
   const field = (name: string): string => embed.fields?.find((f) => f.name === name)?.value ?? '';
   assert.equal(field('Onboarding'), 'Not completed');
   assert.equal(field('Activity Score'), '0');

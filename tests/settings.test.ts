@@ -121,7 +121,7 @@ test('channelSetting restricts the channel option types', () => {
   assert.equal(channel.required, true);
   assert.deepEqual(
     group.options?.map((o) => o.name),
-    ['set', 'get', 'clear']
+    ['set', 'get', 'clear'],
   );
 });
 

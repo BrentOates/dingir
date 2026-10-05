@@ -14,8 +14,8 @@ export async function getServerBirthdays(db: Db, serverId: Snowflake): Promise<U
       and(
         eq(userProfiles.serverId, serverId),
         isNotNull(userProfiles.birthdayDay),
-        isNotNull(userProfiles.birthdayMonth)
-      )
+        isNotNull(userProfiles.birthdayMonth),
+      ),
     )
     .all();
 }
@@ -29,7 +29,7 @@ export async function setBirthday(
   serverId: Snowflake,
   userId: Snowflake,
   month: number,
-  day: number
+  day: number,
 ): Promise<void> {
   db.insert(userProfiles)
     .values({ serverId, userId, birthdayMonth: month, birthdayDay: day })
@@ -43,7 +43,7 @@ export async function setBirthday(
 export async function clearBirthday(
   db: Db,
   serverId: Snowflake,
-  userId: Snowflake
+  userId: Snowflake,
 ): Promise<boolean> {
   const result = db
     .update(userProfiles)
@@ -56,14 +56,17 @@ export async function clearBirthday(
 export async function deleteUsers(
   db: Db,
   serverId: Snowflake,
-  userIds: Snowflake[]
+  userIds: Snowflake[],
 ): Promise<number> {
   let removed = 0;
   for (let i = 0; i < userIds.length; i += 500) {
     removed += db
       .delete(userProfiles)
       .where(
-        and(eq(userProfiles.serverId, serverId), inArray(userProfiles.userId, userIds.slice(i, i + 500)))
+        and(
+          eq(userProfiles.serverId, serverId),
+          inArray(userProfiles.userId, userIds.slice(i, i + 500)),
+        ),
       )
       .run().changes;
   }
@@ -73,7 +76,7 @@ export async function deleteUsers(
 export async function getUserProfile(
   db: Db,
   serverId: Snowflake,
-  userId: Snowflake
+  userId: Snowflake,
 ): Promise<UserProfile> {
   db.insert(userProfiles).values({ serverId, userId }).onConflictDoNothing().run();
   return db.select().from(userProfiles).where(forUser(serverId, userId)).get()!;
@@ -82,7 +85,7 @@ export async function getUserProfile(
 export async function findUserProfile(
   db: Db,
   serverId: Snowflake,
-  userId: Snowflake
+  userId: Snowflake,
 ): Promise<UserProfile | null> {
   return db.select().from(userProfiles).where(forUser(serverId, userId)).get() ?? null;
 }
@@ -90,7 +93,7 @@ export async function findUserProfile(
 export async function incrementActivityScore(
   db: Db,
   serverId: Snowflake,
-  userId: Snowflake
+  userId: Snowflake,
 ): Promise<void> {
   db.insert(userProfiles)
     .values({ serverId, userId, activityScore: 1 })

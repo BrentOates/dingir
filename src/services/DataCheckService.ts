@@ -1,4 +1,4 @@
-import type { Client} from 'discord.js';
+import type { Client } from 'discord.js';
 import { type Snowflake } from 'discord.js';
 import type { App } from '../app.ts';
 import { getConfigs, purgeGuild, updateConfig } from './ConfigService.ts';
@@ -31,7 +31,7 @@ export const runDataCheck = async (
   policy: RetentionPolicyConfig = {
     minFailures: app.env.purgeMinFailures,
     graceDays: app.env.purgeGraceDays,
-  }
+  },
 ): Promise<void> => {
   const { logger } = app;
   const now = app.clock();
@@ -55,7 +55,7 @@ export const runDataCheck = async (
         },
         outcome,
         now,
-        policy
+        policy,
       );
 
       if (next.purge) {

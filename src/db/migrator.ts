@@ -22,7 +22,7 @@ export function migrate(db: Database, logger: Logger, list: Migration[] = migrat
   db.exec('CREATE TABLE IF NOT EXISTS `SequelizeMeta` (`name` VARCHAR(255) PRIMARY KEY)');
 
   const done = new Set(
-    (db.prepare('SELECT name FROM `SequelizeMeta`').all() as { name: string }[]).map((r) => r.name)
+    (db.prepare('SELECT name FROM `SequelizeMeta`').all() as { name: string }[]).map((r) => r.name),
   );
   const record = db.prepare('INSERT INTO `SequelizeMeta` (name) VALUES (?)');
   const applied: string[] = [];

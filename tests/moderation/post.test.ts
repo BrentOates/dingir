@@ -58,7 +58,7 @@ test('send failure replies with an error and neither succeeds nor audits', async
     target(async () => {
       throw new Error('boom');
     }, allPerms),
-    { content: 'hi' }
+    { content: 'hi' },
   );
   await runSlash(app, sink.client, fake, { member: fakeMember('user-1') });
   const reply = last(fake.calls);
@@ -75,7 +75,7 @@ test('success audits then replies with the jump link', async () => {
       sentPayloads.push(1);
       return { url: 'https://discord.com/channels/g/c/m' };
     }, allPerms),
-    { content: 'hello world', attachment: { name: 'pic.png' } }
+    { content: 'hello world', attachment: { name: 'pic.png' } },
   );
   await runSlash(app, sink.client, fake, { member: fakeMember('user-1') });
   assert.equal(sentPayloads.length, 1);
@@ -86,7 +86,7 @@ test('success audits then replies with the jump link', async () => {
   assert.equal(nth(embed.fields, 2).value, 'pic.png');
   assert.equal(
     contentOf(last(fake.calls).payload),
-    'Posted in <#chan-9>: https://discord.com/channels/g/c/m'
+    'Posted in <#chan-9>: https://discord.com/channels/g/c/m',
   );
 });
 
@@ -98,7 +98,7 @@ test('missing permission replies clearly and does not send', async () => {
       sends += 1;
       return { url: 'x' };
     }, [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages]),
-    { attachment: { name: 'pic.png' } }
+    { attachment: { name: 'pic.png' } },
   );
   await runSlash(app, sink.client, fake, { member: fakeMember('user-1') });
   assert.equal(sends, 0);
@@ -108,7 +108,10 @@ test('missing permission replies clearly and does not send', async () => {
 
 test('requires content or attachment and limits content length', async () => {
   const sink = fakeAuditClient('audit-1', [post]);
-  const fake = setup(target(async () => ({ url: 'x' }), allPerms), {});
+  const fake = setup(
+    target(async () => ({ url: 'x' }), allPerms),
+    {},
+  );
   await runSlash(app, sink.client, fake, { member: fakeMember('user-1') });
   assert.match(contentOf(last(fake.calls).payload), /at least text or an attachment/);
 

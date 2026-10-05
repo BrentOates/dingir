@@ -23,7 +23,7 @@ export const BirthdaysGroup = defineSubcommandGroup({
             .setName('channel')
             .setDescription('Channel to create the birthday calendar in')
             .addChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement)
-            .setRequired(true)
+            .setRequired(true),
         ),
       run: async (ctx) => {
         const { id } = ctx.interaction.options.getChannel('channel', true);
@@ -57,7 +57,7 @@ export const BirthdaysGroup = defineSubcommandGroup({
         await ctx.reply(
           status === 'updated'
             ? `Birthday calendar has been created: ${link}`
-            : `Birthday calendar message was created (${link}) but could not be populated yet; try \`/config birthdays sync\`.`
+            : `Birthday calendar message was created (${link}) but could not be populated yet; try \`/config birthdays sync\`.`,
         );
       },
     },

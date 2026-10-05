@@ -26,7 +26,8 @@ test('defineCommand applies leaf options', () => {
   const json = defineCommand({
     name: 'say',
     description: 'Says',
-    options: (b) => b.addStringOption((o) => o.setName('text').setDescription('Text').setRequired(true)),
+    options: (b) =>
+      b.addStringOption((o) => o.setName('text').setDescription('Text').setRequired(true)),
     run: noop,
   }).toJSON();
   assert.equal(nth(json.options).name, 'text');
@@ -35,7 +36,7 @@ test('defineCommand applies leaf options', () => {
 test('defineCommand rejects invalid shapes with descriptive errors', () => {
   assert.throws(
     () => defineCommand({ name: 'a', description: 'd' }),
-    /command "a" must define either run or subcommands/
+    /command "a" must define either run or subcommands/,
   );
   assert.throws(
     () =>
@@ -45,7 +46,7 @@ test('defineCommand rejects invalid shapes with descriptive errors', () => {
         run: noop,
         subcommands: [{ name: 's', description: 'd', run: noop }],
       }),
-    /cannot define both run and subcommands/
+    /cannot define both run and subcommands/,
   );
   assert.throws(
     () =>
@@ -55,7 +56,7 @@ test('defineCommand rejects invalid shapes with descriptive errors', () => {
         defer: 'ephemeral',
         subcommands: [{ name: 's', description: 'd', run: noop }],
       }),
-    /not a leaf command/
+    /not a leaf command/,
   );
   assert.throws(
     () =>
@@ -67,7 +68,7 @@ test('defineCommand rejects invalid shapes with descriptive errors', () => {
           { name: 's', description: 'd', run: noop },
         ],
       }),
-    /Duplicate subcommand\/group name "s" in command "a"/
+    /Duplicate subcommand\/group name "s" in command "a"/,
   );
   assert.throws(
     () =>
@@ -83,7 +84,7 @@ test('defineCommand rejects invalid shapes with descriptive errors', () => {
           },
         ],
       }),
-    /Duplicate subcommand\/group name "x"/
+    /Duplicate subcommand\/group name "x"/,
   );
   assert.throws(
     () =>
@@ -101,15 +102,20 @@ test('defineCommand rejects invalid shapes with descriptive errors', () => {
           },
         ],
       }),
-    /Duplicate subcommand name "s" in group "g"/
+    /Duplicate subcommand name "s" in group "g"/,
   );
   assert.throws(
-    () => defineCommand({ name: 'a', description: 'd', groups: [{ name: 'g', description: 'd', subcommands: [] }] }),
-    /group "g" in command "a" must define at least one subcommand/
+    () =>
+      defineCommand({
+        name: 'a',
+        description: 'd',
+        groups: [{ name: 'g', description: 'd', subcommands: [] }],
+      }),
+    /group "g" in command "a" must define at least one subcommand/,
   );
   assert.throws(
     () => defineCommand({ name: 'Bad Name', description: 'd', run: noop }),
-    /Invalid command "Bad Name"/
+    /Invalid command "Bad Name"/,
   );
 });
 
@@ -119,7 +125,12 @@ test('resolve routes leaf, subcommand and grouped subcommand handlers', () => {
     ran.push(id);
   };
 
-  const leaf = defineCommand({ name: 'leaf', description: 'd', defer: 'public', run: handler('leaf') });
+  const leaf = defineCommand({
+    name: 'leaf',
+    description: 'd',
+    defer: 'public',
+    run: handler('leaf'),
+  });
   const resolvedLeaf = leaf.resolve(fakeInteraction({ commandName: 'leaf' }).interaction)!;
   assert.equal(resolvedLeaf.defer, 'public');
   assert.equal(resolvedLeaf.path, 'leaf');
@@ -145,10 +156,15 @@ test('resolve routes leaf, subcommand and grouped subcommand handlers', () => {
 
   assert.equal(tree.resolve(fakeInteraction({ subcommand: 'missing' }).interaction), undefined);
   assert.equal(tree.resolve(fakeInteraction({}).interaction), undefined);
-  assert.equal(tree.resolve(fakeInteraction({ group: 'grp', subcommand: 'plain' }).interaction), undefined);
+  assert.equal(
+    tree.resolve(fakeInteraction({ group: 'grp', subcommand: 'plain' }).interaction),
+    undefined,
+  );
   assert.equal(leaf.resolve(fakeInteraction({ subcommand: 'x' }).interaction), undefined);
 
-  return Promise.all([resolvedLeaf.run, plain.run, grouped.run].map((run) => run({} as CommandContext))).then(() => {
+  return Promise.all(
+    [resolvedLeaf.run, plain.run, grouped.run].map((run) => run({} as CommandContext)),
+  ).then(() => {
     assert.deepEqual(ran, ['leaf', 'tree plain', 'grp go']);
   });
 });
@@ -174,7 +190,7 @@ test('reply uses editReply() after deferring, then followUp() afterwards', async
   await reply('second');
   assert.deepEqual(
     calls.map((c) => c.method),
-    ['editReply', 'followUp']
+    ['editReply', 'followUp'],
   );
   assert.equal(nth(calls).payload.flags, undefined);
   assert.equal(nth(calls, 1).payload.flags, MessageFlags.Ephemeral);

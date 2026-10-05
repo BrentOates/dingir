@@ -84,7 +84,7 @@ test('runs the handler with context and applies the defer mode', async () => {
 
   assert.deepEqual(
     calls.map((c) => c.method),
-    ['deferReply', 'editReply']
+    ['deferReply', 'editReply'],
   );
   assert.deepEqual(nth(calls).payload, { flags: MessageFlags.Ephemeral });
   assert.equal(seen?.config.serverId, 'guild-9');
@@ -92,7 +92,12 @@ test('runs the handler with context and applies the defer mode', async () => {
 });
 
 test('public defer does not set the ephemeral flag', async () => {
-  const cmd = defineCommand({ name: 'test', description: 'd', defer: 'public', run: async () => {} });
+  const cmd = defineCommand({
+    name: 'test',
+    description: 'd',
+    defer: 'public',
+    run: async () => {},
+  });
   const { interaction, calls } = fakeInteraction();
   await dispatch(clientWith(cmd), interaction);
   assert.deepEqual(calls, [{ method: 'deferReply', payload: {} }]);
@@ -112,7 +117,10 @@ test('a throwing handler produces exactly one ephemeral error reply', async () =
   assert.deepEqual(calls, [
     {
       method: 'reply',
-      payload: { content: 'Something went wrong running this command.', flags: MessageFlags.Ephemeral },
+      payload: {
+        content: 'Something went wrong running this command.',
+        flags: MessageFlags.Ephemeral,
+      },
     },
   ]);
   const failure = app.logsAt('error').find((entry) => entry.message === 'Command failed');
@@ -134,7 +142,7 @@ test('a handler that throws after replying results in a single follow-up error m
 
   assert.deepEqual(
     calls.map((c) => c.method),
-    ['deferReply', 'editReply', 'followUp']
+    ['deferReply', 'editReply', 'followUp'],
   );
 });
 
@@ -153,7 +161,9 @@ test('a failing error reply is logged and does not throw', async () => {
     },
   });
   await dispatch(clientWith(cmd), interaction);
-  assert.ok(app.logsAt('error').some((entry) => entry.message === 'Could not send command error reply'));
+  assert.ok(
+    app.logsAt('error').some((entry) => entry.message === 'Could not send command error reply'),
+  );
 });
 
 test('a UserError replies ephemerally with its message and is not logged as an error', async () => {
@@ -169,12 +179,17 @@ test('a UserError replies ephemerally with its message and is not logged as an e
   await dispatch(clientWith(cmd), interaction);
 
   assert.deepEqual(calls, [
-    { method: 'reply', payload: { content: 'That is not allowed.', flags: MessageFlags.Ephemeral } },
+    {
+      method: 'reply',
+      payload: { content: 'That is not allowed.', flags: MessageFlags.Ephemeral },
+    },
   ]);
   const entries = app.logs.slice(before);
   assert.equal(entries.filter((entry) => entry.level === 'error').length, 0);
   assert.ok(
-    entries.some((entry) => entry.level === 'info' && entry.context?.reason === 'That is not allowed.')
+    entries.some(
+      (entry) => entry.level === 'info' && entry.context?.reason === 'That is not allowed.',
+    ),
   );
 });
 
@@ -192,7 +207,7 @@ test('a UserError thrown after deferring edits the deferred reply', async () => 
 
   assert.deepEqual(
     calls.map((c) => c.method),
-    ['deferReply', 'editReply']
+    ['deferReply', 'editReply'],
   );
   assert.equal(nth(calls, 1).payload.content, 'Nope.');
 });

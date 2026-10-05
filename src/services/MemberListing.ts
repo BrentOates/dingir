@@ -33,7 +33,7 @@ export const wholeDaysSinceJoin = (member: GuildMember, now: number): number | n
 export const buildMemberListing = (
   header: string,
   emptyMessage: string,
-  members: GuildMember[]
+  members: GuildMember[],
 ): ReplyOptions => {
   if (members.length === 0) {
     return { content: emptyMessage, allowedMentions: { parse: [] } };

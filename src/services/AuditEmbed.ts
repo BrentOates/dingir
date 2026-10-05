@@ -1,4 +1,4 @@
-import type { GuildMember} from 'discord.js';
+import type { GuildMember } from 'discord.js';
 import { type ColorResolvable, EmbedBuilder, User } from 'discord.js';
 
 const LIMITS = {
@@ -27,7 +27,7 @@ export class AuditEmbed extends EmbedBuilder {
 
   public override setDescription(description: string | null): this {
     return super.setDescription(
-      description === null ? null : this.limit(description, LIMITS.description)
+      description === null ? null : this.limit(description, LIMITS.description),
     );
   }
 
@@ -85,7 +85,7 @@ export class AuditEmbed extends EmbedBuilder {
 export function memberAuditEmbed(
   member: GuildMember | User,
   colour: ColorResolvable,
-  description: string
+  description: string,
 ): AuditEmbed {
   const user = member instanceof User ? member : member.user;
   const name = member.displayName || user.tag;

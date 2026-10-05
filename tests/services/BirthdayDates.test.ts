@@ -88,7 +88,7 @@ test('upcoming groups by date, sorts, and does not mutate input', () => {
       ['2026-06-20', ['a', 'b']],
       ['2026-07-01', ['c']],
       ['2027-01-05', ['d']],
-    ]
+    ],
   );
   assert.deepEqual(profiles, copy);
 });
@@ -103,11 +103,11 @@ test('upcoming limit: stops after the group that reaches the limit, never splitt
   const now = at('2026-06-15T12:00:00');
   assert.deepEqual(
     upcoming(profiles, now, 'utc', 2).map((g) => g.userIds),
-    [['a'], ['b', 'c']]
+    [['a'], ['b', 'c']],
   );
   assert.deepEqual(
     upcoming(profiles, now, 'utc', 3).map((g) => g.userIds),
-    [['a'], ['b', 'c']]
+    [['a'], ['b', 'c']],
   );
   assert.equal(upcoming(profiles, now, 'utc', 4).length, 3);
   assert.deepEqual(upcoming([], now, 'utc'), []);

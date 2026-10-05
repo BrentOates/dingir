@@ -10,4 +10,14 @@ import ping from './info/ping.ts';
 import profile from './info/profile.ts';
 
 /** Every slash command the bot registers. Add new commands here. */
-export const commands: Command[] = [noroles, post, rolesince, simulate, config, about, mybirthday, ping, profile];
+export const commands: Command[] = [
+  noroles,
+  post,
+  rolesince,
+  simulate,
+  config,
+  about,
+  mybirthday,
+  ping,
+  profile,
+];

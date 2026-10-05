@@ -58,5 +58,8 @@ test('ok resets state', () => {
 
 test('transient leaves state unchanged and never purges', () => {
   const state: AccessState = { accessFailureCount: 9, firstAccessFailureAt: day(0) };
-  assert.deepEqual(nextAccessState(state, 'transient', day(40), policy), { ...state, purge: false });
+  assert.deepEqual(nextAccessState(state, 'transient', day(40), policy), {
+    ...state,
+    purge: false,
+  });
 });

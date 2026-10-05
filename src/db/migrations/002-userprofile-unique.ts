@@ -15,7 +15,11 @@ interface ProfileRow {
 }
 
 const toTime = (value: string | null): number => {
-  const parsed = Date.parse(String(value ?? '').replace(' ', 'T').replace(/ ([+-])/, '$1'));
+  const parsed = Date.parse(
+    String(value ?? '')
+      .replace(' ', 'T')
+      .replace(/ ([+-])/, '$1'),
+  );
   return Number.isNaN(parsed) ? 0 : parsed;
 };
 
@@ -31,7 +35,7 @@ const newestFirst = (a: ProfileRow, b: ProfileRow): number =>
 export function up(db: Database, logger: Logger): void {
   const rows = db
     .prepare(
-      'SELECT id, serverId, userId, birthdayYear, birthdayMonth, birthdayDay, activityScore, updatedAt FROM `UserProfiles` WHERE serverId IS NOT NULL AND userId IS NOT NULL'
+      'SELECT id, serverId, userId, birthdayYear, birthdayMonth, birthdayDay, activityScore, updatedAt FROM `UserProfiles` WHERE serverId IS NOT NULL AND userId IS NOT NULL',
     )
     .all() as ProfileRow[];
 
@@ -77,7 +81,5 @@ export function up(db: Database, logger: Logger): void {
     }
   }
 
-  db.exec(
-    `CREATE UNIQUE INDEX \`${INDEX_NAME}\` ON \`UserProfiles\` (\`serverId\`, \`userId\`)`
-  );
+  db.exec(`CREATE UNIQUE INDEX \`${INDEX_NAME}\` ON \`UserProfiles\` (\`serverId\`, \`userId\`)`);
 }

@@ -27,7 +27,7 @@ export const channelSetText = (label: string, channelId: string): string =>
 export const channelGetText = (
   label: string,
   channelId: string | null,
-  exists: boolean
+  exists: boolean,
 ): string => {
   if (!channelId) {
     return `${label}: not set`;
@@ -65,7 +65,7 @@ export function channelSetting(opts: ChannelSettingOptions): SubcommandGroupDefi
               .setName('channel')
               .setDescription(`Channel to use for: ${label.toLowerCase()}`)
               .addChannelTypes(...opts.channelTypes)
-              .setRequired(true)
+              .setRequired(true),
           ),
         run: async (ctx) => {
           const channel = ctx.interaction.options.getChannel('channel', true);
@@ -107,7 +107,10 @@ export function booleanSetting(opts: BooleanSettingOptions): SubcommandGroupDefi
         description: `Enable or disable: ${label.toLowerCase()}`,
         options: (b) =>
           b.addBooleanOption((o) =>
-            o.setName('enabled').setDescription(`Whether ${label.toLowerCase()} are on`).setRequired(true)
+            o
+              .setName('enabled')
+              .setDescription(`Whether ${label.toLowerCase()} are on`)
+              .setRequired(true),
           ),
         run: async (ctx) => {
           const enabled = ctx.interaction.options.getBoolean('enabled', true);

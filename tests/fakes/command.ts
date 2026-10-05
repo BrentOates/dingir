@@ -17,7 +17,7 @@ export interface FakeCommandParts {
 export function fakeCommandContext(
   app: App,
   options: Record<string, unknown> = {},
-  parts: FakeCommandParts = {}
+  parts: FakeCommandParts = {},
 ) {
   const { interaction } = fakeInteraction({ options, subcommand: parts.subcommand });
   if (parts.client) {

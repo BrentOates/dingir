@@ -9,7 +9,7 @@ const errorCode = (error: unknown): unknown =>
 
 export const resolveMember = async (
   guild: Guild,
-  userOrId: User | Snowflake
+  userOrId: User | Snowflake,
 ): Promise<GuildMember | null> => {
   const id = typeof userOrId === 'string' ? userOrId : userOrId.id;
   const cached = guild.members.cache.get(id);
@@ -29,9 +29,10 @@ export const resolveMember = async (
 
 export const resolveTextChannel = async (
   guild: Guild,
-  id: Snowflake
+  id: Snowflake,
 ): Promise<GuildTextBasedChannel | null> => {
-  const channel = guild.channels.cache.get(id) ?? (await guild.channels.fetch(id).catch(() => null));
+  const channel =
+    guild.channels.cache.get(id) ?? (await guild.channels.fetch(id).catch(() => null));
   if (!channel || !channel.isTextBased() || channel.isDMBased() || !channel.isSendable()) {
     return null;
   }

@@ -12,7 +12,10 @@ const capture = (level?: LogLevel) => {
       },
     },
   });
-  return { logger, entries: () => lines.map((line) => JSON.parse(line) as Record<string, unknown>) };
+  return {
+    logger,
+    entries: () => lines.map((line) => JSON.parse(line) as Record<string, unknown>),
+  };
 };
 
 test('writes JSON lines with level, message and merged context', () => {
@@ -51,7 +54,7 @@ test('respects the configured level', () => {
   logger.warn('shown');
   assert.deepEqual(
     entries().map((e) => e.msg),
-    ['shown']
+    ['shown'],
   );
 });
 

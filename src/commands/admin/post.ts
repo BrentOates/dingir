@@ -1,4 +1,4 @@
-import type { Message} from 'discord.js';
+import type { Message } from 'discord.js';
 import { ChannelType, PermissionFlagsBits } from 'discord.js';
 import { defineCommand } from '../../framework/command.ts';
 import { UserError } from '../../framework/errors.ts';
@@ -19,13 +19,13 @@ export default defineCommand({
           .setName('channel')
           .setDescription('Channel to post in')
           .addChannelTypes(ChannelType.GuildText, ChannelType.GuildAnnouncement)
-          .setRequired(true)
+          .setRequired(true),
       )
       .addStringOption((opt) =>
-        opt.setName('content').setDescription('Optional simple message to send').setMaxLength(2000)
+        opt.setName('content').setDescription('Optional simple message to send').setMaxLength(2000),
       )
       .addAttachmentOption((opt) =>
-        opt.setName('attachment').setDescription('Optional attachment to send')
+        opt.setName('attachment').setDescription('Optional attachment to send'),
       ),
   run: async (ctx) => {
     const options = ctx.interaction.options;
@@ -52,7 +52,9 @@ export default defineCommand({
       const names = Object.entries(PermissionFlagsBits)
         .filter(([, flag]) => missing.includes(flag))
         .map(([name]) => name);
-      throw new UserError(`I am missing permissions in ${channel.toString()}: ${names.join(', ')}.`);
+      throw new UserError(
+        `I am missing permissions in ${channel.toString()}: ${names.join(', ')}.`,
+      );
     }
 
     let sent: Message;
@@ -66,7 +68,7 @@ export default defineCommand({
       ctx.app.logger.warn(
         'Failed to send /post message',
         { guildId: ctx.guild.id, channelId: channel.id },
-        error
+        error,
       );
       throw new UserError('An error was encountered sending this message.', { cause: error });
     }

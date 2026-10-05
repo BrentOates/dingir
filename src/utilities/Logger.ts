@@ -31,7 +31,7 @@ export const createConsoleLogger = ({
 }: LoggerOptions = {}): Logger => {
   const base = pino(
     { level, timestamp: pino.stdTimeFunctions.isoTime, base: undefined },
-    destination ?? pino.destination(1)
+    destination ?? pino.destination(1),
   );
   const at =
     (method: keyof Logger): Logger[keyof Logger] =>

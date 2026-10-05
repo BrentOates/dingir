@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import type { Client} from 'discord.js';
+import type { Client } from 'discord.js';
 import { EmbedBuilder } from 'discord.js';
 import type { ServerConfig } from '../../src/db/schema.ts';
 import { sendAudit } from '../../src/services/AuditService.ts';
@@ -32,7 +32,15 @@ test('returns false when fetch rejects', async () => {
 });
 
 test('returns false when channel is missing or not sendable', async () => {
-  assert.equal(await sendAudit(app, clientWith(async () => null), config('c1'), embed), false);
+  assert.equal(
+    await sendAudit(
+      app,
+      clientWith(async () => null),
+      config('c1'),
+      embed,
+    ),
+    false,
+  );
   const unsendable = clientWith(async () => ({ isSendable: () => false }));
   assert.equal(await sendAudit(app, unsendable, config('c1'), embed), false);
 });

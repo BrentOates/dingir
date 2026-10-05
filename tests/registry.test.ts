@@ -9,8 +9,14 @@ test('validateRegistry accepts unique names', () => {
 });
 
 test('validateRegistry rejects duplicate names', () => {
-  assert.throws(() => validateRegistry('command', [{ name: 'same' }, { name: 'same' }]), /Duplicate command "same"/);
-  assert.throws(() => validateRegistry('event', [{ name: 'x' }, { name: 'x' }]), /Duplicate event "x"/);
+  assert.throws(
+    () => validateRegistry('command', [{ name: 'same' }, { name: 'same' }]),
+    /Duplicate command "same"/,
+  );
+  assert.throws(
+    () => validateRegistry('event', [{ name: 'x' }, { name: 'x' }]),
+    /Duplicate event "x"/,
+  );
 });
 
 test('validateRegistry rejects missing names', () => {

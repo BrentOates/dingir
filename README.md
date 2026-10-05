@@ -12,6 +12,7 @@ A Discord bot for the Irkallu server, built with discord.js and TypeScript. Prov
 4. Start: `npm start` (Node runs the TypeScript source directly; there is no build step)
 
 For watch mode during development:
+
 ```bash
 npm run dev
 ```
@@ -19,6 +20,7 @@ npm run dev
 Logs are structured JSON. For human-readable output while developing, use `npm run dev:pretty` (pipes through `pino-pretty`, a dev dependency). In production, pipe `docker logs` or `npm start` through `npx pino-pretty` if you want the same.
 
 Test and lint:
+
 ```bash
 npm test        # Run the test suite
 npm run test:coverage  # Run tests and enforce coverage thresholds
@@ -45,17 +47,17 @@ The database is stored in `/usr/src/app/data` inside the container; mount a volu
 
 All configuration is managed through environment variables in `.env`. See `.env.example` for defaults.
 
-| Variable | Required | Default | Description |
-|----------|----------|---------|-------------|
-| `TOKEN` | Yes | — | Discord bot token from the Developer Portal |
-| `CLIENT_ID` | Yes | — | Discord application (client) ID from the Developer Portal |
-| `JOB_SCHEDULE` | No | `0 9 * * *` | Cron schedule (5 or 6 fields) for daily cleanup, birthday notifications, and calendar updates. Example: `0 9 * * *` = 9:00 AM daily |
-| `BOT_TIMEZONE` | No | `Europe/London` | IANA time zone used for scheduling and birthday calculations (e.g. `Europe/London`, `America/New_York`) |
-| `DB_PATH` | No | `data/dingir.sqlite` | Path to SQLite database file. Use `:memory:` for throwaway runs (no persistence) |
-| `PURGE_MIN_FAILURES` | No | `3` | Minimum number of failed guild access checks before purging orphaned data (see Data & Retention) |
-| `PURGE_GRACE_DAYS` | No | `7` | Grace period (days) after first failure before purging. Data is purged only after both thresholds are met |
-| `LOG_LEVEL` | No | `info` | Log verbosity: `fatal`, `error`, `warn`, `info`, `debug` or `trace`. Logs are JSON, one object per line |
-| `DEV_GUILD_ID` | No | — | Guild ID for instant slash command registration during development (commands update immediately instead of within 1 hour). Omit in production |
+| Variable             | Required | Default              | Description                                                                                                                                   |
+| -------------------- | -------- | -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `TOKEN`              | Yes      | —                    | Discord bot token from the Developer Portal                                                                                                   |
+| `CLIENT_ID`          | Yes      | —                    | Discord application (client) ID from the Developer Portal                                                                                     |
+| `JOB_SCHEDULE`       | No       | `0 9 * * *`          | Cron schedule (5 or 6 fields) for daily cleanup, birthday notifications, and calendar updates. Example: `0 9 * * *` = 9:00 AM daily           |
+| `BOT_TIMEZONE`       | No       | `Europe/London`      | IANA time zone used for scheduling and birthday calculations (e.g. `Europe/London`, `America/New_York`)                                       |
+| `DB_PATH`            | No       | `data/dingir.sqlite` | Path to SQLite database file. Use `:memory:` for throwaway runs (no persistence)                                                              |
+| `PURGE_MIN_FAILURES` | No       | `3`                  | Minimum number of failed guild access checks before purging orphaned data (see Data & Retention)                                              |
+| `PURGE_GRACE_DAYS`   | No       | `7`                  | Grace period (days) after first failure before purging. Data is purged only after both thresholds are met                                     |
+| `LOG_LEVEL`          | No       | `info`               | Log verbosity: `fatal`, `error`, `warn`, `info`, `debug` or `trace`. Logs are JSON, one object per line                                       |
+| `DEV_GUILD_ID`       | No       | —                    | Guild ID for instant slash command registration during development (commands update immediately instead of within 1 hour). Omit in production |
 
 ## Discord Setup
 
@@ -96,23 +98,23 @@ Commands are organized into categories. Only **admin-only** commands require the
 
 ### Info Commands
 
-| Command | Who Can Use | Description |
-|---------|------------|-------------|
-| `/ping` | Everyone | Show WebSocket latency and round-trip time |
-| `/about` | Everyone | Display Dingir version, source code link, server info, and uptime |
-| `/profile <member>` | Admin | Fetch a member's profile: nickname, username, join date, onboarding status, activity score, and birthday if set |
-| `/mybirthday set <day> <month>` | Everyone | Set your birthday for this server |
-| `/mybirthday clear` | Everyone | Remove your birthday from this server |
+| Command                         | Who Can Use | Description                                                                                                     |
+| ------------------------------- | ----------- | --------------------------------------------------------------------------------------------------------------- |
+| `/ping`                         | Everyone    | Show WebSocket latency and round-trip time                                                                      |
+| `/about`                        | Everyone    | Display Dingir version, source code link, server info, and uptime                                               |
+| `/profile <member>`             | Admin       | Fetch a member's profile: nickname, username, join date, onboarding status, activity score, and birthday if set |
+| `/mybirthday set <day> <month>` | Everyone    | Set your birthday for this server                                                                               |
+| `/mybirthday clear`             | Everyone    | Remove your birthday from this server                                                                           |
 
 ### Admin Commands
 
-| Command | Description |
-|---------|-------------|
-| `/simulate join [member]` | Audit only: send the "member joined" audit for a member (no roles or welcome message). Defaults to you |
-| `/simulate onboard [member]` | Dry run: show what onboarding would do (guest roles, welcome) without applying changes. Defaults to you |
-| `/rolesince <role> [days]` | List members in a role who joined the server at least N days ago |
-| `/noroles` | List all members with no roles assigned (excluding bots) |
-| `/post <channel> [content] [attachment]` | Post a simple message and/or file to a channel. Requires at least one of content or attachment |
+| Command                                  | Description                                                                                             |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `/simulate join [member]`                | Audit only: send the "member joined" audit for a member (no roles or welcome message). Defaults to you  |
+| `/simulate onboard [member]`             | Dry run: show what onboarding would do (guest roles, welcome) without applying changes. Defaults to you |
+| `/rolesince <role> [days]`               | List members in a role who joined the server at least N days ago                                        |
+| `/noroles`                               | List all members with no roles assigned (excluding bots)                                                |
+| `/post <channel> [content] [attachment]` | Post a simple message and/or file to a channel. Requires at least one of content or attachment          |
 
 ### Config Commands
 
@@ -120,77 +122,77 @@ Use `/config <group> <subcommand>` to manage server settings. All are admin-only
 
 #### `/config announcements` — Announcements Channel
 
-| Subcommand | Description |
-|------------|-------------|
-| `set <channel>` | Set the announcements channel |
-| `get` | Show the currently configured announcements channel |
-| `clear` | Clear the announcements channel |
+| Subcommand      | Description                                         |
+| --------------- | --------------------------------------------------- |
+| `set <channel>` | Set the announcements channel                       |
+| `get`           | Show the currently configured announcements channel |
+| `clear`         | Clear the announcements channel                     |
 
 #### `/config audit` — Audit Log Channel
 
-| Subcommand | Description |
-|------------|-------------|
+| Subcommand      | Description                                                |
+| --------------- | ---------------------------------------------------------- |
 | `set <channel>` | Set the audit log channel (where member events are posted) |
-| `get` | Show the currently configured audit channel |
-| `clear` | Clear the audit channel |
+| `get`           | Show the currently configured audit channel                |
+| `clear`         | Clear the audit channel                                    |
 
 #### `/config sysmsgs` — Bot System Messages
 
 Toggle whether the bot uses Discord's system channel for welcome messages:
 
-| Subcommand | Description |
-|------------|-------------|
-| `enable` | Enable bot system messages in the server's system channel |
-| `disable` | Disable bot system messages in the server's system channel |
-| `status` | Show the current status |
+| Subcommand | Description                                                |
+| ---------- | ---------------------------------------------------------- |
+| `enable`   | Enable bot system messages in the server's system channel  |
+| `disable`  | Disable bot system messages in the server's system channel |
+| `status`   | Show the current status                                    |
 
 #### `/config honeypot` — Honeypot Channel
 
 Configure a channel that automatically bans members who post in it:
 
-| Subcommand | Description |
-|------------|-------------|
-| `set <channel>` | Set the honeypot channel |
-| `get` | Show the currently configured honeypot channel |
-| `clear` | Clear the honeypot channel |
+| Subcommand      | Description                                    |
+| --------------- | ---------------------------------------------- |
+| `set <channel>` | Set the honeypot channel                       |
+| `get`           | Show the currently configured honeypot channel |
+| `clear`         | Clear the honeypot channel                     |
 
 #### `/config welcome` — Welcome Messages & Images
 
-| Subcommand | Description |
-|------------|-------------|
+| Subcommand           | Description                                                                             |
+| -------------------- | --------------------------------------------------------------------------------------- |
 | `set-message <text>` | Set the welcome message (max 1500 characters). Use `{member}` to mention the new member |
-| `set-image <url>` | Set the background image for welcome images (http/https URL) |
-| `get` | Show the welcome message and image URL |
-| `clear <which>` | Clear the message, image, or both (`which` = `message`, `image`, or `all`) |
-| `preview` | Preview the welcome message as it would be sent for you |
+| `set-image <url>`    | Set the background image for welcome images (http/https URL)                            |
+| `get`                | Show the welcome message and image URL                                                  |
+| `clear <which>`      | Clear the message, image, or both (`which` = `message`, `image`, or `all`)              |
+| `preview`            | Preview the welcome message as it would be sent for you                                 |
 
 #### `/config newroles` — New Member Roles
 
 Roles given to members when they complete onboarding:
 
-| Subcommand | Description |
-|------------|-------------|
-| `get` | Show the current new-member roles |
+| Subcommand                               | Description                                 |
+| ---------------------------------------- | ------------------------------------------- |
+| `get`                                    | Show the current new-member roles           |
 | `set <role-one> [role-two] [role-three]` | Set up to three roles to give on onboarding |
-| `clear` | Clear the new-member roles |
+| `clear`                                  | Clear the new-member roles                  |
 
 #### `/config birthdays` — Birthday Calendar
 
-| Subcommand | Description |
-|------------|-------------|
+| Subcommand         | Description                                                                             |
+| ------------------ | --------------------------------------------------------------------------------------- |
 | `create <channel>` | Create or recreate a birthday calendar in a text channel (fetches all server birthdays) |
-| `sync` | Manually sync the birthday calendar (runs automatically on the scheduled job) |
-| `remove` | Remove the birthday calendar message |
+| `sync`             | Manually sync the birthday calendar (runs automatically on the scheduled job)           |
+| `remove`           | Remove the birthday calendar message                                                    |
 
 #### `/config debug` — Onboarding Diagnostics
 
 Toggle diagnostic audits for onboarding runs:
 
-| Subcommand | Description |
-|------------|-------------|
-| `enable` | Post a summary of each onboarding run to the audit channel |
-| `disable` | Do not post onboarding summaries |
-| `status` | Show the current status |
+| Subcommand | Description                                                |
+| ---------- | ---------------------------------------------------------- |
+| `enable`   | Post a summary of each onboarding run to the audit channel |
+| `disable`  | Do not post onboarding summaries                           |
+| `status`   | Show the current status                                    |
 
 ## Behaviour
 
@@ -204,6 +206,7 @@ When a member joins without screening enabled, or completes server screening:
 4. **Debug**: If debug mode is enabled, a diagnostic summary is posted to the audit channel showing what succeeded, failed, or was skipped
 
 Roles are only assigned if:
+
 - They are below the bot's highest role in the role hierarchy
 - They are not managed by an integration
 - They are not `@everyone`
@@ -213,6 +216,7 @@ If a role cannot be assigned, the error is logged and the onboarding continues f
 ### Audit Log
 
 Member events are posted to the configured audit channel:
+
 - Member joined (join audit)
 - Member completed onboarding
 - Member left (with member data cleanup status)
@@ -223,6 +227,7 @@ Member events are posted to the configured audit channel:
 ### Honeypot
 
 If a honeypot channel is configured, any non-administrator member who posts in it is:
+
 1. Immediately banned (with messages from the past 7 days deleted)
 2. Removed from the database
 3. Logged to the audit channel
@@ -264,11 +269,11 @@ Migrations run automatically on startup. Current migrations:
 
 ### What Gets Deleted
 
-| Event | Data Deleted |
-|-------|--------------|
-| Member leaves server | User profile (birthday, activity score, settings) for that server |
-| Bot removed from server | All configuration and user profiles for that server (immediate) |
-| Guild unreachable for `PURGE_MIN_FAILURES` checks spanning `PURGE_GRACE_DAYS` days | All configuration and user profiles for that guild (purge) |
+| Event                                                                              | Data Deleted                                                      |
+| ---------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| Member leaves server                                                               | User profile (birthday, activity score, settings) for that server |
+| Bot removed from server                                                            | All configuration and user profiles for that server (immediate)   |
+| Guild unreachable for `PURGE_MIN_FAILURES` checks spanning `PURGE_GRACE_DAYS` days | All configuration and user profiles for that guild (purge)        |
 
 **Note**: Transient errors (network timeouts, API rate limiting, temporary outages) never count toward the purge threshold. Only permanent failures (guild deleted, bot kicked) count.
 
@@ -313,7 +318,7 @@ export default defineCommand({
   description: 'Greet a member',
   options: (b) =>
     b.addUserOption((opt) =>
-      opt.setName('member').setDescription('Member to greet').setRequired(true)
+      opt.setName('member').setDescription('Member to greet').setRequired(true),
     ),
   run: async (ctx) => {
     const user = ctx.interaction.options.getUser('member', true);
@@ -333,10 +338,10 @@ Use the helpers in `src/framework/settings.ts`. For a channel setting:
 channelSetting({
   name: 'myfeature',
   description: 'Set the my feature channel',
-  field: 'myFeatureChannelId',           // Must exist in ServerConfig
+  field: 'myFeatureChannelId', // Must exist in ServerConfig
   label: 'My feature channel',
   channelTypes: [ChannelType.GuildText],
-})
+});
 ```
 
 Then ensure the field is defined in `src/db/schema.ts` and add a migration to add the column if needed. For a boolean setting, use `booleanSetting()` instead.
@@ -352,7 +357,7 @@ Events are defined in `src/events/`. Discord.js events are mapped automatically.
 import { defineEvent } from '../framework/event';
 
 export default defineEvent({
-  name: 'messageCreate',  // discord.js event name
+  name: 'messageCreate', // discord.js event name
   run: async (app, client, message) => {
     // `app` carries env, db, logger, clock, honeypot and shutdown; see src/app.ts
   },

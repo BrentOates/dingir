@@ -1,13 +1,5 @@
-import type {
-  AttachmentBuilder,
-  Client,
-  Guild,
-  GuildMember,
-  Role} from 'discord.js';
-import {
-  type PartialGuildMember,
-  type Snowflake,
-} from 'discord.js';
+import type { AttachmentBuilder, Client, Guild, GuildMember, Role } from 'discord.js';
+import { type PartialGuildMember, type Snowflake } from 'discord.js';
 import type { App } from '../app.ts';
 import type { ServerConfig } from '../db/schema.ts';
 import { EmbedColours } from '../resources/EmbedColours.ts';
@@ -68,7 +60,7 @@ export const roleProblem = (guild: Guild, role: Role): string | null => {
     return 'bot member unavailable';
   }
   if (role.position >= me.roles.highest.position) {
-    return 'at or above the bot\'s highest role';
+    return "at or above the bot's highest role";
   }
   return null;
 };
@@ -82,7 +74,7 @@ export const parseRoleIds = (raw: string | null | undefined): Snowflake[] =>
 /** True only when a member is known to have just passed membership screening. */
 export const completedScreening = (
   oldMember: GuildMember | PartialGuildMember,
-  newMember: GuildMember | PartialGuildMember
+  newMember: GuildMember | PartialGuildMember,
 ): boolean => oldMember.pending === true && newMember.pending === false;
 
 export const formatOnboardingSummary = (result: OnboardingResult): string => {
@@ -92,7 +84,9 @@ export const formatOnboardingSummary = (result: OnboardingResult): string => {
     `Welcome message: ${result.welcome}`,
   ];
   if (result.rolesAdded.length > 0) {
-    lines.push(`${result.dryRun ? 'Would add' : 'Added'}: ${result.rolesAdded.map((id) => `<@&${id}>`).join(', ')}`);
+    lines.push(
+      `${result.dryRun ? 'Would add' : 'Added'}: ${result.rolesAdded.map((id) => `<@&${id}>`).join(', ')}`,
+    );
   }
   for (const skip of result.rolesSkipped) {
     lines.push(`Skipped role ${skip.id}: ${skip.reason}`);
@@ -104,13 +98,13 @@ export const auditJoin = (
   app: App,
   client: Client,
   member: GuildMember,
-  config: ServerConfig
+  config: ServerConfig,
 ): Promise<boolean> =>
   sendAudit(
     app,
     client,
     config,
-    memberAuditEmbed(member, EmbedColours.positive, 'New member joined').addField('ID', member.id)
+    memberAuditEmbed(member, EmbedColours.positive, 'New member joined').addField('ID', member.id),
   );
 
 const auditFailure = (
@@ -119,7 +113,7 @@ const auditFailure = (
   member: GuildMember,
   config: ServerConfig,
   description: string,
-  detail: string
+  detail: string,
 ): Promise<boolean> =>
   sendAudit(
     app,
@@ -127,14 +121,14 @@ const auditFailure = (
     config,
     memberAuditEmbed(member, EmbedColours.negative, description)
       .addField('ID', member.id)
-      .addField('Reason', detail)
+      .addField('Reason', detail),
   );
 
 async function runStep(
   app: App,
   name: string,
   member: GuildMember,
-  step: () => Promise<StepResult>
+  step: () => Promise<StepResult>,
 ): Promise<StepResult> {
   try {
     return await step();
@@ -142,7 +136,7 @@ async function runStep(
     app.logger.error(
       `Onboarding step failed: ${name}`,
       { guild: member.guild.id, member: member.id },
-      error
+      error,
     );
     return `failed:${messageOf(error)}`;
   }
@@ -154,7 +148,7 @@ async function addGuestRoles(
   member: GuildMember,
   config: ServerConfig,
   dryRun: boolean,
-  result: OnboardingResult
+  result: OnboardingResult,
 ): Promise<StepResult> {
   const ids = parseRoleIds(config.guestRoleIds);
   if (ids.length === 0) {
@@ -192,7 +186,7 @@ async function addGuestRoles(
       member,
       config,
       'Unable to provide guest role(s) to member.',
-      messageOf(error)
+      messageOf(error),
     );
     throw error;
   }
@@ -206,7 +200,7 @@ async function sendWelcome(
   config: ServerConfig,
   dryRun: boolean,
   result: OnboardingResult,
-  renderImage: WelcomeImageRenderer
+  renderImage: WelcomeImageRenderer,
 ): Promise<StepResult> {
   const text = config.welcomeMessage ?? '';
   const url = config.welcomeMessageBackgroundUrl;
@@ -238,7 +232,7 @@ async function sendWelcome(
           member,
           config,
           'Unable to generate welcome image.',
-          payload.imageError
+          payload.imageError,
         );
       }
     }
@@ -264,7 +258,7 @@ async function sendWelcome(
       member,
       config,
       'Unable to send welcome message.',
-      messageOf(error)
+      messageOf(error),
     );
     throw error;
   }
@@ -277,7 +271,7 @@ export async function complete(
   member: GuildMember,
   config: ServerConfig,
   options: OnboardingOptions = {},
-  deps: OnboardingDeps = {}
+  deps: OnboardingDeps = {},
 ): Promise<OnboardingResult> {
   const dryRun = options.dryRun ?? false;
   const renderImage = deps.renderImage ?? WelcomeImage.render;
@@ -299,18 +293,18 @@ export async function complete(
         config,
         memberAuditEmbed(member, EmbedColours.neutral, 'Member completed onboarding').addField(
           'ID',
-          member.id
-        )
+          member.id,
+        ),
       );
       return sent ? 'done' : 'skipped:no usable audit channel';
     });
   }
 
   result.roles = await runStep(app, 'roles', member, () =>
-    addGuestRoles(app, client, member, config, dryRun, result)
+    addGuestRoles(app, client, member, config, dryRun, result),
   );
   result.welcome = await runStep(app, 'welcome', member, () =>
-    sendWelcome(app, client, member, config, dryRun, result, renderImage)
+    sendWelcome(app, client, member, config, dryRun, result, renderImage),
   );
 
   if (config.debug && !dryRun) {
@@ -321,7 +315,7 @@ export async function complete(
         config,
         memberAuditEmbed(member, EmbedColours.info, 'Onboarding diagnostics')
           .addField('ID', member.id)
-          .addField('Steps', formatOnboardingSummary(result))
+          .addField('Steps', formatOnboardingSummary(result)),
       );
       return sent ? 'done' : 'skipped:no usable audit channel';
     });

@@ -36,7 +36,7 @@ export default defineEvent({
     try {
       if (resolved.defer) {
         await interaction.deferReply(
-          resolved.defer === 'ephemeral' ? { flags: MessageFlags.Ephemeral } : {}
+          resolved.defer === 'ephemeral' ? { flags: MessageFlags.Ephemeral } : {},
         );
       }
       const config = await getConfig(app, interaction.guildId);

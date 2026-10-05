@@ -11,8 +11,16 @@ const DAY = 24 * 60 * 60 * 1000;
 const t0 = new Date('2027-01-01T00:00:00Z');
 
 const base = createTestApp();
-const { allProfiles, clearConfigs, clearProfiles, countProfiles, createConfig, createConfigs, createProfiles, findConfig } =
-  dbFixtures(base);
+const {
+  allProfiles,
+  clearConfigs,
+  clearProfiles,
+  countProfiles,
+  createConfig,
+  createConfigs,
+  createProfiles,
+  findConfig,
+} = dbFixtures(base);
 const run = (client: ReturnType<typeof fakeClient>, now: Date, p = policy): Promise<void> =>
   runDataCheck(createTestApp({ db: base.db, clock: () => now }), client, p);
 
@@ -57,7 +65,7 @@ test('gone guild is purged only after min failures and grace period', async () =
 test('guild missing from the client entirely counts as gone', async () => {
   createConfig({ serverId: 'g1' });
   await run(fakeClient(), t0, policy);
-  assert.equal((reload('g1'))?.accessFailureCount, 1);
+  assert.equal(reload('g1')?.accessFailureCount, 1);
 });
 
 test('a successful fetch resets counters', async () => {
@@ -79,7 +87,9 @@ test('profiles of departed members are deleted, including non-birthday ones', as
   ]);
   const guild = fakeGuildWithMembers({ id: 'g1', memberIds: ['here'] });
   await run(fakeClient({ guilds: { g1: guild } }), t0, policy);
-  const remaining = (allProfiles()).map((p) => `${p.serverId}/${p.userId}`).sort();
+  const remaining = allProfiles()
+    .map((p) => `${p.serverId}/${p.userId}`)
+    .sort();
   assert.deepEqual(remaining, ['g1/here', 'other/gone-plain']);
 });
 
@@ -104,6 +114,6 @@ test('one guild throwing does not stop the others', async () => {
   });
   const fine = fakeGuildWithMembers({ id: 'g2', memberIds: ['a'] });
   await run(fakeClient({ guilds: { g1: broken, g2: fine } }), t0, policy);
-  const remaining = (allProfiles()).map((p) => p.serverId);
+  const remaining = allProfiles().map((p) => p.serverId);
   assert.deepEqual(remaining, ['g1']);
 });

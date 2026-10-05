@@ -41,7 +41,8 @@ export const embedField = (embed: EmbedJson, name: string): { name: string; valu
 };
 
 export function fakeMessage(overrides: Record<string, unknown> = {}) {
-  const author = (overrides.author as ReturnType<typeof fakeUser> | null | undefined) ?? fakeUser('u1');
+  const author =
+    (overrides.author as ReturnType<typeof fakeUser> | null | undefined) ?? fakeUser('u1');
   const base = {
     id: 'm1',
     partial: false,
@@ -67,7 +68,7 @@ export async function runSlash(
   app: App,
   client: DingirClient,
   fake: FakeInteraction,
-  extra: Record<string, unknown> = {}
+  extra: Record<string, unknown> = {},
 ): Promise<void> {
   Object.assign(fake.interaction, { client, ...extra });
   await interactionCreate.run(app, client, fake.interaction);

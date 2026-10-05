@@ -1,5 +1,10 @@
 import { IANAZone } from 'luxon';
-import { DEFAULT_LOG_LEVEL, LOG_LEVELS, type LogLevel, parseLogLevel } from '../utilities/Logger.ts';
+import {
+  DEFAULT_LOG_LEVEL,
+  LOG_LEVELS,
+  type LogLevel,
+  parseLogLevel,
+} from '../utilities/Logger.ts';
 
 export interface Env {
   readonly token: string;

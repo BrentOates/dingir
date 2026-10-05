@@ -13,7 +13,7 @@ export interface ScheduledJobLike {
 
 export type ScheduleFn = (
   spec: { rule: string; tz: string },
-  callback: () => void
+  callback: () => void,
 ) => ScheduledJobLike | null;
 
 const defaultScheduleFn: ScheduleFn = (spec, callback) => {
@@ -39,7 +39,7 @@ export class Scheduler {
     cron: string,
     timezone: string,
     tasks: SchedulerTask[],
-    scheduleFn: ScheduleFn = defaultScheduleFn
+    scheduleFn: ScheduleFn = defaultScheduleFn,
   ) {
     this.logger = logger;
     this.cron = cron;

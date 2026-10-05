@@ -64,7 +64,9 @@ export function fakeGuild(overrides: FakeGuildOverrides = {}): Guild {
   });
 }
 
-export function fakeConfig(overrides: Partial<Record<keyof ServerConfig, unknown>> = {}): ServerConfig {
+export function fakeConfig(
+  overrides: Partial<Record<keyof ServerConfig, unknown>> = {},
+): ServerConfig {
   return stub<ServerConfig>({
     serverId: 'guild-1',
     guestRoleIds: null,
@@ -116,7 +118,11 @@ export function fakeAuditChannel(failWith?: string): AuditChannel {
 }
 
 /** A client whose channel cache resolves only `channelId` (to `channel`). */
-export function fakeChannelClient(channelId: string, channel: object, extra: object = {}): DingirClient {
+export function fakeChannelClient(
+  channelId: string,
+  channel: object,
+  extra: object = {},
+): DingirClient {
   return stub<DingirClient & Client>({
     channels: { fetch: async (id: string) => (id === channelId ? channel : null) },
     ...extra,
