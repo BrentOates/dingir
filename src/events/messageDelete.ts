@@ -9,10 +9,7 @@ import { UserProfileService } from '../utilities/UserProfileService';
 import { HoneyPotEnforcementService } from '../utilities/HoneyPotEnforcementService';
 
 export const name = 'messageDelete';
-export const run: RunFunction = async (
-  client: NovaClient,
-  message: Message
-) => {
+export const run: RunFunction = async (client: NovaClient, message: Message) => {
   if (!message.author || !message.guild) {
     return;
   }
@@ -23,10 +20,7 @@ export const run: RunFunction = async (
 
   const serverConfig = await ConfigService.getConfig(message.guild.id);
 
-  await UserProfileService.decrementActivityScore(
-    message.guild.id,
-    message.author.id
-  );
+  await UserProfileService.decrementActivityScore(message.guild.id, message.author.id);
 
   const audit = new EmbedCompatLayer()
     .setColor(EmbedColours.neutral)

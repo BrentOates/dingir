@@ -9,10 +9,7 @@ import { UserProfileService } from '../utilities/UserProfileService';
 import { HoneyPotEnforcementService } from '../utilities/HoneyPotEnforcementService';
 
 export const name = 'guildMemberRemove';
-export const run: RunFunction = async (
-  client: NovaClient,
-  member: GuildMember
-) => {
+export const run: RunFunction = async (client: NovaClient, member: GuildMember) => {
   if (member.user.bot) {
     return;
   }
@@ -22,10 +19,7 @@ export const run: RunFunction = async (
     return;
   }
 
-  const dataDeleted = await UserProfileService.deleteUser(
-    member.guild.id,
-    member.user.id
-  );
+  const dataDeleted = await UserProfileService.deleteUser(member.guild.id, member.user.id);
 
   const audit = new EmbedCompatLayer()
     .setColor(EmbedColours.negative)
@@ -35,10 +29,7 @@ export const run: RunFunction = async (
     })
     .setDescription('Member left')
     .addField('ID', member.user.id)
-    .addField(
-      'Member data cleanup',
-      dataDeleted ? 'Deleted' : 'No stored member data'
-    )
+    .addField('Member data cleanup', dataDeleted ? 'Deleted' : 'No stored member data')
     .setTimestamp();
 
   const serverConfig = await ConfigService.getConfig(member.guild.id);

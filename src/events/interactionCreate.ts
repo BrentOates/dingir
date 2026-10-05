@@ -8,40 +8,48 @@ import { ServerConfig } from '../client/models/ServerConfig';
 
 export const name = 'interactionCreate';
 
-const runCommand = async (client: NovaClient, cmd: ChatInputCommandInteraction, config: ServerConfig) => {
-	const slashCmd = client.slashCommands.get(cmd.commandName);
+const runCommand = async (
+  client: NovaClient,
+  cmd: ChatInputCommandInteraction,
+  config: ServerConfig
+) => {
+  const slashCmd = client.slashCommands.get(cmd.commandName);
 
-	if (!slashCmd) {
-		return;
-	}
+  if (!slashCmd) {
+    return;
+  }
 
-	await slashCmd.execute(cmd, config)
-		.catch((err: string) => {
-			if (cmd.deferred && !cmd.replied) {
-				cmd.editReply({ content: 'Something went wrong, was this command run in the correct place?' });
-			} else if (!cmd.replied) {
-				cmd.reply({ content: 'Something went wrong, was this command run in the correct place?', ephemeral: true });
-			}
-			Logger.writeError(err);
-		});
+  await slashCmd.execute(cmd, config).catch((err: string) => {
+    if (cmd.deferred && !cmd.replied) {
+      cmd.editReply({
+        content: 'Something went wrong, was this command run in the correct place?',
+      });
+    } else if (!cmd.replied) {
+      cmd.reply({
+        content: 'Something went wrong, was this command run in the correct place?',
+        ephemeral: true,
+      });
+    }
+    Logger.writeError(err);
+  });
 };
 
 export const run: RunFunction = async (client: NovaClient, interaction: Interaction) => {
-	if (!interaction.isChatInputCommand()) {
-		return;
-	}
+  if (!interaction.isChatInputCommand()) {
+    return;
+  }
 
-	if (!interaction.guild) {
-		return interaction.reply({
-			content: 'Dingir only supports interactions in Discord Servers.',
-			ephemeral: true
-		});
-	}
+  if (!interaction.guild) {
+    return interaction.reply({
+      content: 'Dingir only supports interactions in Discord Servers.',
+      ephemeral: true,
+    });
+  }
 
-	const serverConfig = await ConfigService.getConfigByMessage(interaction);
-	await UserProfileService.incrementActivityScore(interaction.guild.id, interaction.user.id);
-	
-	if (serverConfig) {
-		await runCommand(client, interaction, serverConfig);
-	}
+  const serverConfig = await ConfigService.getConfigByMessage(interaction);
+  await UserProfileService.incrementActivityScore(interaction.guild.id, interaction.user.id);
+
+  if (serverConfig) {
+    await runCommand(client, interaction, serverConfig);
+  }
 };

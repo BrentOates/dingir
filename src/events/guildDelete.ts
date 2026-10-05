@@ -8,9 +8,7 @@ import { UserProfileService } from '../utilities/UserProfileService';
 export const name = 'guildDelete';
 export const run: RunFunction = async (client: NovaClient, guild: Guild) => {
   const configDeleted = await ConfigService.deleteConfig(guild.id);
-  const userProfilesDeleted = await UserProfileService.deleteUsersByServer(
-    guild.id
-  );
+  const userProfilesDeleted = await UserProfileService.deleteUsersByServer(guild.id);
 
   Logger.writeLog(`Bot removed from guild: ${guild.name} (${guild.id}).`);
   Logger.writeLog(`Config deleted: ${configDeleted}.`);

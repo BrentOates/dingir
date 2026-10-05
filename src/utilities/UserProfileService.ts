@@ -30,9 +30,7 @@ export class UserProfileService {
     });
   }
 
-  public static async getServerBirthdays(
-    serverId: string
-  ): Promise<UserProfile[]> {
+  public static async getServerBirthdays(serverId: string): Promise<UserProfile[]> {
     return UserProfile.findAll({
       where: {
         birthdayDay: {
@@ -46,10 +44,7 @@ export class UserProfileService {
     });
   }
 
-  public static async getUserProfile(
-    serverId: string,
-    userId: string
-  ): Promise<UserProfile> {
+  public static async getUserProfile(serverId: string, userId: string): Promise<UserProfile> {
     const [profiles] = await UserProfile.findOrCreate({
       where: {
         serverId: serverId,
@@ -98,10 +93,7 @@ export class UserProfileService {
     return this.getUserProfile(serverId, userId);
   }
 
-  public static async deleteUser(
-    serverId: string,
-    userId: string
-  ): Promise<boolean> {
+  public static async deleteUser(serverId: string, userId: string): Promise<boolean> {
     const recordsDeleted = await UserProfile.destroy({
       where: {
         serverId: serverId,

@@ -12,16 +12,11 @@ export const run: RunFunction = async (client: NovaClient) => {
 
   Logger.writeLog('Online');
   await CommandRegistrar.registerGlobalCommands(client);
-  
-  const birthdaySchedule = schedule.scheduleJob(
-    process.env.JOB_SCHEDULE,
-    () => {
-      DataCheck.dataCleanup(client);
-      BirthdayManager.notifyBirthdays(client);
-      BirthdayManager.populateCalendars(client);
-    }
-  );
-  Logger.writeLog(
-    `Primary schedule set, next run at ${birthdaySchedule.nextInvocation()}`
-  );
+
+  const birthdaySchedule = schedule.scheduleJob(process.env.JOB_SCHEDULE, () => {
+    DataCheck.dataCleanup(client);
+    BirthdayManager.notifyBirthdays(client);
+    BirthdayManager.populateCalendars(client);
+  });
+  Logger.writeLog(`Primary schedule set, next run at ${birthdaySchedule.nextInvocation()}`);
 };

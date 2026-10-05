@@ -19,7 +19,7 @@ export class ChannelService {
 
     await auditChannel.send({
       embeds: [embed],
-      files: attachment ? [attachment] : undefined
+      files: attachment ? [attachment] : undefined,
     });
   }
 }

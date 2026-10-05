@@ -2,12 +2,14 @@ import { ChatInputCommandInteraction, Message } from 'discord.js';
 import { ServerConfig } from '../client/models/ServerConfig';
 
 export class ConfigService {
-	public static async getConfigByMessage (message: Message | ChatInputCommandInteraction): Promise<ServerConfig | undefined> {
-		const [ config ] = await ServerConfig.findOrCreate({
-			where: {
-				serverId: message.guild.id 
-			}
-		});
+  public static async getConfigByMessage(
+    message: Message | ChatInputCommandInteraction
+  ): Promise<ServerConfig | undefined> {
+    const [config] = await ServerConfig.findOrCreate({
+      where: {
+        serverId: message.guild.id,
+      },
+    });
 
     return config;
   }

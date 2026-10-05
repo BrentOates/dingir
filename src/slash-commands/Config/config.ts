@@ -1,4 +1,9 @@
-import { ChatInputCommandInteraction, SlashCommandBuilder, PermissionFlagsBits, InteractionContextType } from 'discord.js';
+import {
+  ChatInputCommandInteraction,
+  SlashCommandBuilder,
+  PermissionFlagsBits,
+  InteractionContextType,
+} from 'discord.js';
 import { ServerConfig } from '../../client/models/ServerConfig';
 import { SlashCommand, SlashSubCommand, SlashSubGroupCommand } from '../../types/SlashCommand';
 import { AnnouncementsCommand } from './Subcommands/announcements';
@@ -10,44 +15,44 @@ import { NewRolesCommand } from './Subcommands/newroles';
 import { SystemMessagesCommand } from './Subcommands/systemMsgs';
 import { WelcomeCommand } from './Subcommands/welcome';
 
-const cmdMap: {[key: string]: SlashSubGroupCommand | SlashSubCommand} = {
-	announcements: AnnouncementsCommand,
-	debug: DebugCommand,
-	sysmsgs: SystemMessagesCommand,
-	audit: AuditCommand,
-	welcome: WelcomeCommand,
-	newroles: NewRolesCommand,
-	birthdays: BirthdaysConfigCommand,
-	honeypot: HoneyPotCommand
+const cmdMap: { [key: string]: SlashSubGroupCommand | SlashSubCommand } = {
+  announcements: AnnouncementsCommand,
+  debug: DebugCommand,
+  sysmsgs: SystemMessagesCommand,
+  audit: AuditCommand,
+  welcome: WelcomeCommand,
+  newroles: NewRolesCommand,
+  birthdays: BirthdaysConfigCommand,
+  honeypot: HoneyPotCommand,
 };
 
 const execute = async (cmd: ChatInputCommandInteraction, config: ServerConfig) => {
-	const subCommand = cmd.options.getSubcommandGroup() ?? cmd.options.getSubcommand();
-	const subCmd = cmdMap[subCommand];
+  const subCommand = cmd.options.getSubcommandGroup() ?? cmd.options.getSubcommand();
+  const subCmd = cmdMap[subCommand];
 
-	if (!subCommand) {
-		cmd.reply({ content: 'This command is misconfigured', ephemeral: true });
-	}
+  if (!subCommand) {
+    cmd.reply({ content: 'This command is misconfigured', ephemeral: true });
+  }
 
-	subCmd.execute(cmd, config);
+  subCmd.execute(cmd, config);
 };
 
 const commandData = new SlashCommandBuilder()
-	.setName('config')
-	.setDescription('Manage configuration data for this server')
-	.setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
-	.setContexts([InteractionContextType.Guild])
-	.addSubcommandGroup(AnnouncementsCommand.commandData)
-	.addSubcommandGroup(DebugCommand.commandData)
-	.addSubcommandGroup(SystemMessagesCommand.commandData)
-	.addSubcommandGroup(AuditCommand.commandData)
-	.addSubcommandGroup(WelcomeCommand.commandData)
-	.addSubcommandGroup(NewRolesCommand.commandData)
-	.addSubcommandGroup(BirthdaysConfigCommand.commandData)
-	.addSubcommandGroup(HoneyPotCommand.commandData);
+  .setName('config')
+  .setDescription('Manage configuration data for this server')
+  .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
+  .setContexts([InteractionContextType.Guild])
+  .addSubcommandGroup(AnnouncementsCommand.commandData)
+  .addSubcommandGroup(DebugCommand.commandData)
+  .addSubcommandGroup(SystemMessagesCommand.commandData)
+  .addSubcommandGroup(AuditCommand.commandData)
+  .addSubcommandGroup(WelcomeCommand.commandData)
+  .addSubcommandGroup(NewRolesCommand.commandData)
+  .addSubcommandGroup(BirthdaysConfigCommand.commandData)
+  .addSubcommandGroup(HoneyPotCommand.commandData);
 
 const slashCommand: SlashCommand = {
-	commandData: commandData,
-	execute: execute
-}; 
+  commandData: commandData,
+  execute: execute,
+};
 export = slashCommand;

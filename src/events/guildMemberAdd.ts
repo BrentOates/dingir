@@ -7,10 +7,7 @@ import { ConfigService } from '../utilities/ConfigService';
 import { EmbedCompatLayer } from '../types/EmbedCompatLayer';
 
 export const name = 'guildMemberAdd';
-export const run: RunFunction = async (
-  client: NovaClient,
-  member: GuildMember
-) => {
+export const run: RunFunction = async (client: NovaClient, member: GuildMember) => {
   const serverConfig = await ConfigService.getConfig(member.guild.id);
 
   const audit = new EmbedCompatLayer()

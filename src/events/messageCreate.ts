@@ -38,10 +38,7 @@ const sendAudit = async (
 };
 
 export const name = 'messageCreate';
-export const run: RunFunction = async (
-  client: NovaClient,
-  message: Message
-) => {
+export const run: RunFunction = async (client: NovaClient, message: Message) => {
   if (!message.guild || message.author.bot) {
     return;
   }
@@ -52,8 +49,7 @@ export const run: RunFunction = async (
   }
 
   const member =
-    message.member ??
-    (await message.guild.members.fetch(message.author.id).catch(() => null));
+    message.member ?? (await message.guild.members.fetch(message.author.id).catch(() => null));
   if (!member || member.permissions.has(PermissionFlagsBits.Administrator)) {
     return;
   }
@@ -88,13 +84,16 @@ export const run: RunFunction = async (
   }
 
   await UserProfileService.deleteUser(message.guild.id, member.id).catch((error) => {
-    Logger.writeError(`Could not delete profile data for honey-pot ban ${member.id}.`, formatError(error));
+    Logger.writeError(
+      `Could not delete profile data for honey-pot ban ${member.id}.`,
+      formatError(error)
+    );
   });
   await sendAudit(
     client,
     message,
     'Honey-pot triggered',
-    'Banned and deleted the member\'s messages from the past 7 days.'
+    "Banned and deleted the member's messages from the past 7 days."
   ).catch((error) => {
     Logger.writeError('Could not send honey-pot success audit.', formatError(error));
   });

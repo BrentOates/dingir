@@ -7,17 +7,12 @@ import { sequelize } from './database/sequelize';
 import { SlashCommand } from '../types/SlashCommand';
 
 class NovaClient extends Client {
-	public events: Collection<string, Event> = new Collection();
-	public slashCommands: Collection<string, SlashCommand> = new Collection();
+  public events: Collection<string, Event> = new Collection();
+  public slashCommands: Collection<string, SlashCommand> = new Collection();
 
   public constructor() {
     super({
-      partials: [
-        Partials.Message,
-        Partials.Channel,
-        Partials.Reaction,
-        Partials.GuildMember,
-      ],
+      partials: [Partials.Message, Partials.Channel, Partials.Reaction, Partials.GuildMember],
       intents: [
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildMembers,
@@ -30,33 +25,29 @@ class NovaClient extends Client {
   }
 
   public async start(): Promise<void> {
-    await sequelize.sync({alter: true,});
+    await sequelize.sync({ alter: true });
 
-		const eventFiles: string[] = await glob(
-			`${__dirname}/../events/**/*{.js,.ts}`
-		);
-		const slashCommandFiles: string[] = await glob(
-			`${__dirname}/../slash-commands/*/*{.js,.ts}`
-		);
+    const eventFiles: string[] = await glob(`${__dirname}/../events/**/*{.js,.ts}`);
+    const slashCommandFiles: string[] = await glob(`${__dirname}/../slash-commands/*/*{.js,.ts}`);
 
-		eventFiles.forEach(async (eventFile: string) => {
-			const importedEvent = await import(eventFile);
-			const event = (importedEvent.default ?? importedEvent) as Event;
-			this.events.set(event.name, event);
-			this.on(event.name, event.run.bind(null, this));
-		});
+    eventFiles.forEach(async (eventFile: string) => {
+      const importedEvent = await import(eventFile);
+      const event = (importedEvent.default ?? importedEvent) as Event;
+      this.events.set(event.name, event);
+      this.on(event.name, event.run.bind(null, this));
+    });
 
-		slashCommandFiles.forEach(async (slashCommandFile: string) => {
-			const importedCommand = await import(slashCommandFile);
-			const cmd = (importedCommand.default ?? importedCommand) as SlashCommand;
-			this.slashCommands.set(cmd.commandData.name, cmd);
-		});
+    slashCommandFiles.forEach(async (slashCommandFile: string) => {
+      const importedCommand = await import(slashCommandFile);
+      const cmd = (importedCommand.default ?? importedCommand) as SlashCommand;
+      this.slashCommands.set(cmd.commandData.name, cmd);
+    });
 
-		process.on('SIGTERM', () => {
-			Logger.writeLog('SIGTERM Received, destroying client & shutting down.');
-			this.destroy();
-			process.exit();
-		});
+    process.on('SIGTERM', () => {
+      Logger.writeLog('SIGTERM Received, destroying client & shutting down.');
+      this.destroy();
+      process.exit();
+    });
 
     await this.login(process.env.TOKEN);
     Logger.writeLog('Logged in');

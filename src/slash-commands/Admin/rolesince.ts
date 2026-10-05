@@ -1,4 +1,11 @@
-import { ChatInputCommandInteraction, SlashCommandBuilder, PermissionFlagsBits, SlashCommandRoleOption, SlashCommandNumberOption, InteractionContextType } from 'discord.js';
+import {
+  ChatInputCommandInteraction,
+  SlashCommandBuilder,
+  PermissionFlagsBits,
+  SlashCommandRoleOption,
+  SlashCommandNumberOption,
+  InteractionContextType,
+} from 'discord.js';
 import { DateTime } from 'luxon';
 import { SlashCommand } from '../../types/SlashCommand';
 
@@ -10,31 +17,25 @@ const execute = async (cmd: ChatInputCommandInteraction) => {
 
   const members = allMembers.filter((member) => {
     const joined = DateTime.fromMillis(member.joinedTimestamp).startOf('day');
-    const daysInServer = DateTime.local()
-      .startOf('day')
-      .diff(joined, 'days')
-      .toObject().days;
-    return (
-      member.roles.cache.find((r) => r.id === role.id) &&
-      daysInServer >= days
-    );
+    const daysInServer = DateTime.local().startOf('day').diff(joined, 'days').toObject().days;
+    return member.roles.cache.find((r) => r.id === role.id) && daysInServer >= days;
   });
 
   let response: string;
 
   if (members.size < 1) {
-    response = `There are no users in ${role.toString()} that have been in the server for at least ${days ?? 0
-      } days.`;
+    response = `There are no users in ${role.toString()} that have been in the server for at least ${
+      days ?? 0
+    } days.`;
   } else {
-    response = `**Users in ${role.toString()} that have been in the server for at least ${days ?? 0
-      } days.**\n------\n`;
+    response = `**Users in ${role.toString()} that have been in the server for at least ${
+      days ?? 0
+    } days.**\n------\n`;
     members.each(async (mem) => {
       if (mem.partial) {
         await mem.fetch();
       }
-      response += `${mem.toString()} joined <t:${Math.floor(
-        mem.joinedTimestamp / 1000
-      )}:R>\n`;
+      response += `${mem.toString()} joined <t:${Math.floor(mem.joinedTimestamp / 1000)}:R>\n`;
     });
   }
 
@@ -43,25 +44,24 @@ const execute = async (cmd: ChatInputCommandInteraction) => {
     allowedMentions: {
       parse: [],
     },
-    ephemeral: true
+    ephemeral: true,
   });
 };
 
 const commandData = new SlashCommandBuilder()
   .setName('rolesince')
   .setDescription('Returns members in the given role for the specified number of days')
-  .addRoleOption((opt: SlashCommandRoleOption) => opt
-    .setName('role')
-    .setDescription('Role to search again')
-    .setRequired(true))
-  .addNumberOption((opt: SlashCommandNumberOption) => opt
-    .setName('days')
-    .setDescription('Minimum number of days in the role'))
+  .addRoleOption((opt: SlashCommandRoleOption) =>
+    opt.setName('role').setDescription('Role to search again').setRequired(true)
+  )
+  .addNumberOption((opt: SlashCommandNumberOption) =>
+    opt.setName('days').setDescription('Minimum number of days in the role')
+  )
   .setDefaultMemberPermissions(PermissionFlagsBits.Administrator)
   .setContexts([InteractionContextType.Guild]);
 
 const slashCommand: SlashCommand = {
   commandData: commandData,
-  execute: execute
+  execute: execute,
 };
 export = slashCommand;

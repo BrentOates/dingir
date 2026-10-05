@@ -24,23 +24,15 @@ const applyText = (canvas: Canvas, text: string, baseSize: number) => {
 };
 
 const getWelcomeMessage = async (config: ServerConfig, member: GuildMember) => {
- return config.welcomeMessage.replace(
-    '{member}',
-    `<@${member.id}>`
-  );
+  return config.welcomeMessage.replace('{member}', `<@${member.id}>`);
 };
 
 const getWelcomeImage = async (config: ServerConfig, member: GuildMember) => {
-  GlobalFonts.registerFromPath(
-    `${__dirname}/../resources/fonts/Roboto-Regular.ttf`,
-    'Roboto'
-  );
+  GlobalFonts.registerFromPath(`${__dirname}/../resources/fonts/Roboto-Regular.ttf`, 'Roboto');
 
   const canvas = createCanvas(700, 250);
   const ctx = canvas.getContext('2d');
-  const joinedTs = DateTime.fromMillis(member.joinedTimestamp).toLocaleString(
-    DateTime.DATE_FULL
-  );
+  const joinedTs = DateTime.fromMillis(member.joinedTimestamp).toLocaleString(DateTime.DATE_FULL);
 
   // Draw background
   const background = await loadImage(config.welcomeMessageBackgroundUrl);
@@ -77,21 +69,21 @@ const getWelcomeImage = async (config: ServerConfig, member: GuildMember) => {
   );
   ctx.drawImage(avatar, 50, 50, 150, 150);
 
-  const attachment = new AttachmentBuilder(await canvas.encode('png')).setName(
-    'welcome-image.png'
-  );
+  const attachment = new AttachmentBuilder(await canvas.encode('png')).setName('welcome-image.png');
 
   return attachment;
 };
 
-const addGuestRoles = async(serverConfig: ServerConfig, newMember: GuildMember, client: NovaClient) => {
+const addGuestRoles = async (
+  serverConfig: ServerConfig,
+  newMember: GuildMember,
+  client: NovaClient
+) => {
   try {
     const guestRoleIds = serverConfig.guestRoleIds.split(',');
     const guildRoles = await newMember.guild.roles.fetch();
 
-    await newMember.roles.add(
-      guildRoles.filter((role) => guestRoleIds.includes(role.id))
-    );
+    await newMember.roles.add(guildRoles.filter((role) => guestRoleIds.includes(role.id)));
   } catch (e) {
     Logger.writeError(
       `Adding guest roles failed in guildMemberUpdate for server: ${serverConfig.id}.`,
@@ -111,7 +103,11 @@ const addGuestRoles = async(serverConfig: ServerConfig, newMember: GuildMember, 
   }
 };
 
-const sendScreenAudit = async(serverConfig: ServerConfig, newMember: GuildMember, client: NovaClient) => {
+const sendScreenAudit = async (
+  serverConfig: ServerConfig,
+  newMember: GuildMember,
+  client: NovaClient
+) => {
   try {
     const audit = new EmbedCompatLayer()
       .setColor(EmbedColours.neutral)
@@ -144,8 +140,7 @@ export const run: RunFunction = async (
 
   const serverConfig = await ConfigService.getConfig(newMember.guild.id);
   const notPassedScreen =
-    oldMember.pending ||
-    (oldMember.pending === null && newMember.roles.cache.size === 1);
+    oldMember.pending || (oldMember.pending === null && newMember.roles.cache.size === 1);
 
   if (notPassedScreen && !newMember.pending) {
     sendScreenAudit(serverConfig, newMember, client);
@@ -173,7 +168,6 @@ export const run: RunFunction = async (
           content: content ?? undefined,
           files: attachment ? [attachment] : undefined,
         });
-        
       } catch (e) {
         Logger.writeError(
           `Sending welcome message failed in guildMemberUpdate for server: ${serverConfig.serverId}.`,
