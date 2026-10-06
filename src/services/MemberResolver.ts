@@ -13,11 +13,11 @@ export const resolveMember = async (
 ): Promise<GuildMember | null> => {
   const id = typeof userOrId === 'string' ? userOrId : userOrId.id;
   const cached = guild.members.cache.get(id);
-  if (cached) {
+  if (cached && !cached.partial) {
     return cached;
   }
   try {
-    return await guild.members.fetch(id);
+    return await guild.members.fetch(cached ? { user: id, force: true } : id);
   } catch (error) {
     const code = errorCode(error);
     if (code === UNKNOWN_MEMBER || code === UNKNOWN_USER) {

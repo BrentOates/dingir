@@ -108,3 +108,19 @@ test('mybirthday clear confirms removal when a birthday was set', async () => {
   const replies = await exec(mybirthday, { subcommand: 'clear' });
   assert.equal(lastContent(replies), 'Your birthday has been removed.');
 });
+
+test('profile shows Unknown when the join time is unavailable', async () => {
+  const guild = fakeGuildWithMembers({ id: 'guild-1', memberIds: ['m2'] });
+  const member = guild.members.cache.get('m2');
+  assert.ok(member);
+  Object.assign(member, {
+    nickname: null,
+    pending: false,
+    joinedTimestamp: null,
+    user: { username: 'someone' },
+    displayAvatarURL: () => 'https://example.com/a.png',
+  });
+  const replies = await exec(profile, { options: { member: { id: 'm2' } }, guild });
+  const embed = nth(last(replies).embeds as EmbedBuilder[] | undefined).toJSON();
+  assert.equal(embed.fields?.find((f) => f.name === 'Joined')?.value, 'Unknown');
+});

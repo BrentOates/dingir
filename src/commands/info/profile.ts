@@ -38,7 +38,13 @@ export default defineCommand({
         { name: 'Member', value: member.toString() },
         { name: 'Nickname', value: member.nickname ?? 'Not set' },
         { name: 'Username', value: member.user.username },
-        { name: 'Joined', value: `<t:${Math.floor((member.joinedTimestamp ?? 0) / 1000)}:R>` },
+        {
+          name: 'Joined',
+          value:
+            member.joinedTimestamp === null
+              ? 'Unknown'
+              : `<t:${Math.floor(member.joinedTimestamp / 1000)}:R>`,
+        },
         { name: 'Onboarding', value: member.pending ? 'Not completed' : 'Completed' },
         { name: 'Activity Score', value: String(profile?.activityScore ?? 0) },
       );

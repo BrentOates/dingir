@@ -54,3 +54,30 @@ test('resolveTextChannel returns sendable guild text channels only', async () =>
   assert.equal(await resolveTextChannel(guild, 'voice'), null);
   assert.equal(await resolveTextChannel(guild, 'missing'), null);
 });
+
+test('partial cached member is force-fetched', async () => {
+  const partial = fakeMember('u4', { partial: true });
+  const full = fakeMember('u4');
+  const calls: unknown[] = [];
+  const guild = guildWith({ u4: partial }, async (arg) => {
+    calls.push(arg);
+    return full;
+  });
+  assert.equal(await resolveMember(guild, 'u4'), full);
+  assert.deepEqual(calls, [{ user: 'u4', force: true }]);
+});
+
+test('partial cached member resolves to null when it is gone', async () => {
+  const guild = guildWith({ u5: fakeMember('u5', { partial: true }) }, async () => {
+    throw apiError(10007);
+  });
+  assert.equal(await resolveMember(guild, 'u5'), null);
+});
+
+test('full cached member is not fetched', async () => {
+  const member = fakeMember('u6', { partial: false });
+  const guild = guildWith({ u6: member }, async () => {
+    throw new Error('should not fetch');
+  });
+  assert.equal(await resolveMember(guild, 'u6'), member);
+});
