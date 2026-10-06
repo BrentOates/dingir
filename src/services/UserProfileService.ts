@@ -1,5 +1,5 @@
 import type { Snowflake } from 'discord.js';
-import { and, eq, inArray, isNotNull, or, sql } from 'drizzle-orm';
+import { and, eq, inArray, isNotNull, isNull, lt, or, sql } from 'drizzle-orm';
 import type { Db } from '../db/db.ts';
 import { userProfiles, type UserProfile } from '../db/schema.ts';
 
@@ -126,31 +126,52 @@ export async function deleteUsersByServer(db: Db, serverId: Snowflake): Promise<
   return result.changes > 0;
 }
 
-export async function markOnboarded(
+/**
+ * Begins a new membership: forgets every state recorded for a previous one. Pass `pending` when
+ * the member is awaiting screening.
+ */
+export async function startMembership(
   db: Db,
   serverId: Snowflake,
   userId: Snowflake,
   at: Date,
+  pending: boolean,
 ): Promise<void> {
+  const screeningPendingAt = pending ? at : null;
   db.insert(userProfiles)
-    .values({ serverId, userId, onboardedAt: at })
+    .values({ serverId, userId, screeningPendingAt })
     .onConflictDoUpdate({
       target: [userProfiles.serverId, userProfiles.userId],
-      set: { onboardedAt: at, screeningPendingAt: null, updatedAt: at },
+      set: { screeningPendingAt, onboardedAt: null, updatedAt: at },
     })
     .run();
 }
 
-export async function getOnboardedAt(
+/**
+ * Atomically claims the single onboarding of the current membership. Returns false when it was
+ * already claimed, so concurrent or replayed events cannot onboard a member twice.
+ */
+export async function claimOnboarding(
   db: Db,
   serverId: Snowflake,
   userId: Snowflake,
-): Promise<Date | null> {
-  return (await findUserProfile(db, serverId, userId))?.onboardedAt ?? null;
+  at: Date,
+): Promise<boolean> {
+  return (
+    db
+      .insert(userProfiles)
+      .values({ serverId, userId, onboardedAt: at })
+      .onConflictDoUpdate({
+        target: [userProfiles.serverId, userProfiles.userId],
+        set: { onboardedAt: at, screeningPendingAt: null, updatedAt: at },
+        setWhere: isNull(userProfiles.onboardedAt),
+      })
+      .run().changes > 0
+  );
 }
 
-/** Records that the member is awaiting membership screening. Leaves onboardedAt untouched. */
-export async function markScreeningPending(
+/** Records that a member is awaiting screening, unless anything is already known about them. */
+export async function recordScreeningPending(
   db: Db,
   serverId: Snowflake,
   userId: Snowflake,
@@ -161,49 +182,26 @@ export async function markScreeningPending(
     .onConflictDoUpdate({
       target: [userProfiles.serverId, userProfiles.userId],
       set: { screeningPendingAt: at, updatedAt: at },
+      setWhere: and(isNull(userProfiles.screeningPendingAt), isNull(userProfiles.onboardedAt)),
     })
     .run();
 }
 
-/**
- * Starts a fresh screening cycle for a newly joined member: records the pending time and clears any
- * stale onboardedAt left over from a previous membership whose leave was missed.
- */
-export async function startScreeningCycle(
+/** Drops recorded timestamps older than `cutoff`: they belong to a membership that has ended. */
+export async function dropStaleOnboardingState(
   db: Db,
   serverId: Snowflake,
   userId: Snowflake,
-  at: Date,
+  cutoff: Date,
 ): Promise<void> {
-  db.insert(userProfiles)
-    .values({ serverId, userId, screeningPendingAt: at })
-    .onConflictDoUpdate({
-      target: [userProfiles.serverId, userProfiles.userId],
-      set: { screeningPendingAt: at, onboardedAt: null, updatedAt: at },
-    })
-    .run();
-}
-
-/** Forgets a recorded onboarding (a new membership has begun). Leaves screening state untouched. */
-export async function clearOnboarded(
-  db: Db,
-  serverId: Snowflake,
-  userId: Snowflake,
-): Promise<void> {
+  const mine = forUser(serverId, userId);
   db.update(userProfiles)
-    .set({ onboardedAt: null, updatedAt: new Date() })
-    .where(and(forUser(serverId, userId), isNotNull(userProfiles.onboardedAt)))
+    .set({ onboardedAt: null })
+    .where(and(mine, lt(userProfiles.onboardedAt, cutoff)))
     .run();
-}
-
-export async function clearScreeningPending(
-  db: Db,
-  serverId: Snowflake,
-  userId: Snowflake,
-): Promise<void> {
   db.update(userProfiles)
-    .set({ screeningPendingAt: null, updatedAt: new Date() })
-    .where(and(forUser(serverId, userId), isNotNull(userProfiles.screeningPendingAt)))
+    .set({ screeningPendingAt: null })
+    .where(and(mine, lt(userProfiles.screeningPendingAt, cutoff)))
     .run();
 }
 

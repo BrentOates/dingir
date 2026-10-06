@@ -1,3 +1,47 @@
+/*
+ * ONBOARDING SPEC
+ *
+ * Persisted state, per (guild, user) in UserProfiles, describes the CURRENT membership only:
+ *   screeningPendingAt  member was seen awaiting membership screening (cleared on onboarding)
+ *   onboardedAt         the one onboarding of this membership has been claimed
+ * Rows are deleted when the member leaves (guildMemberRemove) or the guild is purged.
+ *
+ * Transitions (state = pending/onboarded; "-" = none):
+ *   event                          state            action                              new state
+ *   join, pending                  any              reset, no onboarding                pending
+ *   join, not pending              any              reset, claim, onboard               onboarded
+ *   update pending (true)          -                record pending                      pending
+ *   update pending (true)          pending/onb.     nothing                             unchanged
+ *   update true -> false (known)   -/pending        claim, onboard                      onboarded
+ *   update true -> false (known)   onboarded        nothing (replay)                    onboarded
+ *   update ? -> false (old partial) pending         claim, onboard                      onboarded
+ *   update ? -> false (old partial) -/onboarded     nothing (cannot prove screening)    unchanged
+ *   update, any other              any              nothing                             unchanged
+ *   leave                          any              delete row                          -
+ *   startup sweep (per member)     any              drop state older than the member's  see rows above
+ *                                                   joinedTimestamp; pending -> record
+ *                                                   pending; recorded pending but no
+ *                                                   longer pending -> claim, onboard
+ *
+ * Invariants:
+ *   1. A member is onboarded at most once per membership: the claim is one atomic conditional
+ *      upsert made before any step runs. A crash after the claim loses the welcome; it is never
+ *      repeated. Individual step failures (roles, welcome, audit) are reported, never retried.
+ *   2. State left by a previous membership never suppresses onboarding: joins reset it, and where
+ *      the join was missed (bot offline) any timestamp older than joinedTimestamp is dropped
+ *      whenever the member is next seen (update event or sweep).
+ *   3. Dry runs (/simulate) never touch persisted state.
+ *   4. Bots are never onboarded or tracked.
+ *
+ * Failure handling:
+ *   - Discord send/role calls fail: the step reports failed, an audit is attempted, other steps
+ *     and the claim stand.
+ *   - Old member partial or uncached: only a recorded pending state proves screening just ended.
+ *   - Bot offline during a join/leave/update: the sweep reconciles at the next startup; members
+ *     whose screening ended while offline are onboarded late.
+ *   - Concurrent events during an await: the claim is the only synchronisation point and is atomic.
+ */
+
 import type { AttachmentBuilder, Client, Guild, GuildMember, Role } from 'discord.js';
 import { type PartialGuildMember, type Snowflake } from 'discord.js';
 import type { App } from '../app.ts';
@@ -5,7 +49,7 @@ import type { ServerConfig } from '../db/schema.ts';
 import { EmbedColours } from '../resources/EmbedColours.ts';
 import { memberAuditEmbed } from './AuditEmbed.ts';
 import { sendAudit } from './AuditService.ts';
-import { markOnboarded } from './UserProfileService.ts';
+import { claimOnboarding } from './UserProfileService.ts';
 import { WelcomeImage, type WelcomeImageRenderer } from './WelcomeImage.ts';
 
 /** 'done' | 'skipped:<reason>' | 'failed:<message>' */
@@ -343,12 +387,28 @@ export async function complete(
     result.debug = 'skipped:dry run';
   }
 
-  if (!dryRun) {
-    // Record the attempt whatever the individual steps did, so replayed events don't repeat it.
-    await markOnboarded(app.db, member.guild.id, member.id, app.clock());
-  }
-
   return result;
 }
 
-export const OnboardingService = { complete };
+/**
+ * Onboards a member at most once per membership: the claim is recorded before any step runs, so a
+ * concurrent or replayed event finds it taken. Returns null when the member was already onboarded.
+ */
+export async function onboard(
+  app: App,
+  client: Client,
+  member: GuildMember,
+  config: ServerConfig,
+  options: OnboardingOptions = {},
+): Promise<OnboardingResult | null> {
+  if (!(await claimOnboarding(app.db, member.guild.id, member.id, app.clock()))) {
+    app.logger.info('Skipping onboarding: already onboarded this membership', {
+      guild: member.guild.id,
+      member: member.id,
+    });
+    return null;
+  }
+  return complete(app, client, member, config, options);
+}
+
+export const OnboardingService = { complete, onboard };

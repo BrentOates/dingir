@@ -75,7 +75,7 @@ The bot declares these gateway intents. The first two are **privileged** and mus
 - **Guild Messages** (unprivileged)
 - **Message Content** (privileged)
 
-The **Guild Members** intent is required for membership screening tracking: on startup, the bot fetches all members for each server (one fetch per server) to record members who are pending screening.
+The **Guild Members** intent is required for membership screening tracking: on startup, the bot fetches all members for each server (one fetch per server) to record members who are pending screening, and onboards members whose screening finished while the bot was offline.
 
 ### Bot Permissions
 
