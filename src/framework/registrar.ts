@@ -1,8 +1,40 @@
+/*
+ * COMMAND REGISTRATION SPEC
+ *
+ * Persisted state (BotState, keyed by application id so another bot sharing the database is
+ * independent):
+ *   commandsHash:<client>:<scope>  hash of the commands last registered successfully in <scope>
+ *   commandsScope:<client>         the scope last registered successfully and fully cleaned up
+ * A scope is `global` or `guild:<DEV_GUILD_ID>`; the env's DEV_GUILD_ID picks the current one.
+ *
+ * Transitions (last recorded scope -> current scope, on startup or `npm run deploy:commands`):
+ *   same scope, hash equal                 skip (startup) / register again (deploy script)
+ *   same scope, hash differs or missing    register, record hash
+ *   none recorded                          register, record hash and scope (re-registers once)
+ *   guild:X -> global | guild:Y            register, then clear guild X, then record the scope
+ *   global  -> guild:Y                     register in Y; global commands are never cleared
+ *                                          automatically (may be production), a warning says so
+ *
+ * Invariants:
+ *   1. The hash is recorded only after a successful register, so a failed or interrupted
+ *      registration is retried on the next start; nothing is cleared or recorded when it fails.
+ *   2. The scope is recorded only after the previous dev guild was cleaned up (or cannot be:
+ *      the bot is gone from it), so a failed cleanup is retried on every start until it works.
+ *   3. A recorded hash is trusted only while the recorded scope equals the current scope, so
+ *      switching scope always re-registers, even back to a scope whose old hash still matches.
+ *   4. Registration failure at startup is logged and never stops the bot.
+ *
+ * Failure handling: Discord errors on register -> 'failed' (retry next start); on cleanup ->
+ * keep the old scope (retry), except Unknown Guild / Missing Access, where the guild's commands
+ * are unreachable and nothing remains to be done.
+ */
+
 import { createHash } from 'node:crypto';
 import { REST, Routes } from 'discord.js';
 import type { App } from '../app.ts';
 import type { Env } from '../config/env.ts';
 import { getState, setState } from '../services/BotState.ts';
+import { classifyGuildFetchError } from '../services/RetentionPolicy.ts';
 import type { Command } from './command.ts';
 
 export interface CommandScope {
@@ -112,12 +144,17 @@ export async function registerCommands(
       cleaned = true;
       logger.info('Cleared application commands from the previous dev guild', { guild: guildId });
     } catch (error) {
-      scopeRecorded = false; // keep the old scope so the next run retries the cleanup
-      logger.warn(
-        'Could not clear application commands from the previous dev guild; remove them manually',
-        { guild: guildId },
-        error,
-      );
+      if (classifyGuildFetchError(error) === 'gone') {
+        // The bot is no longer in that guild, so its commands there are gone with it.
+        logger.info('Previous dev guild is unreachable; nothing to clear', { guild: guildId });
+      } else {
+        scopeRecorded = false; // keep the old scope so the next run retries the cleanup
+        logger.warn(
+          'Could not clear application commands from the previous dev guild; remove them manually',
+          { guild: guildId },
+          error,
+        );
+      }
     }
   }
   if (scopeRecorded) {
@@ -150,9 +187,9 @@ export async function syncCommands(
   const hash = hashCommands(commands);
   const previousScope = getState(db, scope.scopeKey);
 
-  // A changed scope must re-register even when this scope's stored hash still matches, so the
-  // previous dev guild gets cleaned up.
-  if (getState(db, scope.stateKey) === hash && (previousScope ?? scope.scope) === scope.scope) {
+  // A changed (or unrecorded) scope must re-register even when this scope's stored hash still
+  // matches, so the previous dev guild gets cleaned up and the scope gets recorded.
+  if (getState(db, scope.stateKey) === hash && previousScope === scope.scope) {
     logger.info(`Application commands unchanged, skipping registration ${scope.label}`, {
       hash: hash.slice(0, 12),
     });
