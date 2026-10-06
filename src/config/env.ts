@@ -1,3 +1,4 @@
+import { Cron } from 'croner';
 import { IANAZone } from 'luxon';
 import {
   DEFAULT_LOG_LEVEL,
@@ -48,17 +49,25 @@ export function loadEnv(source: Source = process.env): Readonly<Env> {
   const clientId = required('CLIENT_ID');
 
   const jobSchedule = read('JOB_SCHEDULE') ?? '0 9 * * *';
+  const timezone = read('BOT_TIMEZONE') ?? 'Europe/London';
+  const timezoneValid = IANAZone.isValidZone(timezone);
+  if (!timezoneValid) {
+    problems.push(`BOT_TIMEZONE must be a valid IANA time zone (got "${timezone}")`);
+  }
+
   const cronFields = jobSchedule.split(/\s+/);
   if (
     (cronFields.length !== 5 && cronFields.length !== 6) ||
     !cronFields.every((field) => CRON_FIELD.test(field))
   ) {
     problems.push(`JOB_SCHEDULE must be a 5- or 6-field cron expression (got "${jobSchedule}")`);
-  }
-
-  const timezone = read('BOT_TIMEZONE') ?? 'Europe/London';
-  if (!IANAZone.isValidZone(timezone)) {
-    problems.push(`BOT_TIMEZONE must be a valid IANA time zone (got "${timezone}")`);
+  } else {
+    try {
+      new Cron(jobSchedule, timezoneValid ? { paused: true, timezone } : { paused: true }).stop();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      problems.push(`JOB_SCHEDULE is not a valid cron expression: ${message}`);
+    }
   }
 
   const dbPath = read('DB_PATH') ?? 'data/dingir.sqlite';

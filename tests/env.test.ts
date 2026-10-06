@@ -85,3 +85,15 @@ test('parses and validates LOG_LEVEL', () => {
   assert.equal(loadEnv({ ...valid, LOG_LEVEL: 'debug' }).logLevel, 'debug');
   assert.throws(() => loadEnv({ ...valid, LOG_LEVEL: 'bogus' }), /LOG_LEVEL must be one of/);
 });
+
+test('rejects a cron expression croner cannot parse', () => {
+  assert.throws(
+    () => loadEnv({ ...valid, JOB_SCHEDULE: '99 99 99 99 99' }),
+    /JOB_SCHEDULE is not a valid cron expression/,
+  );
+});
+
+test('accepts 5- and 6-field cron expressions', () => {
+  assert.equal(loadEnv({ ...valid, JOB_SCHEDULE: '0 9 * * *' }).jobSchedule, '0 9 * * *');
+  assert.equal(loadEnv({ ...valid, JOB_SCHEDULE: '30 0 9 * * *' }).jobSchedule, '30 0 9 * * *');
+});
