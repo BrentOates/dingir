@@ -184,11 +184,11 @@ Roles given to members when they complete onboarding:
 
 #### `/config birthdays` — Birthday Calendar
 
-| Subcommand         | Description                                                                                                                                                                                         |
-| ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `create <channel>` | Create or recreate a birthday calendar in a text channel (fetches all server birthdays); the existing calendar is kept until the new one has been posted and saved, then the old message is removed |
-| `sync`             | Manually sync the birthday calendar (runs automatically on the scheduled job)                                                                                                                       |
-| `remove`           | Remove the birthday calendar message                                                                                                                                                                |
+| Subcommand         | Description                                                                                                                                                                                                                                                         |
+| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `create <channel>` | Create or recreate a birthday calendar in a text channel (fetches all server birthdays); the existing calendar is kept until the new one has been posted, saved and populated, then the old message is removed (if the new one can't be populated, nothing changes) |
+| `sync`             | Manually sync the birthday calendar (runs automatically on the scheduled job)                                                                                                                                                                                       |
+| `remove`           | Remove the birthday calendar message                                                                                                                                                                                                                                |
 
 #### `/config debug` — Onboarding Diagnostics
 

@@ -66,15 +66,37 @@ export const BirthdaysGroup = defineSubcommandGroup({
         }
 
         const status = await refreshCalendar(ctx.app, client, ctx.config);
+        const link = calendarMessageUrl(ctx.guild.id, path);
+        if (status !== 'updated') {
+          // Keep whatever calendar existed before: restore its path and drop the new placeholder.
+          try {
+            ctx.config = await updateConfig(ctx.app, ctx.config.serverId, {
+              birthdayCalendarMessagePath: previousPath ?? null,
+            });
+          } catch (error) {
+            ctx.app.logger.error(
+              'Could not restore the previous birthday calendar path',
+              { guild: ctx.guild.id },
+              error,
+            );
+          }
+          await message.delete().catch((deleteError: unknown) => {
+            ctx.app.logger.warn(
+              'Could not remove the new birthday calendar message after a failed population',
+              { guild: ctx.guild.id },
+              deleteError,
+            );
+          });
+          throw new UserError(
+            previousPath
+              ? "I couldn't populate the new birthday calendar, so the existing calendar was kept. Try again later."
+              : "I couldn't populate the new birthday calendar, so nothing was changed. Try again later.",
+          );
+        }
         if (previousPath && previousPath !== path) {
           await deleteCalendarMessage(client, previousPath);
         }
-        const link = calendarMessageUrl(ctx.guild.id, path);
-        await ctx.reply(
-          status === 'updated'
-            ? `Birthday calendar has been created: ${link}`
-            : `Birthday calendar message was created (${link}) but could not be populated yet; try \`/config birthdays sync\`.`,
-        );
+        await ctx.reply(`Birthday calendar has been created: ${link}`);
       },
     },
     {
