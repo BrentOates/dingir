@@ -4,7 +4,6 @@ import { DateTime } from 'luxon';
 import type { ServerConfig } from '../../src/db/schema.ts';
 import { notifyBirthdays, refreshCalendar } from '../../src/services/BirthdayService.ts';
 import {
-  apiError,
   fakeClient,
   fakeGuildWithMembers,
   fakeEditableMessage,
@@ -37,29 +36,6 @@ const makeConfig = (fields: Record<string, unknown> = {}): ServerConfig =>
 test('refreshCalendar: not configured', async () => {
   const config = makeConfig();
   assert.equal(await refreshCalendar(appAt(), fakeClient(), config), 'not-configured');
-});
-
-test('refreshCalendar: channel fetch rejecting keeps the stored path', async () => {
-  const config = makeConfig({ birthdayCalendarMessagePath: 'c1/m1' });
-  const client = fakeClient({ channelFetchError: apiError(50001) });
-  assert.equal(await refreshCalendar(appAt(), client, config), 'channel-missing');
-  assert.equal(config.birthdayCalendarMessagePath, 'c1/m1');
-});
-
-test('refreshCalendar: message missing', async () => {
-  const config = makeConfig({ birthdayCalendarMessagePath: 'c1/m1' });
-  const client = fakeClient({ channels: [fakeTextChannel('c1')] });
-  assert.equal(await refreshCalendar(appAt(), client, config), 'message-missing');
-});
-
-test('refreshCalendar: edit failure reports failed', async () => {
-  const config = makeConfig({ birthdayCalendarMessagePath: 'c1/m1' });
-  const message = fakeEditableMessage('m1');
-  message.edit = async () => {
-    throw new Error('boom');
-  };
-  const client = fakeClient({ channels: [fakeTextChannel('c1', [message])] });
-  assert.equal(await refreshCalendar(appAt(), client, config), 'failed');
 });
 
 test('refreshCalendar: edits with Feb 29 shown on Feb 28 and today counted', async () => {

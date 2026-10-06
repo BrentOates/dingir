@@ -32,27 +32,54 @@ export async function getConfig(
   return config;
 }
 
+/** Reads a config without creating it: null when the guild has no (or no longer has a) row. */
+export async function findConfig(
+  { db, configCache }: ConfigDeps,
+  serverId: Snowflake,
+): Promise<ServerConfig | null> {
+  return (
+    configCache.get(serverId) ??
+    db.select().from(serverConfigs).where(eq(serverConfigs.serverId, serverId)).get() ??
+    null
+  );
+}
+
 export async function getConfigs(db: Db): Promise<ServerConfig[]> {
   return db.select().from(serverConfigs).all();
 }
 
 export async function updateConfig(
-  { db, configCache }: ConfigDeps,
+  deps: ConfigDeps,
   serverId: Snowflake,
   patch: ServerConfigPatch,
 ): Promise<ServerConfig> {
+  return (await swapConfig(deps, serverId, patch)).updated;
+}
+
+/** Like updateConfig, but also returns the config as it was in the same atomic step. */
+export async function swapConfig(
+  { db, configCache }: ConfigDeps,
+  serverId: Snowflake,
+  patch: ServerConfigPatch,
+): Promise<{ previous: ServerConfig; updated: ServerConfig }> {
   configCache.delete(serverId);
-  const updated = db.transaction((tx) => {
+  const result = db.transaction((tx) => {
     tx.insert(serverConfigs).values({ serverId }).onConflictDoNothing().run();
-    return tx
+    const previous = tx
+      .select()
+      .from(serverConfigs)
+      .where(eq(serverConfigs.serverId, serverId))
+      .get()!;
+    const updated = tx
       .update(serverConfigs)
       .set({ ...patch, updatedAt: new Date() })
       .where(eq(serverConfigs.serverId, serverId))
       .returning()
       .get();
+    return { previous, updated };
   });
-  configCache.set(serverId, updated);
-  return updated;
+  configCache.set(serverId, result.updated);
+  return result;
 }
 
 /**

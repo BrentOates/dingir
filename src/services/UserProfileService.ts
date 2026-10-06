@@ -116,9 +116,13 @@ export async function incrementActivityScore(
     .run();
 }
 
-export async function deleteUser(db: Db, serverId: Snowflake, userId: Snowflake): Promise<boolean> {
-  const result = db.delete(userProfiles).where(forUser(serverId, userId)).run();
-  return result.changes > 0;
+/** Deletes a member's profile and returns what was stored, or null when there was none. */
+export async function deleteUser(
+  db: Db,
+  serverId: Snowflake,
+  userId: Snowflake,
+): Promise<UserProfile | null> {
+  return db.delete(userProfiles).where(forUser(serverId, userId)).returning().get() ?? null;
 }
 
 export async function deleteUsersByServer(db: Db, serverId: Snowflake): Promise<boolean> {

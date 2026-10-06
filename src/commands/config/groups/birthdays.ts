@@ -6,7 +6,7 @@ import {
   deleteCalendarMessage,
   refreshCalendar,
 } from '../../../services/BirthdayService.ts';
-import { updateConfig } from '../../../services/ConfigService.ts';
+import { findConfig, swapConfig, updateConfig } from '../../../services/ConfigService.ts';
 import { resolveTextChannel } from '../../../services/MemberResolver.ts';
 
 export const BirthdaysGroup = defineSubcommandGroup({
@@ -44,7 +44,6 @@ export const BirthdaysGroup = defineSubcommandGroup({
         }
 
         const client = ctx.interaction.client;
-        const previousPath = ctx.config.birthdayCalendarMessagePath;
 
         // Send first and persist before touching the old calendar, so a failure at either step
         // leaves the existing calendar and its stored path intact.
@@ -53,10 +52,15 @@ export const BirthdaysGroup = defineSubcommandGroup({
           allowedMentions: { parse: [] },
         });
         const path = `${message.channelId}/${message.id}`;
+        // The calendar this create replaces is whatever is stored at the moment of saving: a
+        // concurrent create may have replaced the one ctx.config saw, and must not be orphaned.
+        let previousPath: string | null | undefined;
         try {
-          ctx.config = await updateConfig(ctx.app, ctx.config.serverId, {
+          const swapped = await swapConfig(ctx.app, ctx.config.serverId, {
             birthdayCalendarMessagePath: path,
           });
+          previousPath = swapped.previous.birthdayCalendarMessagePath;
+          ctx.config = swapped.updated;
         } catch (error) {
           await message.delete().catch((deleteError: unknown) => {
             ctx.app.logger.warn(
@@ -71,11 +75,15 @@ export const BirthdaysGroup = defineSubcommandGroup({
         const status = await refreshCalendar(ctx.app, client, ctx.config);
         const link = calendarMessageUrl(ctx.guild.id, path);
         if (status !== 'updated') {
-          // Keep whatever calendar existed before: restore its path and drop the new placeholder.
+          // Keep whatever calendar existed before: restore its path (unless a concurrent create
+          // has since replaced ours) and drop the new placeholder.
           try {
-            ctx.config = await updateConfig(ctx.app, ctx.config.serverId, {
-              birthdayCalendarMessagePath: previousPath ?? null,
-            });
+            const stored = await findConfig(ctx.app, ctx.guild.id);
+            if (stored?.birthdayCalendarMessagePath === path) {
+              ctx.config = await updateConfig(ctx.app, ctx.config.serverId, {
+                birthdayCalendarMessagePath: previousPath ?? null,
+              });
+            }
           } catch (error) {
             ctx.app.logger.error(
               'Could not restore the previous birthday calendar path',
@@ -122,6 +130,8 @@ export const BirthdaysGroup = defineSubcommandGroup({
             'The calendar channel is missing or inaccessible. Recreate it with `/config birthdays create`.',
           'message-missing':
             'The calendar message is missing. Recreate it with `/config birthdays create`.',
+          'no-access':
+            'I do not have permission to view or edit the calendar message. Fix my permissions in that channel, or recreate it with `/config birthdays create`.',
           failed: 'An error occurred syncing the calendar. Try again later.',
         } as const;
         await ctx.reply(replies[status]);

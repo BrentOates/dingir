@@ -2,6 +2,7 @@ import { defineEvent } from '../framework/event.ts';
 import { EmbedColours } from '../resources/EmbedColours.ts';
 import { memberAuditEmbed } from '../services/AuditEmbed.ts';
 import { sendAudit } from '../services/AuditService.ts';
+import { refreshCalendar } from '../services/BirthdayService.ts';
 import { getConfig } from '../services/ConfigService.ts';
 import { deleteUser } from '../services/UserProfileService.ts';
 
@@ -13,7 +14,12 @@ export default defineEvent({
       return;
     }
 
-    const dataDeleted = await deleteUser(app.db, member.guild.id, user.id);
+    const removed = await deleteUser(app.db, member.guild.id, user.id);
+    const config = await getConfig(app, member.guild.id);
+    if (removed?.birthdayMonth != null) {
+      // The calendar must not keep listing a member who is no longer here.
+      await refreshCalendar(app, client, config);
+    }
     if (app.honeypot.isActive(member.guild.id, user.id)) {
       return;
     }
@@ -24,9 +30,8 @@ export default defineEvent({
       'Member left',
     )
       .addField('ID', user.id)
-      .addField('Member data cleanup', dataDeleted ? 'Deleted' : 'No stored member data');
+      .addField('Member data cleanup', removed ? 'Deleted' : 'No stored member data');
 
-    const config = await getConfig(app, member.guild.id);
     await sendAudit(app, client, config, audit);
   },
 });

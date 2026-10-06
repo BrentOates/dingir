@@ -249,7 +249,7 @@ Members can set their birthday using `/mybirthday set <day> <month>`. Birthdays 
 
 **Birthday Announcements**: On the configured schedule (default 9:00 AM daily), the bot checks all servers and posts birthday announcements in the announcements channel for members with birthdays today. If a member's birthday is Feb 29 and it's not a leap year, they are celebrated on Feb 28 instead.
 
-**Birthday Calendar**: If configured, a calendar message lists the next upcoming birthdays (up to 10 birthdays). The calendar is automatically updated on the scheduled job by editing the message. If the message or channel is missing, the refresh logs a warning and an admin must run `/config birthdays create` again to create a new calendar.
+**Birthday Calendar**: If configured, a calendar message lists the next upcoming birthdays (up to 10 birthdays). The calendar is automatically updated on the scheduled job by editing the message. It is also refreshed when a member with a birthday leaves. If the message or channel is missing, or the bot lacks access, the refresh logs a warning and an admin must fix permissions or run `/config birthdays create` again; a temporary Discord error never clears the stored calendar.
 
 **Timezones**: All birthday calculations use the `BOT_TIMEZONE` setting. Members' birthdays are stored as month/day only (no year), and the next occurrence is calculated relative to the bot's configured time zone.
 
