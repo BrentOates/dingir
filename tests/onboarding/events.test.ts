@@ -37,9 +37,48 @@ test('guildMemberUpdate onboards only on pending true to false', async () => {
   assert.equal(await update({ pending: false }, true), 0);
 });
 
-test('guildMemberUpdate skips when the old member is partial', async () => {
-  assert.equal(await update({ partial: true, pending: null }, false), 0);
-  assert.equal(await update({ partial: true, pending: true }, false), 0);
+const partialUpdate = async (opts: { held?: string[]; bot?: boolean; pending?: boolean }) => {
+  const env = fakeOnboarding({ roles: [role('r1')] });
+  const held = new Map((opts.held ?? []).map((id) => [id, {}]));
+  Object.assign(env.member, {
+    pending: opts.pending ?? false,
+    roles: { cache: held, add: async (ids: string[]) => void env.roleAdds.push(ids) },
+    ...(opts.bot ? { user: stub({ id: 'member-1', tag: 'bot#0001', bot: true }) } : {}),
+  });
+  const oldMember = { guild: env.guild, id: 'member-1', partial: true } as unknown as GuildMember;
+  await guildMemberUpdate.run(app, stub<DingirClient>(env.client), oldMember, env.member);
+  return env.roleAdds.length;
+};
+
+test('guildMemberUpdate onboards a partial old member who is not pending and lacks guest roles', async () => {
+  assert.equal(await partialUpdate({}), 1);
+});
+
+test('guildMemberUpdate skips a partial old member who still has to pass screening', async () => {
+  assert.equal(await partialUpdate({ pending: true }), 0);
+});
+
+test('guildMemberUpdate skips a partial old member who already holds a guest role', async () => {
+  assert.equal(await partialUpdate({ held: ['r1'] }), 0);
+});
+
+test('guildMemberUpdate skips a partial old member when no guest roles are configured', async () => {
+  clearConfigs();
+  createConfig({ serverId: 'guild-1', guestRoleIds: null, auditChannelId: 'audit-1' });
+  assert.equal(await partialUpdate({}), 0);
+  assert.ok(
+    app
+      .logsAt('info')
+      .some(
+        (e) =>
+          /previous member state unknown/.test(e.message) &&
+          JSON.stringify(e.context).includes('member-1'),
+      ),
+  );
+});
+
+test('guildMemberUpdate skips a bot with a partial old member', async () => {
+  assert.equal(await partialUpdate({ bot: true }), 0);
 });
 
 test('guildMemberAdd audits the join and onboards immediately when not pending', async () => {
