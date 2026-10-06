@@ -1,26 +1,14 @@
-import { Guild } from 'discord.js';
-import { NovaClient } from '../client/NovaClient';
-import { RunFunction } from '../types/Event';
-import { ConfigService } from '../utilities/ConfigService';
-import { Logger } from '../utilities/Logger';
+import { defineEvent } from '../framework/event.ts';
+import { getConfig, resetAccessFailures } from '../services/ConfigService.ts';
+import { syncGuildScreening } from '../services/ScreeningService.ts';
 
-export const name = 'guildCreate';
-export const run: RunFunction = async (client: NovaClient, guild: Guild) => {
-  ConfigService.getConfig(guild.id)
-    .then((config) => {
-      if (config) {
-        return Logger.writeLog(
-          `Bot added to new guild: ${guild.name} (${guild.id}).`
-        );
-      }
-      return Logger.writeError(
-        `Bot added to new guild, but config could not be generated: ${guild.name} (${guild.id}).`
-      );
-    })
-    .catch((err) => {
-      return Logger.writeError(
-        `Bot added to new guild, but config could not be generated: ${guild.name} (${guild.id}).`,
-        err
-      );
-    });
-};
+export default defineEvent({
+  name: 'guildCreate',
+  run: async (app, client, guild) => {
+    const config = await getConfig(app, guild.id);
+    await resetAccessFailures(app, config);
+    app.logger.info('Bot added to guild', { guild: guild.id, name: guild.name });
+    // Members already pending screening when the bot arrives have no recorded state yet.
+    await syncGuildScreening(app, client, guild);
+  },
+});

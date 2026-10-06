@@ -1,44 +1,41 @@
-import { Message } from 'discord.js';
-import { NovaClient } from '../client/NovaClient';
-import { EmbedColours } from '../resources/EmbedColours';
-import { RunFunction } from '../types/Event';
-import { ChannelService } from '../utilities/ChannelService';
-import { ConfigService } from '../utilities/ConfigService';
-import { EmbedCompatLayer } from '../types/EmbedCompatLayer';
+import { defineEvent } from '../framework/event.ts';
+import { EmbedColours } from '../resources/EmbedColours.ts';
+import { memberAuditEmbed } from '../services/AuditEmbed.ts';
+import { sendAudit } from '../services/AuditService.ts';
+import { getConfig } from '../services/ConfigService.ts';
 
-export const name = 'messageUpdate';
-export const run: RunFunction = async (
-  client: NovaClient,
-  oldMessage: Message,
-  newMessage: Message
-) => {
-  if (!oldMessage.content) {
-    return;
-  }
+export default defineEvent({
+  name: 'messageUpdate',
+  run: async (app, client, oldMessage, partialNew) => {
+    if (!partialNew.guildId) {
+      return;
+    }
 
-  if (newMessage.partial) {
-    newMessage = await newMessage.fetch();
-  }
+    let newMessage = partialNew;
+    if (newMessage.partial) {
+      try {
+        newMessage = await newMessage.fetch();
+      } catch {
+        return;
+      }
+    }
 
-  if (newMessage.author.bot || !newMessage.guild) {
-    return;
-  }
+    if (newMessage.author.bot || !newMessage.guildId) {
+      return;
+    }
 
-  if (oldMessage.content === newMessage.content) {
-    return;
-  }
+    const previous = oldMessage.partial ? null : oldMessage.content;
+    if (previous === newMessage.content) {
+      return;
+    }
 
-  const audit = new EmbedCompatLayer()
-    .setColor(EmbedColours.neutral)
-    .setAuthor({
-      name: newMessage.author.tag,
-      iconURL: newMessage.author.displayAvatarURL(),
-    })
-    .setDescription('A message was edited')
-    .addField('Previous', oldMessage.content)
-    .addField('Current', newMessage.content)
-    .setTimestamp();
+    const audit = memberAuditEmbed(newMessage.author, EmbedColours.neutral, 'A message was edited')
+      .addField('Channel', `<#${newMessage.channelId}>`)
+      .addField('Previous', previous === null ? '*(not cached)*' : previous)
+      .addField('Current', newMessage.content)
+      .addField('Jump to message', newMessage.url);
 
-  const serverConfig = await ConfigService.getConfig(newMessage.guild.id);
-  await ChannelService.sendAuditMessage(client, serverConfig, audit);
-};
+    const config = await getConfig(app, newMessage.guildId);
+    await sendAudit(app, client, config, audit);
+  },
+});

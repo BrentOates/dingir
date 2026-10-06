@@ -1,6 +1,10 @@
 node_modules
-npm-debug.log
+dist
+data
+tests
+coverage
 .env
 .git
 .github
+.claude
 docs

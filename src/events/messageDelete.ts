@@ -1,51 +1,48 @@
-import { Message } from 'discord.js';
-import { NovaClient } from '../client/NovaClient';
-import { EmbedColours } from '../resources/EmbedColours';
-import { RunFunction } from '../types/Event';
-import { ChannelService } from '../utilities/ChannelService';
-import { ConfigService } from '../utilities/ConfigService';
-import { EmbedCompatLayer } from '../types/EmbedCompatLayer';
-import { UserProfileService } from '../utilities/UserProfileService';
-import { HoneyPotEnforcementService } from '../utilities/HoneyPotEnforcementService';
+import { defineEvent } from '../framework/event.ts';
+import { EmbedColours } from '../resources/EmbedColours.ts';
+import { AuditEmbed, memberAuditEmbed } from '../services/AuditEmbed.ts';
+import { sendAudit } from '../services/AuditService.ts';
+import { getConfig } from '../services/ConfigService.ts';
 
-export const name = 'messageDelete';
-export const run: RunFunction = async (
-  client: NovaClient,
-  message: Message
-) => {
-  if (!message.author || !message.guild) {
-    return;
-  }
+export default defineEvent({
+  name: 'messageDelete',
+  run: async (app, client, message) => {
+    if (!message.guildId) {
+      return;
+    }
+    if (message.author?.bot) {
+      return;
+    }
+    if (message.author && app.honeypot.isActive(message.guildId, message.author.id)) {
+      return;
+    }
 
-  if (HoneyPotEnforcementService.isActive(message.guild.id, message.author.id)) {
-    return;
-  }
+    const config = await getConfig(app, message.guildId);
 
-  const serverConfig = await ConfigService.getConfig(message.guild.id);
+    if (message.partial || !message.author) {
+      const audit = new AuditEmbed()
+        .setColor(EmbedColours.neutral)
+        .setDescription('A message was deleted (not cached — content unavailable)')
+        .setTimestamp()
+        .addField('Channel', `<#${message.channelId}>`)
+        .addField('Message ID', message.id);
+      await sendAudit(app, client, config, audit);
+      return;
+    }
 
-  await UserProfileService.decrementActivityScore(
-    message.guild.id,
-    message.author.id
-  );
-
-  const audit = new EmbedCompatLayer()
-    .setColor(EmbedColours.neutral)
-    .setAuthor({
-      name: message.author.tag,
-      iconURL: message.author.displayAvatarURL(),
-    })
-    .setDescription('A message was deleted')
-    .setTimestamp();
-
-  if (message.content) {
-    audit.addField('Message', message.content);
-  }
-  if (message.embeds.length > 0) {
-    audit.addField('Embeds', message.embeds.length.toString());
-  }
-  if (message.attachments.size > 0) {
-    audit.addField('Attachments', message.attachments.size.toString());
-  }
-
-  await ChannelService.sendAuditMessage(client, serverConfig, audit);
-};
+    const audit = memberAuditEmbed(message.author, EmbedColours.neutral, 'A message was deleted')
+      .addField('Channel', `<#${message.channelId}>`)
+      .addField('Author ID', message.author.id);
+    if (message.content) {
+      audit.addField('Message', message.content);
+    }
+    if (message.attachments.size > 0) {
+      const names = [...message.attachments.values()].map((a) => a.name).join(', ');
+      audit.addField('Attachments', `${message.attachments.size}: ${names}`);
+    }
+    if (message.embeds.length > 0) {
+      audit.addField('Embeds', message.embeds.length.toString());
+    }
+    await sendAudit(app, client, config, audit);
+  },
+});

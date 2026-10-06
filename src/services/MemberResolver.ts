@@ -1,0 +1,61 @@
+import type { Guild, GuildMember, User } from 'discord.js';
+import { type GuildTextBasedChannel, type Snowflake } from 'discord.js';
+import { UserError } from '../framework/errors.ts';
+
+const UNKNOWN_MEMBER = 10007;
+const UNKNOWN_USER = 10013;
+
+const errorCode = (error: unknown): unknown =>
+  typeof error === 'object' && error !== null ? (error as { code?: unknown }).code : undefined;
+
+export const resolveMember = async (
+  guild: Guild,
+  userOrId: User | Snowflake,
+): Promise<GuildMember | null> => {
+  const id = typeof userOrId === 'string' ? userOrId : userOrId.id;
+  const cached = guild.members.cache.get(id);
+  if (cached && !cached.partial) {
+    return cached;
+  }
+  try {
+    return await guild.members.fetch(cached ? { user: id, force: true } : id);
+  } catch (error) {
+    const code = errorCode(error);
+    if (code === UNKNOWN_MEMBER || code === UNKNOWN_USER) {
+      return null;
+    }
+    throw error;
+  }
+};
+
+export const resolveTextChannel = async (
+  guild: Guild,
+  id: Snowflake,
+): Promise<GuildTextBasedChannel | null> => {
+  const channel =
+    guild.channels.cache.get(id) ?? (await guild.channels.fetch(id).catch(() => null));
+  if (!channel || !channel.isTextBased() || channel.isDMBased() || !channel.isSendable()) {
+    return null;
+  }
+  return channel;
+};
+
+/**
+ * Fetches the full member list. A gateway rate limit (discord.js GatewayRateLimitError) becomes a
+ * UserError with the retry time; any other failure propagates unchanged.
+ */
+export const fetchAllMembers = async (guild: Guild) => {
+  try {
+    return await guild.members.fetch();
+  } catch (error) {
+    if (error instanceof Error && error.name === 'GatewayRateLimitError') {
+      const retry = Number((error as { data?: { retry_after?: unknown } }).data?.retry_after);
+      const wait =
+        Number.isFinite(retry) && retry > 0 ? `${Math.ceil(retry)} seconds` : 'a few seconds';
+      throw new UserError(`Discord is rate-limiting member lookups — try again in ${wait}.`, {
+        cause: error,
+      });
+    }
+    throw error;
+  }
+};

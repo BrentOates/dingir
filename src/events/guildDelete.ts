@@ -1,18 +1,15 @@
-import { Guild } from 'discord.js';
-import { NovaClient } from '../client/NovaClient';
-import { RunFunction } from '../types/Event';
-import { ConfigService } from '../utilities/ConfigService';
-import { Logger } from '../utilities/Logger';
-import { UserProfileService } from '../utilities/UserProfileService';
+import { defineEvent } from '../framework/event.ts';
+import { purgeGuild } from '../services/ConfigService.ts';
 
-export const name = 'guildDelete';
-export const run: RunFunction = async (client: NovaClient, guild: Guild) => {
-  const configDeleted = await ConfigService.deleteConfig(guild.id);
-  const userProfilesDeleted = await UserProfileService.deleteUsersByServer(
-    guild.id
-  );
-
-  Logger.writeLog(`Bot removed from guild: ${guild.name} (${guild.id}).`);
-  Logger.writeLog(`Config deleted: ${configDeleted}.`);
-  Logger.writeLog(`User profiles deleted: ${userProfilesDeleted}.`);
-};
+export default defineEvent({
+  name: 'guildDelete',
+  run: async (app, _client, guild) => {
+    const result = await purgeGuild(app, guild.id);
+    app.logger.info('Bot removed from guild', {
+      guild: guild.id,
+      name: guild.name,
+      config: result.config,
+      profiles: result.profiles,
+    });
+  },
+});

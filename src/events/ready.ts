@@ -1,27 +1,39 @@
-import schedule from 'node-schedule';
-import { NovaClient } from '../client/NovaClient';
-import { RunFunction } from '../types/Event';
-import { BirthdayManager } from '../utilities/BirthdayManager';
-import { CommandRegistrar } from '../utilities/CommandRegistrar';
-import { DataCheck } from '../utilities/DataCheck';
-import { Logger } from '../utilities/Logger';
+import { defineEvent } from '../framework/event.ts';
+import { syncCommands } from '../framework/registrar.ts';
+import { notifyBirthdays, refreshAllCalendars } from '../services/BirthdayService.ts';
+import { runDataCheck } from '../services/DataCheckService.ts';
+import { syncScreeningState } from '../services/ScreeningService.ts';
+import { Scheduler } from '../services/Scheduler.ts';
 
-export const name = 'ready';
-export const run: RunFunction = async (client: NovaClient) => {
-  client.user.setPresence({ status: 'online' });
+export default defineEvent({
+  name: 'clientReady',
+  once: true,
+  run: async (app, client) => {
+    const { env, logger } = app;
+    client.user!.setPresence({ status: 'online' });
 
-  Logger.writeLog('Online');
-  await CommandRegistrar.registerGlobalCommands(client);
-  
-  const birthdaySchedule = schedule.scheduleJob(
-    process.env.JOB_SCHEDULE,
-    () => {
-      DataCheck.dataCleanup(client);
-      BirthdayManager.notifyBirthdays(client);
-      BirthdayManager.populateCalendars(client);
+    logger.info('Online');
+    await syncCommands(app, [...client.slashCommands.values()]);
+
+    try {
+      const scheduler = new Scheduler(logger, env.jobSchedule, env.timezone, [
+        { name: 'data-check', run: () => runDataCheck(app, client) },
+        { name: 'birthday-notifications', run: () => notifyBirthdays(app, client) },
+        { name: 'birthday-calendars', run: () => refreshAllCalendars(app, client) },
+      ]);
+      scheduler.start();
+      app.shutdown.register(() => scheduler.stop());
+      logger.info('Scheduler started', {
+        schedule: env.jobSchedule,
+        timezone: env.timezone,
+        next: scheduler.nextInvocation()?.toISOString(),
+      });
+    } catch (error) {
+      logger.error('Could not start scheduler; scheduled jobs are disabled', undefined, error);
     }
-  );
-  Logger.writeLog(
-    `Primary schedule set, next run at ${birthdaySchedule.nextInvocation()}`
-  );
-};
+
+    void syncScreeningState(app, client).catch((error: unknown) => {
+      logger.error('Could not sync screening state', undefined, error);
+    });
+  },
+});
