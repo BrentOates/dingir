@@ -6,6 +6,7 @@ import {
   getConfigs,
   resetAccessFailures,
   updateConfig,
+  updateExistingConfig,
 } from '../../src/services/ConfigService.ts';
 import {
   clearBirthday,
@@ -17,6 +18,8 @@ import {
   incrementActivityScore,
   setBirthday,
 } from '../../src/services/UserProfileService.ts';
+import { eq } from 'drizzle-orm';
+import { serverConfigs, type ServerConfig } from '../../src/db/schema.ts';
 import { createTestApp } from '../helpers/app.ts';
 import { nth } from '../helpers/assertions.ts';
 import { dbFixtures } from '../helpers/db.ts';
@@ -163,4 +166,19 @@ test('screening pending state is recorded, independent of onboardedAt, and clear
     screeningPendingAt: null,
     onboardedAt,
   });
+});
+
+test('updateExistingConfig patches an existing row but never creates one', async () => {
+  await updateConfig(app, 's-existing', { debug: false });
+  const patched = await updateExistingConfig(app, 's-existing', { debug: true });
+  assert.equal(patched?.debug, true);
+  assert.equal(app.configCache.get('s-existing')?.debug, true);
+
+  app.configCache.set('s-gone', { serverId: 's-gone' } as ServerConfig);
+  assert.equal(await updateExistingConfig(app, 's-gone', { debug: true }), null);
+  assert.equal(app.configCache.has('s-gone'), false);
+  assert.equal(
+    app.db.select().from(serverConfigs).where(eq(serverConfigs.serverId, 's-gone')).get(),
+    undefined,
+  );
 });

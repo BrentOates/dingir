@@ -140,3 +140,15 @@ test('a profile created while the member list is being fetched is not deleted', 
     ['a', 'late-joiner'],
   );
 });
+
+test('a guild purged mid-run does not get its config recreated', async () => {
+  createConfig({ serverId: 'g1' });
+  const client = fakeClient({ guilds: { g1: apiError(50001) } });
+  const fetchGuild = client.guilds.fetch.bind(client.guilds);
+  client.guilds.fetch = (async (id: string) => {
+    clearConfigs();
+    return fetchGuild(id);
+  }) as typeof client.guilds.fetch;
+  await run(client, t0, policy);
+  assert.equal(reload('g1'), null);
+});

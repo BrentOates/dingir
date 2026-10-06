@@ -55,6 +55,29 @@ export async function updateConfig(
   return updated;
 }
 
+/**
+ * Patch a config only if its row still exists (no upsert). For background jobs, which must not
+ * resurrect a config that was purged while they were running.
+ */
+export async function updateExistingConfig(
+  { db, configCache }: ConfigDeps,
+  serverId: Snowflake,
+  patch: ServerConfigPatch,
+): Promise<ServerConfig | null> {
+  configCache.delete(serverId);
+  const updated = db
+    .update(serverConfigs)
+    .set({ ...patch, updatedAt: new Date() })
+    .where(eq(serverConfigs.serverId, serverId))
+    .returning()
+    .get();
+  if (!updated) {
+    return null;
+  }
+  configCache.set(serverId, updated);
+  return updated;
+}
+
 export async function deleteConfig(
   { db, configCache }: ConfigDeps,
   serverId: Snowflake,

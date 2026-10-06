@@ -1,7 +1,7 @@
 import type { Client } from 'discord.js';
 import { type Snowflake } from 'discord.js';
 import type { App } from '../app.ts';
-import { getConfigs, purgeGuild, updateConfig } from './ConfigService.ts';
+import { getConfigs, purgeGuild, updateExistingConfig } from './ConfigService.ts';
 import { deleteUsers, getServerProfiles } from './UserProfileService.ts';
 import {
   type AccessOutcome,
@@ -75,10 +75,14 @@ export const runDataCheck = async (
         next.accessFailureCount !== config.accessFailureCount ||
         next.firstAccessFailureAt?.getTime() !== config.firstAccessFailureAt?.getTime()
       ) {
-        await updateConfig(app, config.serverId, {
+        const updated = await updateExistingConfig(app, config.serverId, {
           accessFailureCount: next.accessFailureCount,
           firstAccessFailureAt: next.firstAccessFailureAt,
         });
+        if (!updated) {
+          logger.debug('Config removed during data check; skipping guild', { guild });
+          continue;
+        }
       }
 
       if (outcome === 'ok') {
