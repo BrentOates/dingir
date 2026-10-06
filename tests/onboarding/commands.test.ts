@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { after, beforeEach, test } from 'node:test';
-import { Collection } from 'discord.js';
+import { Collection, SlashCommandSubcommandBuilder } from 'discord.js';
 import type { DingirClient } from '../../src/client/DingirClient.ts';
 import ConfigCommand from '../../src/commands/config/config.ts';
 import interactionCreate from '../../src/events/interactionCreate.ts';
@@ -250,4 +250,44 @@ test('simulate onboard truncates a long welcome preview and keeps short ones int
   await run(b.ctx);
   assert.match(nth(b.replies).content!, /hello there/);
   assert.doesNotMatch(nth(b.replies).content!, /truncated/);
+});
+
+test('welcome get keeps the reply within the limit for a legacy long image URL', async () => {
+  const env = fakeOnboarding({
+    config: {
+      welcomeMessage: 'hi',
+      welcomeMessageBackgroundUrl: `https://e.com/${'a'.repeat(2100)}`,
+    },
+  });
+  const { ctx, replies } = fakeCommandContext(app, {}, env);
+  await handler(WelcomeGroup as never, 'get')(ctx);
+  assert.ok(nth(replies).content!.length <= 2000);
+});
+
+test('welcome set-image option caps the URL length', () => {
+  const sub = WelcomeGroup.subcommands.find((s) => s.name === 'set-image')!;
+  const json = (
+    sub.options!(
+      new SlashCommandSubcommandBuilder().setName('x').setDescription('x'),
+    ) as SlashCommandSubcommandBuilder
+  ).toJSON();
+  assert.equal((json.options![0] as { max_length?: number }).max_length, 1000);
+});
+
+test('image failure notes survive truncation in preview and simulate', async () => {
+  const config = {
+    welcomeMessage: 'q'.repeat(2000),
+    welcomeMessageBackgroundUrl: 'http://127.0.0.1:1/bg.png',
+    systemMessagesEnabled: true,
+  };
+  const p = fakeCommandContext(app, {}, fakeOnboarding({ config }));
+  await handler(WelcomeGroup as never, 'preview')(p.ctx);
+  assert.ok(nth(p.replies).content!.length <= 2000);
+  assert.match(nth(p.replies).content!, /The image failed to render/);
+
+  const run = SimulateCommand.resolve(fakeInteraction({ subcommand: 'onboard' }).interaction)!.run;
+  const s = fakeCommandContext(app, {}, fakeOnboarding({ config }));
+  await run(s.ctx);
+  assert.ok(nth(s.replies).content!.length <= 2000);
+  assert.match(nth(s.replies).content!, /Image failed/);
 });

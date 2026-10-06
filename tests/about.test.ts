@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { toRepoUrl, formatUptime } from '../src/utilities/format.ts';
+import { fitMessage, toRepoUrl, formatUptime } from '../src/utilities/format.ts';
 
 test('toRepoUrl', async (t) => {
   await t.test('removes git+ prefix', () => {
@@ -57,4 +57,10 @@ test('formatUptime', async (t) => {
     const ms = 3 * 24 * 60 * 60 * 1000 + 4 * 60 * 60 * 1000 + 12 * 60 * 1000;
     assert.equal(formatUptime(ms), '3d 4h 12m');
   });
+});
+
+test('fitMessage never splits a surrogate pair', () => {
+  const out = fitMessage('Prefix:  ', 'a' + '😀'.repeat(1500));
+  assert.ok(out.isWellFormed());
+  assert.ok(out.length <= 2000);
 });

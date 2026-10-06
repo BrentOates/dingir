@@ -47,6 +47,10 @@ export function fitMessage(prefix: string, body: string, max = 2000): string {
   if (prefix.length + body.length <= max) {
     return prefix + body;
   }
-  const room = Math.max(0, max - prefix.length - TRUNCATION_NOTE.length - 1);
+  let room = Math.max(0, max - prefix.length - TRUNCATION_NOTE.length - 1);
+  const last = body.charCodeAt(room - 1);
+  if (room > 0 && last >= 0xd800 && last <= 0xdbff) {
+    room -= 1; // don't split a surrogate pair
+  }
   return `${prefix}${body.slice(0, room)}…${TRUNCATION_NOTE}`;
 }

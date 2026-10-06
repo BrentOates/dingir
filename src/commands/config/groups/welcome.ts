@@ -28,6 +28,10 @@ export const validateImageUrl = (url: string): string | null =>
 
 const NO_MENTIONS = { parse: [] };
 
+const MAX_IMAGE_URL_LENGTH = 1000;
+/** Legacy stored URLs may be longer than the option allows; keep `get` replies within Discord's limit. */
+const MAX_SHOWN_URL_LENGTH = 500;
+
 const setMessage = async (ctx: CommandContext) => {
   const text = ctx.interaction.options.getString('text', true);
   const problem = validateWelcomeMessage(text);
@@ -65,7 +69,11 @@ const setImage = async (ctx: CommandContext) => {
 
 const get = async (ctx: CommandContext) => {
   const { welcomeMessage, welcomeMessageBackgroundUrl } = ctx.config;
-  const image = `\nWelcome image: ${welcomeMessageBackgroundUrl ?? 'Not set'}`;
+  const shownUrl =
+    welcomeMessageBackgroundUrl && welcomeMessageBackgroundUrl.length > MAX_SHOWN_URL_LENGTH
+      ? `${welcomeMessageBackgroundUrl.slice(0, MAX_SHOWN_URL_LENGTH - 1)}…`
+      : (welcomeMessageBackgroundUrl ?? 'Not set');
+  const image = `\nWelcome image: ${shownUrl}`;
   await ctx.reply({
     content:
       fitMessage(
@@ -99,11 +107,11 @@ const preview = async (ctx: CommandContext) => {
     await ctx.reply(`Nothing would be sent: ${result.welcome.replace(/^(skipped|failed):/, '')}.`);
     return;
   }
-  const notes = payload.imageError ? `\n\nThe image failed to render: ${payload.imageError}` : '';
+  const notes = payload.imageError ? `The image failed to render: ${payload.imageError}\n\n` : '';
   await ctx.reply({
     content: fitMessage(
-      'Preview of the welcome message for you:\n\n',
-      `${payload.content ?? '*(no text)*'}${notes}`,
+      `Preview of the welcome message for you:\n\n${notes}`,
+      payload.content ?? '*(no text)*',
     ),
     files: payload.image ? [payload.image] : undefined,
     allowedMentions: NO_MENTIONS,
@@ -136,6 +144,7 @@ export const WelcomeGroup = defineSubcommandGroup({
           opt
             .setName('url')
             .setDescription('http(s) URL of the background image')
+            .setMaxLength(MAX_IMAGE_URL_LENGTH)
             .setRequired(true),
         ),
       run: setImage,

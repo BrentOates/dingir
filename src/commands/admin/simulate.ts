@@ -54,12 +54,9 @@ export default defineCommand({
           dryRun: true,
         });
         const payload = result.welcomePayload;
-        const welcome = payload
-          ? `\n\nWelcome preview:\n${payload.content ?? '*(no text)*'}${
-              payload.imageError ? `\nImage failed: ${payload.imageError}` : ''
-            }`
-          : '';
-        const head = `Dry run for ${target.toString()} (nothing was changed or sent):\n${formatOnboardingSummary(result)}`;
+        const imageNote = payload?.imageError ? `\n\nImage failed: ${payload.imageError}` : '';
+        const welcome = payload ? `\n\nWelcome preview:\n${payload.content ?? '*(no text)*'}` : '';
+        const head = `Dry run for ${target.toString()} (nothing was changed or sent):\n${formatOnboardingSummary(result)}${imageNote}`;
         await ctx.reply({
           content: fitMessage(head, welcome),
           files: payload?.image ? [payload.image] : undefined,
