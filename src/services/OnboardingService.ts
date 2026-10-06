@@ -38,6 +38,8 @@ export interface OnboardingDeps {
 
 export interface OnboardingOptions {
   dryRun?: boolean;
+  /** Skip the "completed onboarding" audit when the caller already audited this member. */
+  skipAudit?: boolean;
 }
 
 const MAX_ERROR_LENGTH = 200;
@@ -285,7 +287,9 @@ export async function complete(
     rolesSkipped: [],
   };
 
-  if (!dryRun) {
+  if (!dryRun && options.skipAudit) {
+    result.audit = 'skipped:already audited on join';
+  } else if (!dryRun) {
     result.audit = await runStep(app, 'audit', member, async () => {
       const sent = await sendAudit(
         app,

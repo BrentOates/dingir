@@ -238,3 +238,20 @@ test('debug summary audit is sent only when debug is enabled', async () => {
   assert.match(summary, /diagnostics/);
   assert.match(summary, /skipped:no guest roles configured/);
 });
+
+test('skipAudit omits the completion audit but still lists the step', async () => {
+  const env = fakeOnboarding({ config: { debug: true } });
+  const result = await complete(
+    app,
+    env.client,
+    env.member,
+    env.config,
+    { skipAudit: true },
+    { renderImage: okImage },
+  );
+  assert.equal(result.audit, 'skipped:already audited on join');
+  assert.equal(env.auditSends.length, 1);
+  const summary = JSON.stringify(nth(env.auditSends).embeds);
+  assert.match(summary, /Onboarding diagnostics/);
+  assert.match(summary, /Audit: skipped:already audited on join/);
+});
