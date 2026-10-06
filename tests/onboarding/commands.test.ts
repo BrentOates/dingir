@@ -13,6 +13,7 @@ import WelcomeGroup, {
   validateImageUrl,
   validateWelcomeMessage,
 } from '../../src/commands/config/groups/welcome.ts';
+import SimulateCommand from '../../src/commands/admin/simulate.ts';
 import { fakeCommandContext, fakeOnboarding, role } from '../fakes/onboarding.ts';
 import { createTestApp } from '../helpers/app.ts';
 import { nth, rejectsUserError } from '../helpers/assertions.ts';
@@ -207,4 +208,46 @@ test('newroles set and clear defer before the audit send', async () => {
     assert.deepEqual(order, ['defer', 'audit'], sub);
     assert.equal(env.auditSends.length, 1, sub);
   }
+});
+
+const TRUNCATED = /\*\(preview truncated\)\*$/;
+
+test('welcome preview is truncated to fit Discord limits', async () => {
+  const env = fakeOnboarding({
+    config: { welcomeMessage: 'x'.repeat(2000), systemMessagesEnabled: true },
+  });
+  const { ctx, replies } = fakeCommandContext(app, {}, env);
+  await handler(WelcomeGroup as never, 'preview')(ctx);
+  const content = nth(replies).content!;
+  assert.ok(content.length <= 2000);
+  assert.match(content, TRUNCATED);
+});
+
+test('welcome get is truncated for long legacy messages', async () => {
+  const env = fakeOnboarding({ config: { welcomeMessage: 'y'.repeat(2000) } });
+  const { ctx, replies } = fakeCommandContext(app, {}, env);
+  await handler(WelcomeGroup as never, 'get')(ctx);
+  const content = nth(replies).content!;
+  assert.ok(content.length <= 2000);
+  assert.match(content, /Welcome image: Not set$/);
+  assert.match(content, /preview truncated/);
+});
+
+test('simulate onboard truncates a long welcome preview and keeps short ones intact', async () => {
+  const run = SimulateCommand.resolve(fakeInteraction({ subcommand: 'onboard' }).interaction)!.run;
+  const long = fakeOnboarding({
+    config: { welcomeMessage: 'z'.repeat(2000), systemMessagesEnabled: true },
+  });
+  const a = fakeCommandContext(app, {}, long);
+  await run(a.ctx);
+  assert.ok(nth(a.replies).content!.length <= 2000);
+  assert.match(nth(a.replies).content!, TRUNCATED);
+
+  const short = fakeOnboarding({
+    config: { welcomeMessage: 'hello there', systemMessagesEnabled: true },
+  });
+  const b = fakeCommandContext(app, {}, short);
+  await run(b.ctx);
+  assert.match(nth(b.replies).content!, /hello there/);
+  assert.doesNotMatch(nth(b.replies).content!, /truncated/);
 });

@@ -36,3 +36,17 @@ export function formatUptime(ms: number | null): string {
 
   return '0m';
 }
+
+const TRUNCATION_NOTE = '\n*(preview truncated)*';
+
+/**
+ * Joins a prefix and user-supplied body so the result never exceeds Discord's message limit.
+ * An over-long body is cut with an ellipsis and followed by a truncation note.
+ */
+export function fitMessage(prefix: string, body: string, max = 2000): string {
+  if (prefix.length + body.length <= max) {
+    return prefix + body;
+  }
+  const room = Math.max(0, max - prefix.length - TRUNCATION_NOTE.length - 1);
+  return `${prefix}${body.slice(0, room)}…${TRUNCATION_NOTE}`;
+}

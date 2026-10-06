@@ -6,6 +6,7 @@ import {
   expandWelcomeMessage,
   MAX_WELCOME_LENGTH,
 } from '../../../services/OnboardingService.ts';
+import { fitMessage } from '../../../utilities/format.ts';
 import { isHttpUrl, render } from '../../../services/WelcomeImage.ts';
 
 export const MAX_WELCOME_MESSAGE_LENGTH = 1500;
@@ -64,11 +65,14 @@ const setImage = async (ctx: CommandContext) => {
 
 const get = async (ctx: CommandContext) => {
   const { welcomeMessage, welcomeMessageBackgroundUrl } = ctx.config;
+  const image = `\nWelcome image: ${welcomeMessageBackgroundUrl ?? 'Not set'}`;
   await ctx.reply({
-    content: [
-      `Welcome message: ${welcomeMessage ? `\n${welcomeMessage}` : 'Not set'}`,
-      `Welcome image: ${welcomeMessageBackgroundUrl ?? 'Not set'}`,
-    ].join('\n'),
+    content:
+      fitMessage(
+        'Welcome message: ',
+        welcomeMessage ? `\n${welcomeMessage}` : 'Not set',
+        2000 - image.length,
+      ) + image,
     allowedMentions: NO_MENTIONS,
   });
 };
@@ -97,7 +101,10 @@ const preview = async (ctx: CommandContext) => {
   }
   const notes = payload.imageError ? `\n\nThe image failed to render: ${payload.imageError}` : '';
   await ctx.reply({
-    content: `Preview of the welcome message for you:\n\n${payload.content ?? '*(no text)*'}${notes}`,
+    content: fitMessage(
+      'Preview of the welcome message for you:\n\n',
+      `${payload.content ?? '*(no text)*'}${notes}`,
+    ),
     files: payload.image ? [payload.image] : undefined,
     allowedMentions: NO_MENTIONS,
   });

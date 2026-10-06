@@ -3,6 +3,7 @@ import { type CommandContext, defineCommand } from '../../framework/command.ts';
 import { UserError } from '../../framework/errors.ts';
 import { resolveMember } from '../../services/MemberResolver.ts';
 import { auditJoin, complete, formatOnboardingSummary } from '../../services/OnboardingService.ts';
+import { fitMessage } from '../../utilities/format.ts';
 
 const NO_MENTIONS = { parse: [] };
 
@@ -58,8 +59,9 @@ export default defineCommand({
               payload.imageError ? `\nImage failed: ${payload.imageError}` : ''
             }`
           : '';
+        const head = `Dry run for ${target.toString()} (nothing was changed or sent):\n${formatOnboardingSummary(result)}`;
         await ctx.reply({
-          content: `Dry run for ${target.toString()} (nothing was changed or sent):\n${formatOnboardingSummary(result)}${welcome}`,
+          content: fitMessage(head, welcome),
           files: payload?.image ? [payload.image] : undefined,
           allowedMentions: NO_MENTIONS,
         });
