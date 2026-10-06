@@ -341,12 +341,17 @@ Commands are re-registered once on the first start after upgrading. The command 
 - `/config birthdays` — v2 had `create|sync`; v3 added `remove`
 - `/config newroles` — v2 `set` took 1–2 roles; v3 `set` takes 1–3 roles
 - `/simulate screen` — renamed to `/simulate onboard`
+- `/rolesince` — `days` is now a whole number of at least 0 (v2 accepted decimals)
+- `/post` — `channel` is limited to text and announcement channels, and `content` to 2000 characters
+- `/config announcements` and `/config audit` — `set` now only accepts text and announcement channels
 
 **Unchanged**:
 
 - `/config sysmsgs set <enabled>|get` — both v2 and v3 use this syntax
 - `/config debug set <enabled>|get` — both v2 and v3 use this syntax
-- `/config honeypot`, `/rolesince`, `/noroles`, `/post` — not in v2
+- `/config honeypot set|get|clear` — same options as v2
+- `/noroles` — same options as v2
+- `/about`, `/ping`, `/profile <member>` — same options as v2
 
 ### Releases
 
