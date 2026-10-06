@@ -259,11 +259,27 @@ const notifyGuild = async (
   if (ids.length === 0) {
     return;
   }
-  await channel.send({
-    content: `Happy Birthday to ${ids.map((id) => `<@${id}>`).join(', ')}!`,
-    allowedMentions: { users: ids },
-  });
+  // Split across messages so a big day never exceeds Discord's 2000 character limit.
+  const prefix = 'Happy Birthday to ';
+  let chunk: string[] = [];
+  const flush = async () => {
+    await channel.send({
+      content: `${prefix}${chunk.map((id) => `<@${id}>`).join(', ')}!`,
+      allowedMentions: { users: chunk },
+    });
+    chunk = [];
+  };
+  for (const id of ids) {
+    const next = [...chunk, id].map((u) => `<@${u}>`).join(', ');
+    if (chunk.length > 0 && prefix.length + next.length + 1 > MAX_MESSAGE_LENGTH) {
+      await flush();
+    }
+    chunk.push(id);
+  }
+  await flush();
 };
+
+const MAX_MESSAGE_LENGTH = 2000;
 
 export const notifyBirthdays = async (app: App, client: Client): Promise<void> => {
   app.logger.info('Sending birthday notifications');
