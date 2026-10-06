@@ -75,6 +75,8 @@ The bot declares these gateway intents. The first two are **privileged** and mus
 - **Guild Messages** (unprivileged)
 - **Message Content** (privileged)
 
+The **Guild Members** intent is required for membership screening tracking: on startup, the bot fetches all members for each server (one fetch per server) to record members who are pending screening.
+
 ### Bot Permissions
 
 The bot requires specific permissions on a per-feature basis. When inviting the bot, ensure it has:
@@ -216,7 +218,7 @@ Roles are only assigned if:
 
 If a role cannot be assigned, the error is logged and the onboarding continues for other roles and steps.
 
-**Onboarding Tracking**: Onboarding completion is recorded per member (`onboardedAt`), so a member is never onboarded twice. Leaving the server deletes the profile, so a rejoin is onboarded again. When the bot doesn't have the member's previous state cached (e.g. they joined while the bot was offline), it onboards a member only if they're no longer pending, not a bot, have no recorded onboarding, and joined within the last 7 days; otherwise it skips and logs at info. Members who were already in the server before upgrading are not re-onboarded (except possibly someone who joined within 7 days before the upgrade).
+**Onboarding Tracking**: The bot records when a member is pending membership screening (when they join pending, on any update showing them pending, and via a startup sweep that fetches each server's members after login). If the bot doesn't have the member's previous state cached, it onboards them only when a pending state was recorded and they haven't been onboarded yet; otherwise it skips (logged). Onboarding clears the pending marker and records `onboardedAt`, so nobody is onboarded twice. Members already in the server before the upgrade are never re-onboarded. Leaving the server deletes the profile, so a rejoin is onboarded again. Known limitation: a member who was already pending at deploy time and completes screening before the startup sweep records them, while not cached, won't be onboarded automatically (an admin can assign roles manually).
 
 ### Audit Log
 
@@ -273,6 +275,7 @@ Migrations run automatically on startup. Current migrations:
 - **004-bot-state** — Adds the `BotState` key/value table (currently stores the registered command hash)
 - **005-userprofile-backfill** — Sets NULL activity scores to 0 and deletes profile rows with no server or user id, logging how many
 - **006-userprofile-onboarded-at** — Adds nullable `UserProfiles.onboardedAt`, recording when a member was onboarded
+- **007-userprofile-screening-pending** — Adds nullable `UserProfiles.screeningPendingAt`, recording that a member is waiting on membership screening
 
 ### What Gets Deleted
 
