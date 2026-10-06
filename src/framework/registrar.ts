@@ -12,10 +12,14 @@ export interface CommandScope {
   stateKey: string;
 }
 
-export const commandScope = (env: Pick<Env, 'devGuildId'>): CommandScope =>
+/** The key includes the application id so a different bot sharing this database re-registers. */
+export const commandScope = (env: Pick<Env, 'devGuildId' | 'clientId'>): CommandScope =>
   env.devGuildId
-    ? { label: `dev guild ${env.devGuildId}`, stateKey: `commandsHash:guild:${env.devGuildId}` }
-    : { label: 'globally', stateKey: 'commandsHash:global' };
+    ? {
+        label: `dev guild ${env.devGuildId}`,
+        stateKey: `commandsHash:${env.clientId}:guild:${env.devGuildId}`,
+      }
+    : { label: 'globally', stateKey: `commandsHash:${env.clientId}:global` };
 
 const canonical = (value: unknown): unknown => {
   if (Array.isArray(value)) {
@@ -73,6 +77,12 @@ export async function syncCommands(
   try {
     const count = await put(env, commands);
     setState(db, scope.stateKey, hash, clock());
+    logger.warn(
+      env.devGuildId
+        ? 'Commands were registered to the dev guild only; global commands may also exist and show up as duplicates. Run `npm run deploy:commands` without DEV_GUILD_ID to manage global commands, or remove them manually.'
+        : 'Commands were registered globally; guild-scoped commands from an earlier DEV_GUILD_ID run may still exist and show up as duplicates. Remove them manually if so.',
+      { scope: scope.label },
+    );
     logger.info(`Registered ${count} application commands ${scope.label}`, {
       hash: hash.slice(0, 12),
     });
