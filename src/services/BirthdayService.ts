@@ -95,22 +95,38 @@ export const refreshCalendar = async (
   }
 };
 
+export type DeleteCalendarStatus = 'deleted' | 'already-missing' | 'failed';
+
+const MISSING_CODES = new Set([10003, 10008]); // Unknown Channel, Unknown Message
+
 export const deleteCalendarMessage = async (
+  app: App,
   client: Client,
   path: string | null | undefined,
-): Promise<void> => {
+): Promise<DeleteCalendarStatus> => {
   const target = parseCalendarPath(path);
   if (!target) {
-    return;
+    return 'already-missing';
   }
   try {
     const channel = await client.channels.fetch(target.channelId);
-    if (channel?.isTextBased()) {
-      const message = await channel.messages.fetch(target.messageId);
-      await message.delete();
+    if (!channel?.isTextBased()) {
+      return 'already-missing';
     }
-  } catch {
-    // best effort: the message may already be gone
+    const message = await channel.messages.fetch(target.messageId);
+    if (!message) {
+      return 'already-missing';
+    }
+    await message.delete();
+    return 'deleted';
+  } catch (error) {
+    const code =
+      typeof error === 'object' && error !== null ? (error as { code?: unknown }).code : undefined;
+    if (typeof code === 'number' && MISSING_CODES.has(code)) {
+      return 'already-missing';
+    }
+    app.logger.warn('Could not delete the birthday calendar message', { path }, error);
+    return 'failed';
   }
 };
 

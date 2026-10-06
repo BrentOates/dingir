@@ -188,7 +188,7 @@ Roles given to members when they complete onboarding:
 | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `create <channel>` | Create or recreate a birthday calendar in a text channel (fetches all server birthdays); the existing calendar is kept until the new one has been posted, saved and populated, then the old message is removed (if the new one can't be populated, nothing changes) |
 | `sync`             | Manually sync the birthday calendar (runs automatically on the scheduled job)                                                                                                                                                                                       |
-| `remove`           | Remove the birthday calendar message                                                                                                                                                                                                                                |
+| `remove`           | Remove the birthday calendar message (the stored path is kept if Discord refuses the deletion, so you can retry)                                                                                                                                                    |
 
 #### `/config debug` — Onboarding Diagnostics
 

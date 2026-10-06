@@ -4,8 +4,9 @@ import type { Guild } from 'discord.js';
 import BirthdaysGroup from '../../src/commands/config/groups/birthdays.ts';
 import type { Handler } from '../../src/framework/command.ts';
 import { fakeCommandContext } from '../fakes/command.ts';
+import { deleteCalendarMessage } from '../../src/services/BirthdayService.ts';
 import { stub } from '../fakes/discord.ts';
-import { fakeClient, fakeEditableMessage, fakeTextChannel } from '../fakes/guild.ts';
+import { apiError, fakeClient, fakeEditableMessage, fakeTextChannel } from '../fakes/guild.ts';
 import { createTestApp } from '../helpers/app.ts';
 import { last } from '../helpers/assertions.ts';
 import { dbFixtures } from '../helpers/db.ts';
@@ -128,4 +129,91 @@ test('birthdays create clears the path when population fails and there was no ca
   await assert.rejects(create(ctx), /nothing was changed/);
   assert.equal(newMessage.deleted, true);
   assert.equal(findConfig('guild-1')?.birthdayCalendarMessagePath, null);
+});
+
+const remove: Handler = BirthdaysGroup.subcommands.find((s) => s.name === 'remove')!.run;
+
+const freshApp = () => {
+  const app = createTestApp();
+  after(() => app.close());
+  return app;
+};
+
+const setupRemove = (app: (typeof apps)[number], channelsFor: 'normal' | 'none' | 'throw') => {
+  const { clearConfigs, createConfig, findConfig } = dbFixtures(app);
+  clearConfigs();
+  const message = fakeEditableMessage('old-msg');
+  const channel = fakeTextChannel('old-chan', [message]);
+  const config = createConfig({
+    serverId: 'guild-1',
+    birthdayCalendarMessagePath: 'old-chan/old-msg',
+  });
+  const client = fakeClient({
+    channels: channelsFor === 'none' ? [] : [channel],
+    ...(channelsFor === 'throw'
+      ? { channelFetchError: Object.assign(new Error('boom'), { code: 500 }) }
+      : {}),
+  });
+  const { ctx, replies } = fakeCommandContext(app, {}, { config, client });
+  return { ctx, replies, message, channel, findConfig };
+};
+
+test('birthdays remove clears the path after deleting the message', async () => {
+  const { ctx, replies, message, findConfig } = setupRemove(freshApp(), 'normal');
+  await remove(ctx);
+  assert.equal(message.deleted, true);
+  assert.equal(findConfig('guild-1')?.birthdayCalendarMessagePath, null);
+  assert.equal(last(replies).content, 'Birthday calendar removed.');
+});
+
+test('birthdays remove clears the path when the channel is already gone', async () => {
+  const { ctx, replies, findConfig } = setupRemove(freshApp(), 'none');
+  await remove(ctx);
+  assert.equal(findConfig('guild-1')?.birthdayCalendarMessagePath, null);
+  assert.match(last(replies).content!, /already gone/);
+});
+
+test('birthdays remove clears the path when the message is already gone (10008)', async () => {
+  const { ctx, replies, channel, findConfig } = setupRemove(freshApp(), 'normal');
+  channel.messages.fetch = async () => {
+    throw apiError(10008);
+  };
+  await remove(ctx);
+  assert.equal(findConfig('guild-1')?.birthdayCalendarMessagePath, null);
+  assert.match(last(replies).content!, /already gone/);
+});
+
+test('birthdays remove keeps the path and errors when deletion fails', async () => {
+  const app = createTestApp();
+  after(() => app.close());
+  const { ctx, replies, channel, findConfig } = setupRemove(app, 'normal');
+  channel.messages.fetch = async () => {
+    throw apiError(50013);
+  };
+  await assert.rejects(remove(ctx), /nothing was changed/);
+  assert.equal(findConfig('guild-1')?.birthdayCalendarMessagePath, 'old-chan/old-msg');
+  assert.equal(replies.length, 0);
+});
+
+test('deleteCalendarMessage classifies results', async () => {
+  const app = createTestApp();
+  after(() => app.close());
+  const msg = fakeEditableMessage('m');
+  const chan = fakeTextChannel('c', [msg]);
+  assert.equal(
+    await deleteCalendarMessage(app, fakeClient({ channels: [chan] }), 'c/m'),
+    'deleted',
+  );
+  assert.equal(await deleteCalendarMessage(app, fakeClient(), 'c/m'), 'already-missing');
+  assert.equal(
+    await deleteCalendarMessage(app, fakeClient({ channels: [chan] }), 'c/other'),
+    'already-missing',
+  );
+  assert.equal(await deleteCalendarMessage(app, fakeClient(), null), 'already-missing');
+  const unknownChannel = fakeClient({ channelFetchError: apiError(10003) });
+  assert.equal(await deleteCalendarMessage(app, unknownChannel, 'c/m'), 'already-missing');
+  const forbidden = fakeClient({ channelFetchError: apiError(50013) });
+  assert.equal(await deleteCalendarMessage(app, forbidden, 'c/m'), 'failed');
+  const plain = fakeClient({ channelFetchError: new Error('network') });
+  assert.equal(await deleteCalendarMessage(app, plain, 'c/m'), 'failed');
 });

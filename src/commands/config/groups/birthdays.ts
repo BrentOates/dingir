@@ -94,7 +94,13 @@ export const BirthdaysGroup = defineSubcommandGroup({
           );
         }
         if (previousPath && previousPath !== path) {
-          await deleteCalendarMessage(client, previousPath);
+          const deleted = await deleteCalendarMessage(ctx.app, client, previousPath);
+          if (deleted === 'failed') {
+            ctx.app.logger.warn('Previous birthday calendar message was left in place', {
+              guild: ctx.guild.id,
+              path: previousPath,
+            });
+          }
         }
         await ctx.reply(`Birthday calendar has been created: ${link}`);
       },
@@ -126,11 +132,24 @@ export const BirthdaysGroup = defineSubcommandGroup({
         if (!ctx.config.birthdayCalendarMessagePath) {
           throw new UserError('There is no birthday calendar configured.');
         }
-        await deleteCalendarMessage(ctx.interaction.client, ctx.config.birthdayCalendarMessagePath);
+        const deleted = await deleteCalendarMessage(
+          ctx.app,
+          ctx.interaction.client,
+          ctx.config.birthdayCalendarMessagePath,
+        );
+        if (deleted === 'failed') {
+          throw new UserError(
+            "Couldn't delete the calendar message right now; nothing was changed. Try again.",
+          );
+        }
         ctx.config = await updateConfig(ctx.app, ctx.config.serverId, {
           birthdayCalendarMessagePath: null,
         });
-        await ctx.reply('Birthday calendar removed.');
+        await ctx.reply(
+          deleted === 'deleted'
+            ? 'Birthday calendar removed.'
+            : 'Birthday calendar removed (the message was already gone).',
+        );
       },
     },
   ],
