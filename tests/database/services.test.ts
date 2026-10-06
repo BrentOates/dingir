@@ -9,6 +9,10 @@ import {
 } from '../../src/services/ConfigService.ts';
 import {
   clearBirthday,
+  clearScreeningPending,
+  getOnboardingState,
+  markOnboarded,
+  markScreeningPending,
   getServerBirthdays,
   incrementActivityScore,
   setBirthday,
@@ -130,4 +134,33 @@ test('setBirthday upserts without losing the activity score; clearBirthday repor
   assert.equal(await clearBirthday(db, 's1', 'u1'), false);
   assert.equal(await clearBirthday(db, 's1', 'nobody'), false);
   assert.equal((await getServerBirthdays(db, 's1')).length, 0);
+});
+
+test('screening pending state is recorded, independent of onboardedAt, and cleared', async () => {
+  const pendingAt = new Date('2027-01-10T00:00:00Z');
+  const onboardedAt = new Date('2027-01-11T00:00:00Z');
+  assert.deepEqual(await getOnboardingState(db, 'g1', 'u1'), {
+    screeningPendingAt: null,
+    onboardedAt: null,
+  });
+
+  await markScreeningPending(db, 'g1', 'u1', pendingAt);
+  assert.deepEqual(await getOnboardingState(db, 'g1', 'u1'), {
+    screeningPendingAt: pendingAt,
+    onboardedAt: null,
+  });
+
+  await markOnboarded(db, 'g1', 'u1', onboardedAt);
+  await markScreeningPending(db, 'g1', 'u1', pendingAt);
+  assert.deepEqual(await getOnboardingState(db, 'g1', 'u1'), {
+    screeningPendingAt: pendingAt,
+    onboardedAt,
+  });
+
+  await clearScreeningPending(db, 'g1', 'u1');
+  await clearScreeningPending(db, 'g1', 'missing');
+  assert.deepEqual(await getOnboardingState(db, 'g1', 'u1'), {
+    screeningPendingAt: null,
+    onboardedAt,
+  });
 });

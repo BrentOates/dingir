@@ -148,3 +148,47 @@ export async function getOnboardedAt(
 ): Promise<Date | null> {
   return (await findUserProfile(db, serverId, userId))?.onboardedAt ?? null;
 }
+
+/** Records that the member is awaiting membership screening. Leaves onboardedAt untouched. */
+export async function markScreeningPending(
+  db: Db,
+  serverId: Snowflake,
+  userId: Snowflake,
+  at: Date,
+): Promise<void> {
+  db.insert(userProfiles)
+    .values({ serverId, userId, screeningPendingAt: at })
+    .onConflictDoUpdate({
+      target: [userProfiles.serverId, userProfiles.userId],
+      set: { screeningPendingAt: at, updatedAt: at },
+    })
+    .run();
+}
+
+export async function clearScreeningPending(
+  db: Db,
+  serverId: Snowflake,
+  userId: Snowflake,
+): Promise<void> {
+  db.update(userProfiles)
+    .set({ screeningPendingAt: null, updatedAt: new Date() })
+    .where(and(forUser(serverId, userId), isNotNull(userProfiles.screeningPendingAt)))
+    .run();
+}
+
+export interface OnboardingState {
+  screeningPendingAt: Date | null;
+  onboardedAt: Date | null;
+}
+
+export async function getOnboardingState(
+  db: Db,
+  serverId: Snowflake,
+  userId: Snowflake,
+): Promise<OnboardingState> {
+  const profile = await findUserProfile(db, serverId, userId);
+  return {
+    screeningPendingAt: profile?.screeningPendingAt ?? null,
+    onboardedAt: profile?.onboardedAt ?? null,
+  };
+}

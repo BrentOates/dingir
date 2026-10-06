@@ -17,6 +17,7 @@ const ALL = [
   '004-bot-state',
   '005-userprofile-backfill',
   '006-userprofile-onboarded-at',
+  '007-userprofile-screening-pending',
 ];
 
 const LEGACY_SERVER_CONFIGS =
@@ -91,6 +92,7 @@ test('migrations on an empty database create the expected schema', () => {
       'createdAt',
       'updatedAt',
       'onboardedAt',
+      'screeningPendingAt',
     ]);
 
     assert.ok(indexesOf(db, 'UserProfiles').find((i) => i.name === INDEX)?.unique);
@@ -270,6 +272,7 @@ test('005 backfills NULL scores, removes unusable rows with a warning, and is id
     assert.deepEqual(migrate(db, logger), [
       '005-userprofile-backfill',
       '006-userprofile-onboarded-at',
+      '007-userprofile-screening-pending',
     ]);
     assert.deepEqual(
       allRows(db, 'SELECT userId, activityScore FROM `UserProfiles` ORDER BY userId'),
@@ -298,7 +301,10 @@ test('006 adds a nullable onboardedAt column and is idempotent', () => {
     );
     runUpTo(db, '005-userprofile-backfill');
 
-    assert.deepEqual(migrate(db, logger), ['006-userprofile-onboarded-at']);
+    assert.deepEqual(migrate(db, logger), [
+      '006-userprofile-onboarded-at',
+      '007-userprofile-screening-pending',
+    ]);
     assert.ok(columnsOf(db, 'UserProfiles').includes('onboardedAt'));
     assert.deepEqual(allRows(db, 'SELECT onboardedAt FROM `UserProfiles`'), [
       { onboardedAt: null },
@@ -308,5 +314,28 @@ test('006 adds a nullable onboardedAt column and is idempotent', () => {
     const migration = nth(migrations.filter((m) => m.name === '006-userprofile-onboarded-at'));
     assert.doesNotThrow(() => migration.up(db, logger));
     assert.equal(columnsOf(db, 'UserProfiles').filter((c) => c === 'onboardedAt').length, 1);
+  });
+});
+
+test('007 adds a nullable screeningPendingAt column and is idempotent', () => {
+  withDb((db) => {
+    db.exec(LEGACY_SERVER_CONFIGS);
+    db.exec(LEGACY_USER_PROFILES);
+    const at = "'2024-01-01 00:00:00.000 +00:00'";
+    db.exec(
+      `INSERT INTO \`UserProfiles\` (serverId, userId, createdAt, updatedAt) VALUES ('s1', 'u1', ${at}, ${at})`,
+    );
+    runUpTo(db, '006-userprofile-onboarded-at');
+
+    assert.deepEqual(migrate(db, logger), ['007-userprofile-screening-pending']);
+    assert.ok(columnsOf(db, 'UserProfiles').includes('screeningPendingAt'));
+    assert.deepEqual(allRows(db, 'SELECT screeningPendingAt FROM `UserProfiles`'), [
+      { screeningPendingAt: null },
+    ]);
+
+    assert.deepEqual(migrate(db, logger), []);
+    const migration = nth(migrations.filter((m) => m.name === '007-userprofile-screening-pending'));
+    assert.doesNotThrow(() => migration.up(db, logger));
+    assert.equal(columnsOf(db, 'UserProfiles').filter((c) => c === 'screeningPendingAt').length, 1);
   });
 });

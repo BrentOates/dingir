@@ -6,6 +6,7 @@ import * as serverConfigAccessTracking from './migrations/003-serverconfig-acces
 import * as botState from './migrations/004-bot-state.ts';
 import * as userProfileBackfill from './migrations/005-userprofile-backfill.ts';
 import * as userProfileOnboardedAt from './migrations/006-userprofile-onboarded-at.ts';
+import * as userProfileScreeningPending from './migrations/007-userprofile-screening-pending.ts';
 
 export interface Migration {
   name: string;
@@ -19,6 +20,7 @@ export const migrations: Migration[] = [
   { name: '004-bot-state', up: botState.up },
   { name: '005-userprofile-backfill', up: userProfileBackfill.up },
   { name: '006-userprofile-onboarded-at', up: userProfileOnboardedAt.up },
+  { name: '007-userprofile-screening-pending', up: userProfileScreeningPending.up },
 ];
 
 /** Applies pending migrations in order, each in its own transaction, and returns their names. */
