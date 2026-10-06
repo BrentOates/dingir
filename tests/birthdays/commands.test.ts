@@ -95,3 +95,16 @@ test('profile for a member without a profile does not create one', async () => {
   assert.equal(field('Activity Score'), '0');
   assert.equal(countProfiles(), 0);
 });
+
+test('mybirthday clear reports no birthday for a profile with only activity', async () => {
+  createProfiles([{ serverId: 'guild-1', userId: 'user-1', activityScore: 3 }]);
+  const replies = await exec(mybirthday, { subcommand: 'clear' });
+  assert.equal(lastContent(replies), "You don't have a birthday set.");
+  assert.equal(findProfile('user-1')?.activityScore, 3);
+});
+
+test('mybirthday clear confirms removal when a birthday was set', async () => {
+  createProfiles([{ serverId: 'guild-1', userId: 'user-1', birthdayMonth: 5, birthdayDay: 5 }]);
+  const replies = await exec(mybirthday, { subcommand: 'clear' });
+  assert.equal(lastContent(replies), 'Your birthday has been removed.');
+});

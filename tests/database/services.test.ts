@@ -127,6 +127,7 @@ test('setBirthday upserts without losing the activity score; clearBirthday repor
   assert.equal(allProfiles().length, 1);
 
   assert.equal(await clearBirthday(db, 's1', 'u1'), true);
+  assert.equal(await clearBirthday(db, 's1', 'u1'), false);
   assert.equal(await clearBirthday(db, 's1', 'nobody'), false);
   assert.equal((await getServerBirthdays(db, 's1')).length, 0);
 });

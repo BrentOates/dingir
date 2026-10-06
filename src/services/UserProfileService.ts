@@ -1,5 +1,5 @@
 import type { Snowflake } from 'discord.js';
-import { and, eq, inArray, isNotNull, sql } from 'drizzle-orm';
+import { and, eq, inArray, isNotNull, or, sql } from 'drizzle-orm';
 import type { Db } from '../db/db.ts';
 import { userProfiles, type UserProfile } from '../db/schema.ts';
 
@@ -48,7 +48,16 @@ export async function clearBirthday(
   const result = db
     .update(userProfiles)
     .set({ birthdayYear: null, birthdayMonth: null, birthdayDay: null, updatedAt: new Date() })
-    .where(forUser(serverId, userId))
+    .where(
+      and(
+        forUser(serverId, userId),
+        or(
+          isNotNull(userProfiles.birthdayMonth),
+          isNotNull(userProfiles.birthdayDay),
+          isNotNull(userProfiles.birthdayYear),
+        ),
+      ),
+    )
     .run();
   return result.changes > 0;
 }
