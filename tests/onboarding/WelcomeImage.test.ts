@@ -114,3 +114,60 @@ test('WelcomeImage.render draws avatar with translucent backdrop and thin ring',
     app.close();
   }
 });
+
+const serve = async (handler: Parameters<typeof createServer>[1]) => {
+  const server = createServer(handler);
+  await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
+  const { port } = server.address() as { port: number };
+  return {
+    url: `http://127.0.0.1:${port}/img`,
+    close: () => {
+      server.closeAllConnections();
+      server.close();
+    },
+  };
+};
+
+const renderFrom = (url: string) =>
+  render(
+    createTestApp(),
+    fakeMember('u', { displayName: 'U', joinedTimestamp: Date.now(), guild: { name: 'G' } }),
+    url,
+  );
+
+test('render rejects a streamed image over 10 MB without content-length', async () => {
+  let written = 0;
+  const srv = await serve((_req, res) => {
+    res.writeHead(200, { 'Content-Type': 'image/png' });
+    const chunk = Buffer.alloc(1024 * 1024);
+    const timer = setInterval(() => {
+      if (res.destroyed || written > 200 * 1024 * 1024) {
+        clearInterval(timer);
+        return;
+      }
+      written += chunk.length;
+      res.write(chunk);
+    }, 1);
+    res.on('close', () => clearInterval(timer));
+  });
+  try {
+    const started = Date.now();
+    await assert.rejects(renderFrom(srv.url), /larger than 10 MB/);
+    assert.ok(Date.now() - started < 5000);
+    assert.ok(written < 100 * 1024 * 1024);
+  } finally {
+    srv.close();
+  }
+});
+
+test('render rejects a declared content-length over 10 MB', async () => {
+  const srv = await serve((_req, res) => {
+    res.writeHead(200, { 'Content-Type': 'image/png', 'Content-Length': 11 * 1024 * 1024 });
+    res.write(Buffer.alloc(1024));
+  });
+  try {
+    await assert.rejects(renderFrom(srv.url), /larger than 10 MB/);
+  } finally {
+    srv.close();
+  }
+});

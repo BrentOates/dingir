@@ -45,20 +45,50 @@ export const applyText = (canvas: Canvas, text: string, baseSize: number): strin
   return ctx.font;
 };
 
+class DownloadError extends Error {}
+
 const downloadImage = async (url: string): Promise<Buffer> => {
   if (!isHttpUrl(url)) {
     throw new Error('Image URL must start with http:// or https://');
   }
-  let response: Response;
+  const tooLarge = () => new DownloadError('The image is larger than 10 MB');
+  // One signal covers connecting and reading the whole body.
+  const signal = AbortSignal.timeout(DOWNLOAD_TIMEOUT_MS);
   try {
-    response = await fetch(url, { signal: AbortSignal.timeout(DOWNLOAD_TIMEOUT_MS) });
+    const response = await fetch(url, { signal });
+    if (!response.ok) {
+      await response.body?.cancel();
+      throw new DownloadError(`Could not download the image (HTTP ${response.status})`);
+    }
+    const declared = Number(response.headers.get('content-length'));
+    if (Number.isFinite(declared) && declared > MAX_DOWNLOAD_BYTES) {
+      await response.body?.cancel();
+      throw tooLarge();
+    }
+    const chunks: Uint8Array[] = [];
+    let total = 0;
+    const reader = response.body?.getReader();
+    while (reader) {
+      const { done, value } = await reader.read();
+      if (done) {
+        break;
+      }
+      total += value.length;
+      if (total > MAX_DOWNLOAD_BYTES) {
+        await reader.cancel();
+        throw tooLarge();
+      }
+      chunks.push(value);
+    }
+    return Buffer.concat(chunks);
   } catch (error) {
+    if (error instanceof DownloadError) {
+      throw error;
+    }
     if (error instanceof Error && (error.name === 'TimeoutError' || error.name === 'AbortError')) {
       throw new Error(
         `Downloading the image timed out after ${DOWNLOAD_TIMEOUT_MS / 1000} seconds`,
-        {
-          cause: error,
-        },
+        { cause: error },
       );
     }
     throw new Error(
@@ -66,14 +96,6 @@ const downloadImage = async (url: string): Promise<Buffer> => {
       { cause: error },
     );
   }
-  if (!response.ok) {
-    throw new Error(`Could not download the image (HTTP ${response.status})`);
-  }
-  const buffer = Buffer.from(await response.arrayBuffer());
-  if (buffer.length > MAX_DOWNLOAD_BYTES) {
-    throw new Error('The image is larger than 10 MB');
-  }
-  return buffer;
 };
 
 export type WelcomeImageRenderer = (
