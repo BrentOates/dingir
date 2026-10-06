@@ -91,7 +91,7 @@ The invite URL should include all these permissions. You can generate one in the
 
 Use `DEV_GUILD_ID` in `.env` to test commands instantly in a single guild instead of waiting 1 hour for global registration.
 
-On startup the bot hashes its command definitions and only re-registers them when the hash differs from the one stored for the target scope (global or `DEV_GUILD_ID`). The hash is stored per application (`CLIENT_ID`) and per scope, so the first start after upgrading re-registers once. Switching between global and dev-guild registration can leave commands in the other scope; nothing is deleted automatically — the bot logs a warning. To force a registration without starting the bot, or to clean up orphaned commands, run:
+On startup the bot hashes its command definitions and only re-registers them when the hash differs from the one stored for the target scope (global or `DEV_GUILD_ID`). The hash is stored per application (`CLIENT_ID`) and per scope, so the first start after upgrading re-registers once. The last registered scope is stored in BotState (`commandsScope:<clientId>`). Switching from a dev guild (`DEV_GUILD_ID=X`) to global or another guild automatically clears the old dev guild's commands after the new registration succeeds. Switching from global to a dev guild does NOT remove global commands (they may be production) — remove them via `npm run deploy:commands` without `DEV_GUILD_ID` set or the Developer Portal. `npm run deploy:commands` uses the same logic and opens the database to record the scope/hash. To force a registration without starting the bot, or to clean up orphaned commands, run:
 
 ```bash
 npm run deploy:commands
@@ -182,11 +182,11 @@ Roles given to members when they complete onboarding:
 
 #### `/config birthdays` — Birthday Calendar
 
-| Subcommand         | Description                                                                             |
-| ------------------ | --------------------------------------------------------------------------------------- |
-| `create <channel>` | Create or recreate a birthday calendar in a text channel (fetches all server birthdays) |
-| `sync`             | Manually sync the birthday calendar (runs automatically on the scheduled job)           |
-| `remove`           | Remove the birthday calendar message                                                    |
+| Subcommand         | Description                                                                                                                                                                                         |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `create <channel>` | Create or recreate a birthday calendar in a text channel (fetches all server birthdays); the existing calendar is kept until the new one has been posted and saved, then the old message is removed |
+| `sync`             | Manually sync the birthday calendar (runs automatically on the scheduled job)                                                                                                                       |
+| `remove`           | Remove the birthday calendar message                                                                                                                                                                |
 
 #### `/config debug` — Onboarding Diagnostics
 
@@ -216,7 +216,7 @@ Roles are only assigned if:
 
 If a role cannot be assigned, the error is logged and the onboarding continues for other roles and steps.
 
-**Unknown Previous State**: If the bot didn't have the member's previous state cached (e.g. they joined while the bot was offline), a member who is no longer pending is onboarded only when new-member roles are configured and they have none of them. Otherwise the update is skipped and logged at info level. Bots are never onboarded (their join is still audited).
+**Onboarding Tracking**: Onboarding completion is recorded per member (`onboardedAt`), so a member is never onboarded twice. Leaving the server deletes the profile, so a rejoin is onboarded again. When the bot doesn't have the member's previous state cached (e.g. they joined while the bot was offline), it onboards a member only if they're no longer pending, not a bot, have no recorded onboarding, and joined within the last 7 days; otherwise it skips and logs at info. Members who were already in the server before upgrading are not re-onboarded (except possibly someone who joined within 7 days before the upgrade).
 
 ### Audit Log
 
@@ -255,7 +255,7 @@ Members can set their birthday using `/mybirthday set <day> <month>`. Birthdays 
 
 On the schedule defined by `JOB_SCHEDULE` (default: 9:00 AM in the configured `BOT_TIMEZONE`), three tasks run in order:
 
-1. **Data Check** — Checks access to each configured guild. If unreachable, increments the failure counter. After `PURGE_MIN_FAILURES` failures spanning `PURGE_GRACE_DAYS` days, the guild's data is purged. Transient errors (timeouts, API errors) do not count toward purging.
+1. **Data Check** — Checks access to each configured guild. If unreachable, increments the failure counter. After `PURGE_MIN_FAILURES` failures spanning `PURGE_GRACE_DAYS` days, the guild's data is purged. Transient errors (timeouts, API errors) do not count toward purging. Profiles are snapshotted before fetching the member list, so members who join during the check aren't treated as departed.
 2. **Birthday Notifications** — Posts birthday announcements in the announcements channel for members with birthdays today
 3. **Birthday Calendars** — Updates all configured birthday calendar messages
 
@@ -272,6 +272,7 @@ Migrations run automatically on startup. Current migrations:
 - **003-serverconfig-access-tracking** — Adds access failure tracking for orphaned guild detection
 - **004-bot-state** — Adds the `BotState` key/value table (currently stores the registered command hash)
 - **005-userprofile-backfill** — Sets NULL activity scores to 0 and deletes profile rows with no server or user id, logging how many
+- **006-userprofile-onboarded-at** — Adds nullable `UserProfiles.onboardedAt`, recording when a member was onboarded
 
 ### What Gets Deleted
 
