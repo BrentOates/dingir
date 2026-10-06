@@ -44,6 +44,12 @@ export interface OnboardingOptions {
 
 const MAX_ERROR_LENGTH = 200;
 
+/** Discord's message content limit. */
+export const MAX_WELCOME_LENGTH = 2000;
+
+export const expandWelcomeMessage = (template: string, memberId: Snowflake): string =>
+  template.replaceAll('{member}', `<@${memberId}>`);
+
 const messageOf = (error: unknown): string => {
   const text = error instanceof Error ? error.message : String(error);
   return text.length > MAX_ERROR_LENGTH ? `${text.slice(0, MAX_ERROR_LENGTH)}…` : text;
@@ -219,7 +225,16 @@ async function sendWelcome(
 
   const payload: WelcomePayload = {};
   if (text !== '') {
-    payload.content = text.replaceAll('{member}', `<@${member.id}>`);
+    let content = expandWelcomeMessage(text, member.id);
+    if (content.length > MAX_WELCOME_LENGTH) {
+      app.logger.warn('Welcome message exceeds the Discord limit after expansion; truncating', {
+        guild: member.guild.id,
+        member: member.id,
+        length: content.length,
+      });
+      content = `${content.slice(0, MAX_WELCOME_LENGTH - 1)}…`;
+    }
+    payload.content = content;
   }
   if (url) {
     try {

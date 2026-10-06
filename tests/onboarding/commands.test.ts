@@ -27,7 +27,9 @@ const handler = (group: typeof NewRolesGroup, name: string): Handler =>
   group.subcommands.find((s) => s.name === name)!.run;
 
 test('newroles set rejects @everyone, managed and too-high roles and saves nothing', async () => {
-  const env = fakeOnboarding({ roles: [role('ok', 1), role('m', 1, true), role('hi', 10)] });
+  const env = fakeOnboarding({
+    roles: [role('ok', 1), role('m', 1, true), role('hi', 10)],
+  });
   const { ctx, replies } = fakeCommandContext(
     app,
     {
@@ -56,7 +58,11 @@ test('newroles set saves valid roles, dedupes, and audits', async () => {
   const a = env.guild.roles.cache.get('a');
   const { ctx, replies } = fakeCommandContext(
     app,
-    { 'role-one': a, 'role-two': env.guild.roles.cache.get('b'), 'role-three': a },
+    {
+      'role-one': a,
+      'role-two': env.guild.roles.cache.get('b'),
+      'role-three': a,
+    },
     env,
   );
   await handler(NewRolesGroup, 'set')(ctx);
@@ -66,7 +72,10 @@ test('newroles set saves valid roles, dedupes, and audits', async () => {
 });
 
 test('newroles get is read-only: no audit, marks missing roles', async () => {
-  const env = fakeOnboarding({ roles: [role('a')], config: { guestRoleIds: 'a,gone' } });
+  const env = fakeOnboarding({
+    roles: [role('a')],
+    config: { guestRoleIds: 'a,gone' },
+  });
   const { ctx, replies } = fakeCommandContext(app, {}, env);
   await handler(NewRolesGroup, 'get')(ctx);
   assert.equal(env.auditSends.length, 0);
@@ -81,7 +90,11 @@ test('newroles get is read-only: no audit, marks missing roles', async () => {
 
 test('newroles clear nulls roles and audits', async () => {
   const env = fakeOnboarding({ config: { guestRoleIds: 'a' } });
-  createConfig({ serverId: 'guild-1', auditChannelId: 'audit-1', guestRoleIds: 'a' });
+  createConfig({
+    serverId: 'guild-1',
+    auditChannelId: 'audit-1',
+    guestRoleIds: 'a',
+  });
   const { ctx } = fakeCommandContext(app, {}, env);
   await handler(NewRolesGroup, 'clear')(ctx);
   assert.equal(ctx.config.guestRoleIds, null);
@@ -97,6 +110,8 @@ test('welcome validators', () => {
   assert.equal(validateWelcomeMessage('hello'), null);
   assert.ok(validateWelcomeMessage('x'.repeat(MAX_WELCOME_MESSAGE_LENGTH + 1)));
   assert.ok(validateWelcomeMessage('   '));
+  assert.ok(validateWelcomeMessage('{member}'.repeat(150)));
+  assert.equal(validateWelcomeMessage('{member}'.repeat(80)), null);
 });
 
 test('welcome set-image rejects non-http URLs without saving', async () => {
@@ -141,7 +156,10 @@ test('welcome preview explains why nothing would be sent', async () => {
 
 test('welcome preview shows the text without sending', async () => {
   const env = fakeOnboarding({
-    config: { welcomeMessage: 'hi {member} {member}', systemMessagesEnabled: true },
+    config: {
+      welcomeMessage: 'hi {member} {member}',
+      systemMessagesEnabled: true,
+    },
   });
   const { ctx, replies } = fakeCommandContext(app, {}, env);
   await handler(WelcomeGroup as never, 'preview')(ctx);

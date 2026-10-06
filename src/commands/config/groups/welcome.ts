@@ -1,17 +1,26 @@
 import { type CommandContext, defineSubcommandGroup } from '../../../framework/command.ts';
 import { UserError } from '../../../framework/errors.ts';
 import { type ServerConfigPatch, updateConfig } from '../../../services/ConfigService.ts';
-import { complete } from '../../../services/OnboardingService.ts';
+import {
+  complete,
+  expandWelcomeMessage,
+  MAX_WELCOME_LENGTH,
+} from '../../../services/OnboardingService.ts';
 import { isHttpUrl, render } from '../../../services/WelcomeImage.ts';
 
 export const MAX_WELCOME_MESSAGE_LENGTH = 1500;
+
+/** Worst-case length once `{member}` becomes a mention (snowflakes are at most 20 digits). */
+const expandedLength = (text: string): number => expandWelcomeMessage(text, '0'.repeat(20)).length;
 
 export const validateWelcomeMessage = (text: string): string | null =>
   text.trim() === ''
     ? 'The welcome message cannot be empty. Use /config welcome clear to remove it.'
     : text.length > MAX_WELCOME_MESSAGE_LENGTH
       ? `The welcome message is too long (${text.length} characters, maximum ${MAX_WELCOME_MESSAGE_LENGTH}).`
-      : null;
+      : expandedLength(text) > MAX_WELCOME_LENGTH
+        ? `Once every {member} is expanded to a mention the message would be ${expandedLength(text)} characters, over Discord's ${MAX_WELCOME_LENGTH} character limit. Shorten it or use fewer {member}.`
+        : null;
 
 export const validateImageUrl = (url: string): string | null =>
   isHttpUrl(url) ? null : 'The image URL must start with http:// or https://';
@@ -24,7 +33,9 @@ const setMessage = async (ctx: CommandContext) => {
   if (problem) {
     throw new UserError(problem);
   }
-  ctx.config = await updateConfig(ctx.app, ctx.config.serverId, { welcomeMessage: text });
+  ctx.config = await updateConfig(ctx.app, ctx.config.serverId, {
+    welcomeMessage: text,
+  });
   await ctx.reply({
     content: 'Welcome message saved. Use `{member}` in the text to mention the new member.',
     allowedMentions: NO_MENTIONS,

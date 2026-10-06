@@ -79,7 +79,10 @@ test('guest roles are added in one call and unassignable ones filtered', async (
 });
 
 test('no assignable roles skips the roles step without calling add', async () => {
-  const env = fakeOnboarding({ roles: [role('high', 10)], config: { guestRoleIds: 'high' } });
+  const env = fakeOnboarding({
+    roles: [role('high', 10)],
+    config: { guestRoleIds: 'high' },
+  });
   const result = await complete(app, env.client, env.member, env.config);
   assert.match(result.roles, /^skipped:/);
   assert.equal(env.roleAdds.length, 0);
@@ -115,12 +118,17 @@ test('audit failure does not stop later steps', async () => {
 
 test('welcome replaces every {member} and does not ping others', async () => {
   const env = fakeOnboarding({
-    config: { systemMessagesEnabled: true, welcomeMessage: '{member} hello {member}!' },
+    config: {
+      systemMessagesEnabled: true,
+      welcomeMessage: '{member} hello {member}!',
+    },
   });
   const result = await complete(app, env.client, env.member, env.config);
   assert.equal(result.welcome, 'done');
   assert.equal(nth(env.systemSends).content, '<@member-1> hello <@member-1>!');
-  assert.deepEqual(nth(env.systemSends).allowedMentions, { users: ['member-1'] });
+  assert.deepEqual(nth(env.systemSends).allowedMentions, {
+    users: ['member-1'],
+  });
 });
 
 test('welcome skip reasons', async () => {
@@ -226,7 +234,10 @@ test('dryRun makes no role, send or audit calls and returns the payload', async 
 });
 
 test('debug summary audit is sent only when debug is enabled', async () => {
-  const off = fakeOnboarding({ roles: [role('r1')], config: { guestRoleIds: 'r1' } });
+  const off = fakeOnboarding({
+    roles: [role('r1')],
+    config: { guestRoleIds: 'r1' },
+  });
   await complete(app, off.client, off.member, off.config);
   assert.equal(off.auditSends.length, 1);
 
@@ -254,4 +265,19 @@ test('skipAudit omits the completion audit but still lists the step', async () =
   const summary = JSON.stringify(nth(env.auditSends).embeds);
   assert.match(summary, /Onboarding diagnostics/);
   assert.match(summary, /Audit: skipped:already audited on join/);
+});
+
+test('a legacy welcome template that expands past 2000 characters is truncated, not failed', async () => {
+  const env = fakeOnboarding({
+    config: {
+      systemMessagesEnabled: true,
+      welcomeMessage: '{member}'.repeat(250),
+    },
+  });
+  const result = await complete(app, env.client, env.member, env.config);
+  assert.equal(result.welcome, 'done');
+  const content = nth(env.systemSends).content ?? '';
+  assert.equal(content.length, 2000);
+  assert.ok(content.endsWith('…'));
+  assert.ok(app.logsAt('warn').some((entry) => /truncating/.test(entry.message)));
 });
