@@ -14,6 +14,10 @@ export default defineEvent({
       app.logger.info(`Skipping onboarding: ${reason}`, ids);
     };
     const state = await getOnboardingState(app.db, newMember.guild.id, newMember.id);
+    // An onboarding recorded before the current screening cycle began belongs to a previous membership.
+    const alreadyOnboarded =
+      state.onboardedAt !== null &&
+      !(state.screeningPendingAt !== null && state.onboardedAt < state.screeningPendingAt);
 
     if (newMember.pending === true) {
       // Keep the recorded state fresh; onboarding from an unknown state requires it.
@@ -28,7 +32,7 @@ export default defineEvent({
       if (newMember.pending !== false) {
         return;
       }
-      if (state.onboardedAt) {
+      if (alreadyOnboarded) {
         skip('previous member state unknown and onboarding already recorded');
         return;
       }
@@ -40,7 +44,7 @@ export default defineEvent({
       if (!completedScreening(oldMember, newMember)) {
         return;
       }
-      if (state.onboardedAt) {
+      if (alreadyOnboarded) {
         skip('onboarding already recorded');
         return;
       }

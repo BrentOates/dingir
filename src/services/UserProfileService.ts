@@ -165,6 +165,37 @@ export async function markScreeningPending(
     .run();
 }
 
+/**
+ * Starts a fresh screening cycle for a newly joined member: records the pending time and clears any
+ * stale onboardedAt left over from a previous membership whose leave was missed.
+ */
+export async function startScreeningCycle(
+  db: Db,
+  serverId: Snowflake,
+  userId: Snowflake,
+  at: Date,
+): Promise<void> {
+  db.insert(userProfiles)
+    .values({ serverId, userId, screeningPendingAt: at })
+    .onConflictDoUpdate({
+      target: [userProfiles.serverId, userProfiles.userId],
+      set: { screeningPendingAt: at, onboardedAt: null, updatedAt: at },
+    })
+    .run();
+}
+
+/** Forgets a recorded onboarding (a new membership has begun). Leaves screening state untouched. */
+export async function clearOnboarded(
+  db: Db,
+  serverId: Snowflake,
+  userId: Snowflake,
+): Promise<void> {
+  db.update(userProfiles)
+    .set({ onboardedAt: null, updatedAt: new Date() })
+    .where(and(forUser(serverId, userId), isNotNull(userProfiles.onboardedAt)))
+    .run();
+}
+
 export async function clearScreeningPending(
   db: Db,
   serverId: Snowflake,

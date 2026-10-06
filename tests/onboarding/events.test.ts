@@ -242,3 +242,56 @@ test('guildMemberUpdate sends the completion audit when screening finishes', asy
   assert.equal(env.auditSends.length, 1);
   assert.match(JSON.stringify(nth(nth(env.auditSends).embeds)), /Member completed onboarding/);
 });
+
+const STALE = new Date('2026-12-01T00:00:00Z');
+
+test('a rejoin while pending starts a new cycle and clears the stale onboarding', async () => {
+  await markOnboarded(app.db, 'guild-1', 'member-1', STALE);
+  const env = fakeOnboarding({ roles: [role('r1')] });
+  Object.assign(env.member, { pending: true });
+  await guildMemberAdd.run(app, stub<DingirClient>(env.client), env.member);
+  assert.deepEqual(await getOnboardingState(app.db, 'guild-1', 'member-1'), {
+    screeningPendingAt: app.clock(),
+    onboardedAt: null,
+  });
+  assert.equal(env.roleAdds.length, 0);
+});
+
+test('completing screening after a pending rejoin onboards via the known path', async () => {
+  await markOnboarded(app.db, 'guild-1', 'member-1', STALE);
+  const joining = fakeOnboarding({ roles: [role('r1')] });
+  Object.assign(joining.member, { pending: true });
+  await guildMemberAdd.run(app, stub<DingirClient>(joining.client), joining.member);
+  assert.equal(await update({ pending: true }, false), 1);
+  assert.deepEqual(await getOnboardedAt(app.db, 'guild-1', 'member-1'), app.clock());
+});
+
+test('completing screening after a pending rejoin onboards via the partial path', async () => {
+  await markOnboarded(app.db, 'guild-1', 'member-1', STALE);
+  const joining = fakeOnboarding({ roles: [role('r1')] });
+  Object.assign(joining.member, { pending: true });
+  await guildMemberAdd.run(app, stub<DingirClient>(joining.client), joining.member);
+  assert.equal(await partialUpdate({}), 1);
+});
+
+test('a rejoin that is not pending onboards despite a stale onboarding', async () => {
+  await markOnboarded(app.db, 'guild-1', 'member-1', STALE);
+  const env = fakeOnboarding({ roles: [role('r1')], config: { guestRoleIds: 'r1' } });
+  Object.assign(env.member, { pending: false });
+  await guildMemberAdd.run(app, stub<DingirClient>(env.client), env.member);
+  assert.equal(env.roleAdds.length, 1);
+  assert.deepEqual(await getOnboardedAt(app.db, 'guild-1', 'member-1'), app.clock());
+});
+
+test('a plain update with a stale onboarding and no join is not re-onboarded', async () => {
+  await markOnboarded(app.db, 'guild-1', 'member-1', STALE);
+  assert.equal(await update({ pending: true }, true), 0);
+  assert.equal(await update({ pending: true }, false), 0);
+  assert.deepEqual(await getOnboardedAt(app.db, 'guild-1', 'member-1'), STALE);
+});
+
+test('an update-recorded pending newer than onboarding is treated as a new cycle', async () => {
+  await markOnboarded(app.db, 'guild-1', 'member-1', STALE);
+  await markScreeningPending(app.db, 'guild-1', 'member-1', new Date('2027-01-13T00:00:00Z'));
+  assert.equal(await update({ pending: true }, false), 1);
+});
