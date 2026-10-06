@@ -4,6 +4,8 @@ import { Collection } from 'discord.js';
 import noroles from '../../src/commands/admin/noroles.ts';
 import rolesince from '../../src/commands/admin/rolesince.ts';
 import { buildMemberListing, INLINE_LIMIT } from '../../src/services/MemberListing.ts';
+import { fetchAllMembers } from '../../src/services/MemberResolver.ts';
+import { UserError } from '../../src/framework/errors.ts';
 import { createTestApp, FIXED_NOW } from '../helpers/app.ts';
 import { fakeInteraction } from '../fakes/interaction.ts';
 import { fakeAuditClient, fakeMember, fakeUser, runSlash } from '../fakes/messages.ts';
@@ -112,4 +114,40 @@ test('noroles lists only non-bot members with just the everyone role', async () 
   assert.match(content, /<@1>/);
   assert.doesNotMatch(content, /<@2>/);
   assert.doesNotMatch(content, /<@3>/);
+});
+
+const rateLimitError = (retryAfter?: number) =>
+  Object.assign(new Error('rate limited'), {
+    name: 'GatewayRateLimitError',
+    data: { opcode: 8, retry_after: retryAfter },
+  });
+const guildFetching = (error: Error) => ({ members: { fetch: async () => Promise.reject(error) } });
+
+test('fetchAllMembers turns a gateway rate limit into a UserError with whole seconds', async () => {
+  await assert.rejects(
+    fetchAllMembers(guildFetching(rateLimitError(2.3)) as never),
+    (error: unknown) =>
+      error instanceof UserError &&
+      /rate-limiting member lookups.*in 3 seconds\./.test(error.message),
+  );
+  await assert.rejects(
+    fetchAllMembers(guildFetching(rateLimitError()) as never),
+    (error: unknown) => error instanceof UserError && /a few seconds/.test(error.message),
+  );
+});
+
+test('fetchAllMembers propagates other errors unchanged', async () => {
+  const boom = new Error('boom');
+  await assert.rejects(fetchAllMembers(guildFetching(boom) as never), (error) => error === boom);
+});
+
+test('noroles replies with the rate-limit message', async () => {
+  const guild = {
+    id: 'guild-1',
+    members: { fetch: async () => Promise.reject(rateLimitError(5)) },
+  };
+  const sink = fakeAuditClient('a', [noroles]);
+  const fake = fakeInteraction({ commandName: 'noroles', guild });
+  await runSlash(app, sink.client, fake);
+  assert.match(last(fake.calls).payload.content as string, /try again in 5 seconds/);
 });

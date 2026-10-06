@@ -1,4 +1,5 @@
 import { defineCommand } from '../../framework/command.ts';
+import { fetchAllMembers } from '../../services/MemberResolver.ts';
 import { buildMemberListing } from '../../services/MemberListing.ts';
 
 export default defineCommand({
@@ -7,7 +8,7 @@ export default defineCommand({
   adminOnly: true,
   defer: 'ephemeral',
   run: async (ctx) => {
-    const all = await ctx.guild.members.fetch();
+    const all = await fetchAllMembers(ctx.guild);
     const members = [...all.values()].filter(
       (member) => !member.user.bot && member.roles.cache.size === 1,
     );

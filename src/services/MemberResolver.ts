@@ -1,5 +1,6 @@
 import type { Guild, GuildMember, User } from 'discord.js';
 import { type GuildTextBasedChannel, type Snowflake } from 'discord.js';
+import { UserError } from '../framework/errors.ts';
 
 const UNKNOWN_MEMBER = 10007;
 const UNKNOWN_USER = 10013;
@@ -37,4 +38,24 @@ export const resolveTextChannel = async (
     return null;
   }
   return channel;
+};
+
+/**
+ * Fetches the full member list. A gateway rate limit (discord.js GatewayRateLimitError) becomes a
+ * UserError with the retry time; any other failure propagates unchanged.
+ */
+export const fetchAllMembers = async (guild: Guild) => {
+  try {
+    return await guild.members.fetch();
+  } catch (error) {
+    if (error instanceof Error && error.name === 'GatewayRateLimitError') {
+      const retry = Number((error as { data?: { retry_after?: unknown } }).data?.retry_after);
+      const wait =
+        Number.isFinite(retry) && retry > 0 ? `${Math.ceil(retry)} seconds` : 'a few seconds';
+      throw new UserError(`Discord is rate-limiting member lookups — try again in ${wait}.`, {
+        cause: error,
+      });
+    }
+    throw error;
+  }
 };

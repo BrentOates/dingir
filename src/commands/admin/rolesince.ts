@@ -1,4 +1,5 @@
 import { defineCommand } from '../../framework/command.ts';
+import { fetchAllMembers } from '../../services/MemberResolver.ts';
 import { buildMemberListing, wholeDaysSinceJoin } from '../../services/MemberListing.ts';
 
 export default defineCommand({
@@ -22,7 +23,7 @@ export default defineCommand({
     const days = ctx.interaction.options.getInteger('days') ?? 0;
 
     const now = ctx.app.clock().getTime();
-    await ctx.guild.members.fetch();
+    await fetchAllMembers(ctx.guild);
     const members = [...role.members.values()].filter((member) => {
       if (member.user.bot) {
         return false;
