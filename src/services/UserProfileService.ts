@@ -62,20 +62,17 @@ export async function clearBirthday(
   return result.changes > 0;
 }
 
-export async function deleteUsers(
-  db: Db,
-  serverId: Snowflake,
-  userIds: Snowflake[],
-): Promise<number> {
+/**
+ * Deletes profiles by row id. A row id is never reused, so a profile created after the ids were
+ * read (a member who left and rejoined) is not deleted along with the stale row.
+ */
+export async function deleteProfiles(db: Db, serverId: Snowflake, ids: number[]): Promise<number> {
   let removed = 0;
-  for (let i = 0; i < userIds.length; i += 500) {
+  for (let i = 0; i < ids.length; i += 500) {
     removed += db
       .delete(userProfiles)
       .where(
-        and(
-          eq(userProfiles.serverId, serverId),
-          inArray(userProfiles.userId, userIds.slice(i, i + 500)),
-        ),
+        and(eq(userProfiles.serverId, serverId), inArray(userProfiles.id, ids.slice(i, i + 500))),
       )
       .run().changes;
   }
@@ -123,11 +120,6 @@ export async function deleteUser(
   userId: Snowflake,
 ): Promise<UserProfile | null> {
   return db.delete(userProfiles).where(forUser(serverId, userId)).returning().get() ?? null;
-}
-
-export async function deleteUsersByServer(db: Db, serverId: Snowflake): Promise<boolean> {
-  const result = db.delete(userProfiles).where(eq(userProfiles.serverId, serverId)).run();
-  return result.changes > 0;
 }
 
 /**
