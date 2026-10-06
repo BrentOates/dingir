@@ -10,6 +10,7 @@ export default defineCommand({
   name: 'profile',
   description: 'Fetch profiles for server members',
   adminOnly: true,
+  defer: 'ephemeral',
   options: (b) =>
     b.addUserOption((opt) =>
       opt.setName('member').setDescription('Member to fetch profile for').setRequired(true),

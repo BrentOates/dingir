@@ -78,6 +78,7 @@ export function channelSetting(opts: ChannelSettingOptions): SubcommandGroupDefi
       {
         name: 'get',
         description: `Show the ${label.toLowerCase()}`,
+        defer: 'ephemeral',
         run: async (ctx) => {
           const id = ctx.config[field];
           const exists = id ? await channelExists(ctx.guild, id) : false;

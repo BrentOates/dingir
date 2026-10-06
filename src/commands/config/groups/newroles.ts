@@ -45,6 +45,7 @@ export const NewRolesGroup = defineSubcommandGroup({
     {
       name: 'set',
       description: 'Set the roles given to members when they complete onboarding',
+      defer: 'ephemeral',
       options: (sub) =>
         sub
           .addRoleOption((option) =>
@@ -90,6 +91,7 @@ export const NewRolesGroup = defineSubcommandGroup({
     {
       name: 'clear',
       description: 'Clear the roles given to members when they complete onboarding',
+      defer: 'ephemeral',
       run: async (ctx) => {
         ctx.config = await updateConfig(ctx.app, ctx.config.serverId, { guestRoleIds: null });
         await auditChange(ctx, 'New member roles cleared', []);

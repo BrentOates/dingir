@@ -1,5 +1,11 @@
 import assert from 'node:assert/strict';
 import { after, beforeEach, test } from 'node:test';
+import { Collection } from 'discord.js';
+import type { DingirClient } from '../../src/client/DingirClient.ts';
+import ConfigCommand from '../../src/commands/config/config.ts';
+import interactionCreate from '../../src/events/interactionCreate.ts';
+import { stub } from '../fakes/discord.ts';
+import { fakeInteraction } from '../fakes/interaction.ts';
 import type { Handler } from '../../src/framework/command.ts';
 import NewRolesGroup from '../../src/commands/config/groups/newroles.ts';
 import WelcomeGroup, {
@@ -165,4 +171,40 @@ test('welcome preview shows the text without sending', async () => {
   await handler(WelcomeGroup as never, 'preview')(ctx);
   assert.match(nth(replies).content!, /hi <@member-1> <@member-1>/);
   assert.equal(env.systemSends.length, 0);
+});
+
+test('newroles set and clear defer before the audit send', async () => {
+  for (const sub of ['set', 'clear']) {
+    const env = fakeOnboarding({ roles: [role('a', 1)] });
+    clearConfigs();
+    createConfig({ serverId: 'guild-1', auditChannelId: 'audit-1' });
+    const order: string[] = [];
+    const { interaction } = fakeInteraction({
+      commandName: 'config',
+      group: 'newroles',
+      subcommand: sub,
+      options: { 'role-one': env.guild.roles.cache.get('a') },
+      guild: env.guild,
+    });
+    Object.assign(interaction, { member: env.member, client: env.client });
+    const deferReply = interaction.deferReply.bind(interaction) as (o: unknown) => unknown;
+    Object.assign(interaction, {
+      deferReply: async (options: unknown) => {
+        order.push('defer');
+        return deferReply(options);
+      },
+    });
+    const fetchChannel = env.client.channels.fetch.bind(env.client.channels);
+    env.client.channels.fetch = (async (id: string) => {
+      order.push('audit');
+      return fetchChannel(id);
+    }) as typeof env.client.channels.fetch;
+
+    const client = stub<DingirClient>({
+      slashCommands: new Collection([[ConfigCommand.name, ConfigCommand]]),
+    });
+    await interactionCreate.run(app, client, interaction as never);
+    assert.deepEqual(order, ['defer', 'audit'], sub);
+    assert.equal(env.auditSends.length, 1, sub);
+  }
 });
