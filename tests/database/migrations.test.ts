@@ -15,6 +15,7 @@ const ALL = [
   '002-userprofile-unique',
   '003-serverconfig-access-tracking',
   '004-bot-state',
+  '005-userprofile-backfill',
 ];
 
 const LEGACY_SERVER_CONFIGS =
@@ -246,5 +247,38 @@ test('002 rolls back entirely when it fails', () => {
     assert.throws(() => runUpTo(db, '002-userprofile-unique'));
     assert.equal(allRows(db, 'SELECT * FROM `UserProfiles`').length, 2);
     assert.deepEqual(allRows(db, 'SELECT name FROM `SequelizeMeta`'), [{ name: '001-baseline' }]);
+  });
+});
+
+test('005 backfills NULL scores, removes unusable rows with a warning, and is idempotent', () => {
+  withDb((db) => {
+    db.exec(LEGACY_SERVER_CONFIGS);
+    db.exec(LEGACY_USER_PROFILES);
+    const at = "'2024-01-01 00:00:00.000 +00:00'";
+    db.exec(
+      `INSERT INTO \`UserProfiles\` (serverId, userId, activityScore, createdAt, updatedAt) VALUES
+        ('s1', 'u1', NULL, ${at}, ${at}),
+        ('s1', 'u2', 7, ${at}, ${at}),
+        (NULL, 'u3', 4, ${at}, ${at}),
+        ('s1', NULL, 4, ${at}, ${at})`,
+    );
+    runUpTo(db, '004-bot-state');
+    logs.length = 0;
+
+    assert.deepEqual(migrate(db, logger), ['005-userprofile-backfill']);
+    assert.deepEqual(
+      allRows(db, 'SELECT userId, activityScore FROM `UserProfiles` ORDER BY userId'),
+      [
+        { userId: 'u1', activityScore: 0 },
+        { userId: 'u2', activityScore: 7 },
+      ],
+    );
+    const warnings = logs.filter((entry) => entry.level === 'warn');
+    assert.equal(warnings.length, 1);
+    assert.deepEqual(nth(warnings).context, { count: 2 });
+
+    logs.length = 0;
+    assert.deepEqual(migrate(db, logger), []);
+    assert.equal(logs.filter((entry) => entry.level === 'warn').length, 0);
   });
 });
