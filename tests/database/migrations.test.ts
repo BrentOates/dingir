@@ -16,6 +16,7 @@ const ALL = [
   '003-serverconfig-access-tracking',
   '004-bot-state',
   '005-userprofile-backfill',
+  '006-userprofile-onboarded-at',
 ];
 
 const LEGACY_SERVER_CONFIGS =
@@ -89,6 +90,7 @@ test('migrations on an empty database create the expected schema', () => {
       'activityScore',
       'createdAt',
       'updatedAt',
+      'onboardedAt',
     ]);
 
     assert.ok(indexesOf(db, 'UserProfiles').find((i) => i.name === INDEX)?.unique);
@@ -265,7 +267,10 @@ test('005 backfills NULL scores, removes unusable rows with a warning, and is id
     runUpTo(db, '004-bot-state');
     logs.length = 0;
 
-    assert.deepEqual(migrate(db, logger), ['005-userprofile-backfill']);
+    assert.deepEqual(migrate(db, logger), [
+      '005-userprofile-backfill',
+      '006-userprofile-onboarded-at',
+    ]);
     assert.deepEqual(
       allRows(db, 'SELECT userId, activityScore FROM `UserProfiles` ORDER BY userId'),
       [
@@ -280,5 +285,28 @@ test('005 backfills NULL scores, removes unusable rows with a warning, and is id
     logs.length = 0;
     assert.deepEqual(migrate(db, logger), []);
     assert.equal(logs.filter((entry) => entry.level === 'warn').length, 0);
+  });
+});
+
+test('006 adds a nullable onboardedAt column and is idempotent', () => {
+  withDb((db) => {
+    db.exec(LEGACY_SERVER_CONFIGS);
+    db.exec(LEGACY_USER_PROFILES);
+    const at = "'2024-01-01 00:00:00.000 +00:00'";
+    db.exec(
+      `INSERT INTO \`UserProfiles\` (serverId, userId, createdAt, updatedAt) VALUES ('s1', 'u1', ${at}, ${at})`,
+    );
+    runUpTo(db, '005-userprofile-backfill');
+
+    assert.deepEqual(migrate(db, logger), ['006-userprofile-onboarded-at']);
+    assert.ok(columnsOf(db, 'UserProfiles').includes('onboardedAt'));
+    assert.deepEqual(allRows(db, 'SELECT onboardedAt FROM `UserProfiles`'), [
+      { onboardedAt: null },
+    ]);
+
+    assert.deepEqual(migrate(db, logger), []);
+    const migration = nth(migrations.filter((m) => m.name === '006-userprofile-onboarded-at'));
+    assert.doesNotThrow(() => migration.up(db, logger));
+    assert.equal(columnsOf(db, 'UserProfiles').filter((c) => c === 'onboardedAt').length, 1);
   });
 });

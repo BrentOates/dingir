@@ -50,6 +50,7 @@ export const userProfiles = sqliteTable(
     birthdayMonth: integer('birthdayMonth'),
     birthdayDay: integer('birthdayDay'),
     activityScore: integer('activityScore').notNull().default(0),
+    onboardedAt: datetime('onboardedAt'),
     createdAt: datetime('createdAt')
       .notNull()
       .$defaultFn(() => new Date()),

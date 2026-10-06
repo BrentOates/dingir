@@ -125,3 +125,26 @@ export async function deleteUsersByServer(db: Db, serverId: Snowflake): Promise<
   const result = db.delete(userProfiles).where(eq(userProfiles.serverId, serverId)).run();
   return result.changes > 0;
 }
+
+export async function markOnboarded(
+  db: Db,
+  serverId: Snowflake,
+  userId: Snowflake,
+  at: Date,
+): Promise<void> {
+  db.insert(userProfiles)
+    .values({ serverId, userId, onboardedAt: at })
+    .onConflictDoUpdate({
+      target: [userProfiles.serverId, userProfiles.userId],
+      set: { onboardedAt: at, updatedAt: at },
+    })
+    .run();
+}
+
+export async function getOnboardedAt(
+  db: Db,
+  serverId: Snowflake,
+  userId: Snowflake,
+): Promise<Date | null> {
+  return (await findUserProfile(db, serverId, userId))?.onboardedAt ?? null;
+}

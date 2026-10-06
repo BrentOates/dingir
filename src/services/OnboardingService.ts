@@ -5,6 +5,7 @@ import type { ServerConfig } from '../db/schema.ts';
 import { EmbedColours } from '../resources/EmbedColours.ts';
 import { memberAuditEmbed } from './AuditEmbed.ts';
 import { sendAudit } from './AuditService.ts';
+import { markOnboarded } from './UserProfileService.ts';
 import { WelcomeImage, type WelcomeImageRenderer } from './WelcomeImage.ts';
 
 /** 'done' | 'skipped:<reason>' | 'failed:<message>' */
@@ -340,6 +341,11 @@ export async function complete(
     });
   } else if (config.debug) {
     result.debug = 'skipped:dry run';
+  }
+
+  if (!dryRun) {
+    // Record the attempt whatever the individual steps did, so replayed events don't repeat it.
+    await markOnboarded(app.db, member.guild.id, member.id, app.clock());
   }
 
   return result;
