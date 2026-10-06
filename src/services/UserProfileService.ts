@@ -136,7 +136,7 @@ export async function markOnboarded(
     .values({ serverId, userId, onboardedAt: at })
     .onConflictDoUpdate({
       target: [userProfiles.serverId, userProfiles.userId],
-      set: { onboardedAt: at, updatedAt: at },
+      set: { onboardedAt: at, screeningPendingAt: null, updatedAt: at },
     })
     .run();
 }

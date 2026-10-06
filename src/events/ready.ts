@@ -2,6 +2,7 @@ import { defineEvent } from '../framework/event.ts';
 import { syncCommands } from '../framework/registrar.ts';
 import { notifyBirthdays, refreshAllCalendars } from '../services/BirthdayService.ts';
 import { runDataCheck } from '../services/DataCheckService.ts';
+import { recordPendingMembers } from '../services/ScreeningService.ts';
 import { Scheduler } from '../services/Scheduler.ts';
 
 export default defineEvent({
@@ -30,5 +31,9 @@ export default defineEvent({
     } catch (error) {
       logger.error('Could not start scheduler; scheduled jobs are disabled', undefined, error);
     }
+
+    void recordPendingMembers(app, client).catch((error: unknown) => {
+      logger.error('Could not record pending members', undefined, error);
+    });
   },
 });

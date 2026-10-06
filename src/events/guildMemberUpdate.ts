@@ -1,10 +1,7 @@
 import { defineEvent } from '../framework/event.ts';
 import { complete, completedScreening } from '../services/OnboardingService.ts';
 import { getConfig } from '../services/ConfigService.ts';
-import { getOnboardedAt } from '../services/UserProfileService.ts';
-
-/** How recently a member must have joined for an unknown-previous-state update to onboard them. */
-const RECENT_JOIN_MS = 7 * 24 * 60 * 60 * 1000;
+import { getOnboardingState, markScreeningPending } from '../services/UserProfileService.ts';
 
 export default defineEvent({
   name: 'guildMemberUpdate',
@@ -16,38 +13,39 @@ export default defineEvent({
     const skip = (reason: string): void => {
       app.logger.info(`Skipping onboarding: ${reason}`, ids);
     };
+    const state = await getOnboardingState(app.db, newMember.guild.id, newMember.id);
+
+    if (newMember.pending === true) {
+      // Keep the recorded state fresh; onboarding from an unknown state requires it.
+      if (state.screeningPendingAt === null && state.onboardedAt === null) {
+        await markScreeningPending(app.db, newMember.guild.id, newMember.id, app.clock());
+      }
+      return;
+    }
 
     if (oldMember.partial) {
-      // The previous state is unknown, so only trust "finished screening, not yet onboarded"
-      // when the member is no longer pending, never onboarded, and joined recently.
+      // The previous state is unknown, so only a recorded pending state proves screening just ended.
       if (newMember.pending !== false) {
         return;
       }
-      if (await getOnboardedAt(app.db, newMember.guild.id, newMember.id)) {
+      if (state.onboardedAt) {
         skip('previous member state unknown and onboarding already recorded');
         return;
       }
-      const joined = newMember.joinedTimestamp;
-      if (
-        joined === null ||
-        joined === undefined ||
-        app.clock().getTime() - joined > RECENT_JOIN_MS
-      ) {
-        skip('previous member state unknown and member did not join recently');
+      if (!state.screeningPendingAt) {
+        skip('previous member state unknown and no pending screening recorded');
         return;
       }
-      await complete(app, client, newMember, await getConfig(app, newMember.guild.id));
-      return;
-    }
-    if (!completedScreening(oldMember, newMember)) {
-      return;
-    }
-    if (await getOnboardedAt(app.db, newMember.guild.id, newMember.id)) {
-      skip('onboarding already recorded');
-      return;
+    } else {
+      if (!completedScreening(oldMember, newMember)) {
+        return;
+      }
+      if (state.onboardedAt) {
+        skip('onboarding already recorded');
+        return;
+      }
     }
 
-    const config = await getConfig(app, newMember.guild.id);
-    await complete(app, client, newMember, config);
+    await complete(app, client, newMember, await getConfig(app, newMember.guild.id));
   },
 });
