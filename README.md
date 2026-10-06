@@ -145,11 +145,10 @@ Use `/config <group> <subcommand>` to manage server settings. All are admin-only
 
 Toggle whether the bot uses Discord's system channel for welcome messages:
 
-| Subcommand | Description                                                |
-| ---------- | ---------------------------------------------------------- |
-| `enable`   | Enable bot system messages in the server's system channel  |
-| `disable`  | Disable bot system messages in the server's system channel |
-| `status`   | Show the current status                                    |
+| Subcommand      | Description                                                        |
+| --------------- | ------------------------------------------------------------------ |
+| `set <enabled>` | Enable or disable: bot system messages (`enabled` = true or false) |
+| `get`           | Show whether bot system messages are enabled                       |
 
 #### `/config honeypot` — Honeypot Channel
 
@@ -193,11 +192,10 @@ Roles given to members when they complete onboarding:
 
 Toggle diagnostic audits for onboarding runs:
 
-| Subcommand | Description                                                |
-| ---------- | ---------------------------------------------------------- |
-| `enable`   | Post a summary of each onboarding run to the audit channel |
-| `disable`  | Do not post onboarding summaries                           |
-| `status`   | Show the current status                                    |
+| Subcommand      | Description                                                                                                              |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| `set <enabled>` | Enable or disable: onboarding diagnostics (`enabled` = true posts a summary of each onboarding run to the audit channel) |
+| `get`           | Show whether onboarding diagnostics are enabled                                                                          |
 
 ## Behaviour
 
