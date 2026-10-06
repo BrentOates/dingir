@@ -111,3 +111,85 @@ test('syncCommands warns that the other scope may hold duplicate commands', asyn
   assert.ok(app.logsAt('warn').some((e) => /global commands may also exist/.test(e.message)));
   assert.ok(app.logsAt('warn').some((e) => /deploy:commands/.test(e.message)));
 });
+
+const inScope = (devGuildId?: string) => ({
+  ...app,
+  env: Object.freeze({ ...app.env, devGuildId }),
+});
+
+const clearer = () => {
+  const cleared: string[] = [];
+  return {
+    cleared,
+    clear: async (_env: unknown, guildId: string) => {
+      cleared.push(guildId);
+    },
+  };
+};
+
+test('switching from a dev guild to global clears the old guild', async () => {
+  const { put } = recorder();
+  const { cleared, clear } = clearer();
+  const commands = [command('one')];
+  await syncCommands(inScope('42'), commands, { put, clear });
+  assert.equal(getState(app.db, 'commandsScope:1'), 'guild:42');
+  assert.deepEqual(cleared, []);
+
+  assert.equal(await syncCommands(inScope(), commands, { put, clear }), 'registered');
+  assert.deepEqual(cleared, ['42']);
+  assert.equal(getState(app.db, 'commandsScope:1'), 'global');
+  assert.ok(app.logsAt('info').some((e) => /Cleared application commands/.test(e.message)));
+});
+
+test('switching between dev guilds clears the previous one', async () => {
+  const { put } = recorder();
+  const { cleared, clear } = clearer();
+  const commands = [command('one')];
+  await syncCommands(inScope('A'), commands, { put, clear });
+  await syncCommands(inScope('B'), commands, { put, clear });
+  assert.deepEqual(cleared, ['A']);
+  assert.equal(getState(app.db, 'commandsScope:1'), 'guild:B');
+  // Staying put clears nothing further.
+  await syncCommands(inScope('B'), [command('one'), command('two')], { put, clear });
+  assert.deepEqual(cleared, ['A']);
+});
+
+test('switching from global to a dev guild never clears global commands', async () => {
+  const { put } = recorder();
+  const { cleared, clear } = clearer();
+  const commands = [command('one')];
+  await syncCommands(inScope(), commands, { put, clear });
+  app.logs.length = 0;
+  await syncCommands(inScope('42'), commands, { put, clear });
+  assert.deepEqual(cleared, []);
+  assert.equal(getState(app.db, 'commandsScope:1'), 'guild:42');
+  assert.ok(app.logsAt('warn').some((e) => /deploy:commands/.test(e.message)));
+});
+
+test('a failed registration clears nothing and keeps the recorded scope', async () => {
+  const { put } = recorder();
+  const { cleared, clear } = clearer();
+  await syncCommands(inScope('42'), [command('one')], { put, clear });
+  const failing = async (): Promise<number> => {
+    throw new Error('discord down');
+  };
+  assert.equal(await syncCommands(inScope(), [command('one')], { put: failing, clear }), 'failed');
+  assert.deepEqual(cleared, []);
+  assert.equal(getState(app.db, 'commandsScope:1'), 'guild:42');
+});
+
+test('a failed cleanup keeps the old scope so the next run retries it', async () => {
+  const { put } = recorder();
+  const commands = [command('one')];
+  await syncCommands(inScope('42'), commands, { put });
+  const failingClear = async (): Promise<void> => {
+    throw new Error('forbidden');
+  };
+  assert.equal(await syncCommands(inScope(), commands, { put, clear: failingClear }), 'registered');
+  assert.equal(getState(app.db, 'commandsScope:1'), 'guild:42');
+
+  const { cleared, clear } = clearer();
+  assert.equal(await syncCommands(inScope(), commands, { put, clear }), 'registered');
+  assert.deepEqual(cleared, ['42']);
+  assert.equal(getState(app.db, 'commandsScope:1'), 'global');
+});
