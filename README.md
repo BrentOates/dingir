@@ -91,7 +91,7 @@ The invite URL should include all these permissions. You can generate one in the
 
 Use `DEV_GUILD_ID` in `.env` to test commands instantly in a single guild instead of waiting 1 hour for global registration.
 
-On startup the bot hashes its command definitions and only re-registers them when the hash differs from the one stored for the target scope (global or `DEV_GUILD_ID`). To force a registration without starting the bot, run:
+On startup the bot hashes its command definitions and only re-registers them when the hash differs from the one stored for the target scope (global or `DEV_GUILD_ID`). The hash is stored per application (`CLIENT_ID`) and per scope, so the first start after upgrading re-registers once. Switching between global and dev-guild registration can leave commands in the other scope; nothing is deleted automatically — the bot logs a warning. To force a registration without starting the bot, or to clean up orphaned commands, run:
 
 ```bash
 npm run deploy:commands
@@ -162,13 +162,13 @@ Configure a channel that automatically bans members who post in it:
 
 #### `/config welcome` — Welcome Messages & Images
 
-| Subcommand           | Description                                                                             |
-| -------------------- | --------------------------------------------------------------------------------------- |
-| `set-message <text>` | Set the welcome message (max 1500 characters). Use `{member}` to mention the new member |
-| `set-image <url>`    | Set the background image for welcome images (http/https URL)                            |
-| `get`                | Show the welcome message and image URL                                                  |
-| `clear <which>`      | Clear the message, image, or both (`which` = `message`, `image`, or `all`)              |
-| `preview`            | Preview the welcome message as it would be sent for you                                 |
+| Subcommand           | Description                                                                                                                                                                                                  |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `set-message <text>` | Set the welcome message (max 1500 characters). Use `{member}` to mention the new member. Rejected if, after expanding every `{member}` to a mention, the message would exceed Discord's 2000-character limit |
+| `set-image <url>`    | Set the background image for welcome images (http/https URL)                                                                                                                                                 |
+| `get`                | Show the welcome message and image URL                                                                                                                                                                       |
+| `clear <which>`      | Clear the message, image, or both (`which` = `message`, `image`, or `all`)                                                                                                                                   |
+| `preview`            | Preview the welcome message as it would be sent for you                                                                                                                                                      |
 
 #### `/config newroles` — New Member Roles
 
@@ -205,7 +205,7 @@ When a member joins without screening enabled, or completes server screening:
 
 1. **Audit**: A "member joined" audit is posted to the configured audit channel (if set)
 2. **Guest Roles**: Configured new-member roles are assigned (if any are set)
-3. **Welcome**: A welcome message is posted to the system channel or audit channel, optionally with a background image
+3. **Welcome**: A welcome message is posted to the server's system channel, optionally with a background image (only if `/config sysmsgs` is enabled)
 4. **Debug**: If debug mode is enabled, a diagnostic summary is posted to the audit channel showing what succeeded, failed, or was skipped
 
 Roles are only assigned if:
@@ -215,6 +215,8 @@ Roles are only assigned if:
 - They are not `@everyone`
 
 If a role cannot be assigned, the error is logged and the onboarding continues for other roles and steps.
+
+**Unknown Previous State**: If the bot didn't have the member's previous state cached (e.g. they joined while the bot was offline), a member who is no longer pending is onboarded only when new-member roles are configured and they have none of them. Otherwise the update is skipped and logged at info level. Bots are never onboarded (their join is still audited).
 
 ### Audit Log
 
@@ -245,7 +247,7 @@ Members can set their birthday using `/mybirthday set <day> <month>`. Birthdays 
 
 **Birthday Announcements**: On the configured schedule (default 9:00 AM daily), the bot checks all servers and posts birthday announcements in the announcements channel for members with birthdays today. If a member's birthday is Feb 29 and it's not a leap year, they are celebrated on Feb 28 instead.
 
-**Birthday Calendar**: If configured, a pinned calendar message lists the next upcoming birthdays (up to 10 birthdays). The calendar is automatically updated on the scheduled job. Members can create a new calendar with `/config birthdays create`, and it is recreated if the message or channel is deleted.
+**Birthday Calendar**: If configured, a calendar message lists the next upcoming birthdays (up to 10 birthdays). The calendar is automatically updated on the scheduled job by editing the message. If the message or channel is missing, the refresh logs a warning and an admin must run `/config birthdays create` again to create a new calendar.
 
 **Timezones**: All birthday calculations use the `BOT_TIMEZONE` setting. Members' birthdays are stored as month/day only (no year), and the next occurrence is calculated relative to the bot's configured time zone.
 
@@ -266,9 +268,10 @@ All data is persisted in SQLite at the path specified by `DB_PATH` (default: `da
 Migrations run automatically on startup. Current migrations:
 
 - **001-baseline** — Initial schema (ServerConfigs and UserProfiles tables)
-- **002-userprofile-unique** — Adds a unique constraint on (serverId, userId). If duplicates exist, they are merged: the profile with the most recent birthday is kept, and activity scores are summed. **Backups are strongly recommended before upgrading from v2 to v3** because this migration is permanent and irreversible.
+- **002-userprofile-unique** — Adds a unique constraint on (serverId, userId). If duplicates exist, they are merged: the profile with the most recent birthday is kept, and the maximum activity score is preserved. **Backups are strongly recommended before upgrading from v2 to v3** because this migration is permanent and irreversible.
 - **003-serverconfig-access-tracking** — Adds access failure tracking for orphaned guild detection
 - **004-bot-state** — Adds the `BotState` key/value table (currently stores the registered command hash)
+- **005-userprofile-backfill** — Sets NULL activity scores to 0 and deletes profile rows with no server or user id, logging how many
 
 ### What Gets Deleted
 
@@ -279,6 +282,68 @@ Migrations run automatically on startup. Current migrations:
 | Guild unreachable for `PURGE_MIN_FAILURES` checks spanning `PURGE_GRACE_DAYS` days | All configuration and user profiles for that guild (purge)        |
 
 **Note**: Transient errors (network timeouts, API rate limiting, temporary outages) never count toward the purge threshold. Only permanent failures (guild deleted, bot kicked) count.
+
+## Upgrading from 2.x
+
+When upgrading to v3, note the following:
+
+### Backups
+
+Back up the SQLite file before the first start. Migrations 002 and 005 permanently remove rows:
+
+- **002-userprofile-unique**: Deduplicates UserProfiles and merges activity scores
+- **005-userprofile-backfill**: Deletes profiles with no server or user id
+
+```bash
+# Before starting v3
+cp data/dingir.sqlite data/dingir.sqlite.backup
+```
+
+### Container User
+
+The v3 image runs as the non-root `node` user (uid 1000), but v2 ran as root. If you have an existing data volume or bind mount, it is root-owned and SQLite will fail to open it.
+
+Either keep running as root via Docker Compose:
+
+```yaml
+services:
+  dingir:
+    image: ghcr.io/brentoates/dingir:3.0.0
+    user: '0:0'
+    volumes:
+      - ./data:/usr/src/app/data
+```
+
+Or (preferred, non-root) fix ownership once:
+
+```bash
+# For a bind mount
+sudo chown -R 1000:1000 ./data
+
+# For a named volume
+docker run --rm -v <volume>:/data alpine chown -R 1000:1000 /data
+```
+
+### Command Registration
+
+Commands are re-registered once on the first start after upgrading. The command set changed in v3:
+
+**Renamed subcommands**:
+
+- `/simulate screen` → `/simulate onboard`
+
+**New or changed subcommands**:
+
+- `/mybirthday set|clear` (unchanged)
+- `/config welcome set-message|set-image|get|clear|preview` (unchanged)
+- `/config newroles set` (now takes up to 3 roles)
+- `/config birthdays create|sync|remove` (unchanged)
+- `/config sysmsgs set <enabled>|get` (changed from toggle)
+- `/config debug set <enabled>|get` (changed from toggle)
+
+### Releases
+
+Docker images are published by pushing a git tag (e.g. `git tag 3.0.0 && git push origin 3.0.0`), not by merging to main.
 
 ## Contributing
 
