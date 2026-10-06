@@ -35,9 +35,12 @@ export const BirthdaysGroup = defineSubcommandGroup({
         const perms = me ? channel.permissionsFor(me) : null;
         if (
           !perms?.has(PermissionFlagsBits.ViewChannel) ||
-          !perms.has(PermissionFlagsBits.SendMessages)
+          !perms.has(PermissionFlagsBits.SendMessages) ||
+          !perms.has(PermissionFlagsBits.ReadMessageHistory)
         ) {
-          throw new UserError('I need permission to view and send messages in that channel.');
+          throw new UserError(
+            'I need permission to view the channel, send messages and read message history in that channel.',
+          );
         }
 
         const client = ctx.interaction.client;

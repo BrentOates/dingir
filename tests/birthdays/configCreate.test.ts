@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { after, test } from 'node:test';
-import type { Guild } from 'discord.js';
+import { PermissionFlagsBits, type Guild } from 'discord.js';
 import BirthdaysGroup from '../../src/commands/config/groups/birthdays.ts';
 import type { Handler } from '../../src/framework/command.ts';
 import { fakeCommandContext } from '../fakes/command.ts';
@@ -216,4 +216,19 @@ test('deleteCalendarMessage classifies results', async () => {
   assert.equal(await deleteCalendarMessage(app, forbidden, 'c/m'), 'failed');
   const plain = fakeClient({ channelFetchError: new Error('network') });
   assert.equal(await deleteCalendarMessage(app, plain, 'c/m'), 'failed');
+});
+
+test('birthdays create requires Read Message History and sends nothing without it', async () => {
+  const app = apps[0]!;
+  const { ctx, replies, order, findConfig } = setup(app);
+  const channel = await ctx.guild.channels.fetch('new-chan');
+  Object.assign(channel!, {
+    permissionsFor: () => ({
+      has: (flag: bigint) => flag !== PermissionFlagsBits.ReadMessageHistory,
+    }),
+  });
+  await assert.rejects(create(ctx), /read message history/);
+  assert.deepEqual(order, []);
+  assert.equal(findConfig('guild-1')?.birthdayCalendarMessagePath, 'old-chan/old-msg');
+  assert.equal(replies.length, 0);
 });
