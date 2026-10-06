@@ -22,18 +22,18 @@
     "check": "npm run format:check && npm run lint && npm run typecheck && npm run test:coverage"
   },
   "dependencies": {
-    "@napi-rs/canvas": "^1.0.2",
+    "@napi-rs/canvas": "^1.0.10",
     "better-sqlite3": "^13.0.3",
     "croner": "^10.0.1",
-    "discord.js": "^14.26.5",
+    "discord.js": "^14.27.0",
     "drizzle-orm": "^0.45.3",
     "luxon": "^3.7.2",
     "pino": "^10.4.0"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^9.6.0",
-    "@types/luxon": "^3.7.2",
-    "@types/node": "^24.13.3",
+    "@types/luxon": "^3.7.6",
+    "@types/node": "^26.6.4",
     "oxfmt": "^0.72.0",
     "oxlint": "^1.87.0",
     "oxlint-tsgolint": "^7.0.2003",
