@@ -12,12 +12,14 @@ import {
 
 const cleanMembers = async (app: App, client: Client, serverId: Snowflake): Promise<void> => {
   const guild = await client.guilds.fetch(serverId);
+  // Snapshot the profiles first: anyone who joins during the (slow) member fetch gets a profile
+  // that is missing from the fetched list, and must survive until the next run.
+  const profiles = await getServerProfiles(app.db, serverId);
   const members = await guild.members.fetch();
   if (members.size === 0) {
     app.logger.warn('Member list empty; skipping profile cleanup', { guild: serverId });
     return;
   }
-  const profiles = await getServerProfiles(app.db, serverId);
   const departed = profiles.filter((p) => !members.has(p.userId)).map((p) => p.userId);
   if (departed.length > 0) {
     const removed = await deleteUsers(app.db, serverId, departed);

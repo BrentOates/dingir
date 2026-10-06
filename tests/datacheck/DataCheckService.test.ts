@@ -117,3 +117,26 @@ test('one guild throwing does not stop the others', async () => {
   const remaining = allProfiles().map((p) => p.serverId);
   assert.deepEqual(remaining, ['g1']);
 });
+
+test('a profile created while the member list is being fetched is not deleted', async () => {
+  createConfig({ serverId: 'g1' });
+  createProfiles([
+    { serverId: 'g1', userId: 'a' },
+    { serverId: 'g1', userId: 'gone' },
+  ]);
+  const guild = fakeGuildWithMembers({ id: 'g1', memberIds: ['a'] });
+  const fetchMembers = guild.members.fetch.bind(guild.members);
+  guild.members.fetch = async (id?: string) => {
+    const result = await fetchMembers(id);
+    // The member joins after the list was assembled but before the check reads the database.
+    createProfiles([{ serverId: 'g1', userId: 'late-joiner' }]);
+    return result;
+  };
+  await run(fakeClient({ guilds: { g1: guild } }), t0, policy);
+  assert.deepEqual(
+    allProfiles()
+      .map((p) => p.userId)
+      .sort(),
+    ['a', 'late-joiner'],
+  );
+});
