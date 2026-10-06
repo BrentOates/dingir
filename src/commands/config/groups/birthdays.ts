@@ -41,18 +41,34 @@ export const BirthdaysGroup = defineSubcommandGroup({
         }
 
         const client = ctx.interaction.client;
-        await deleteCalendarMessage(client, ctx.config.birthdayCalendarMessagePath);
+        const previousPath = ctx.config.birthdayCalendarMessagePath;
 
+        // Send first and persist before touching the old calendar, so a failure at either step
+        // leaves the existing calendar and its stored path intact.
         const message = await channel.send({
           content: 'Placeholder calendar message - populating...',
           allowedMentions: { parse: [] },
         });
         const path = `${message.channelId}/${message.id}`;
-        ctx.config = await updateConfig(ctx.app, ctx.config.serverId, {
-          birthdayCalendarMessagePath: path,
-        });
+        try {
+          ctx.config = await updateConfig(ctx.app, ctx.config.serverId, {
+            birthdayCalendarMessagePath: path,
+          });
+        } catch (error) {
+          await message.delete().catch((deleteError: unknown) => {
+            ctx.app.logger.warn(
+              'Could not remove the new birthday calendar message after a failed save',
+              { guild: ctx.guild.id },
+              deleteError,
+            );
+          });
+          throw error;
+        }
 
         const status = await refreshCalendar(ctx.app, client, ctx.config);
+        if (previousPath && previousPath !== path) {
+          await deleteCalendarMessage(client, previousPath);
+        }
         const link = calendarMessageUrl(ctx.guild.id, path);
         await ctx.reply(
           status === 'updated'
