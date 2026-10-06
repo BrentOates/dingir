@@ -12,6 +12,9 @@ export default defineEvent({
       });
       return;
     }
+    if (newMember.user.bot) {
+      return;
+    }
     if (!completedScreening(oldMember, newMember)) {
       return;
     }

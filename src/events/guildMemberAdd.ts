@@ -9,7 +9,7 @@ export default defineEvent({
 
     await auditJoin(app, client, member, config);
 
-    if (!member.pending) {
+    if (!member.user.bot && !member.pending) {
       await complete(app, client, member, config);
     }
   },

@@ -57,3 +57,31 @@ test('guildMemberAdd waits for screening when the member is pending', async () =
   assert.equal(env.roleAdds.length, 0);
   assert.equal(env.auditSends.length, 1);
 });
+
+test('guildMemberAdd audits a bot join but skips onboarding', async () => {
+  const env = fakeOnboarding({
+    roles: [role('r1')],
+    config: { welcomeMessage: 'Hi {member}' },
+  });
+  Object.assign(env.member, {
+    pending: false,
+    user: stub({ id: 'member-1', tag: 'bot#0001', bot: true }),
+  });
+  await guildMemberAdd.run(app, stub<DingirClient>(env.client), env.member);
+  assert.equal(env.auditSends.length, 1);
+  assert.match(JSON.stringify(nth(nth(env.auditSends).embeds)), /New member joined/);
+  assert.equal(env.roleAdds.length, 0);
+  assert.equal(env.systemSends.length, 0);
+});
+
+test('guildMemberUpdate ignores bots completing screening', async () => {
+  const env = fakeOnboarding({ roles: [role('r1')] });
+  Object.assign(env.member, {
+    pending: false,
+    user: stub({ id: 'member-1', tag: 'bot#0001', bot: true }),
+  });
+  const oldMember = { guild: env.guild, id: 'member-1', pending: true } as unknown as GuildMember;
+  await guildMemberUpdate.run(app, stub<DingirClient>(env.client), oldMember, env.member);
+  assert.equal(env.roleAdds.length, 0);
+  assert.equal(env.auditSends.length, 0);
+});
