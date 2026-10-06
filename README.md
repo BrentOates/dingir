@@ -8,7 +8,7 @@ A Discord bot for the Irkallu server, built with discord.js and TypeScript. Prov
 
 1. Clone the repository
 2. Install dependencies: `npm ci`
-   - Install scripts are disabled via `.npmrc` because the only native dependency (`better-sqlite3`) ships prebuilt binaries; if a future dependency needs a postinstall step, run `npm rebuild <pkg>` or revisit this setting.
+   - Install scripts are disabled via `.npmrc` because native dependencies (`better-sqlite3` and `@napi-rs/canvas`) ship prebuilt binaries; if a future dependency needs a postinstall step, run `npm rebuild <pkg>` or revisit this setting.
 3. Copy `.env.example` to `.env` and fill in `TOKEN` and `CLIENT_ID` from the [Discord Developer Portal](https://discord.com/developers/applications)
 4. Start: `npm start` (Node runs the TypeScript source directly; there is no build step)
 
@@ -115,13 +115,13 @@ Commands are organized into categories. Only **admin-only** commands require the
 
 ### Admin Commands
 
-| Command                                  | Description                                                                                             |
-| ---------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| `/simulate join [member]`                | Audit only: send the "member joined" audit for a member (no roles or welcome message). Defaults to you  |
-| `/simulate onboard [member]`             | Dry run: show what onboarding would do (guest roles, welcome) without applying changes. Defaults to you |
-| `/rolesince <role> [days]`               | List members in a role who joined the server at least N days ago                                        |
-| `/noroles`                               | List all members with no roles assigned (excluding bots)                                                |
-| `/post <channel> [content] [attachment]` | Post a simple message and/or file to a channel. Requires at least one of content or attachment          |
+| Command                                  | Description                                                                                                                                       |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/simulate join [member]`                | Audit only: send the "member joined" audit for a member (no roles or welcome message). Defaults to you                                            |
+| `/simulate onboard [member]`             | Dry run: show what onboarding would do (guest roles, welcome) without applying changes. Defaults to you                                           |
+| `/rolesince <role> [days]`               | List members in a role who joined the server at least N days ago. If Discord rate-limits member lookups, tells the admin to retry after N seconds |
+| `/noroles`                               | List all members with no roles assigned (excluding bots). If Discord rate-limits member lookups, tells the admin to retry after N seconds         |
+| `/post <channel> [content] [attachment]` | Post a simple message and/or file to a channel. Requires at least one of content or attachment                                                    |
 
 ### Config Commands
 
@@ -168,9 +168,9 @@ Configure a channel that automatically bans members who post in it:
 | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `set-message <text>` | Set the welcome message (max 1500 characters). Use `{member}` to mention the new member. Rejected if, after expanding every `{member}` to a mention, the message would exceed Discord's 2000-character limit |
 | `set-image <url>`    | Set the background image for welcome images (http/https URL)                                                                                                                                                 |
-| `get`                | Show the welcome message and image URL                                                                                                                                                                       |
+| `get`                | Show the welcome message and image URL (long messages are truncated to fit Discord's 2000-character limit)                                                                                                   |
 | `clear <which>`      | Clear the message, image, or both (`which` = `message`, `image`, or `all`)                                                                                                                                   |
-| `preview`            | Preview the welcome message as it would be sent for you                                                                                                                                                      |
+| `preview`            | Preview the welcome message as it would be sent for you (long messages are truncated to fit Discord's 2000-character limit)                                                                                  |
 
 #### `/config newroles` — New Member Roles
 
@@ -205,9 +205,9 @@ Toggle diagnostic audits for onboarding runs:
 
 When a member joins without screening enabled, or completes server screening:
 
-1. **Audit**: A "member joined" audit is posted to the configured audit channel (if set)
+1. **Audit**: A "New member joined" audit is posted to the configured audit channel (if set). When screening completes, a "Member completed onboarding" audit is posted. Servers without screening enabled only send the join audit.
 2. **Guest Roles**: Configured new-member roles are assigned (if any are set)
-3. **Welcome**: A welcome message is posted to the server's system channel, optionally with a background image (only if `/config sysmsgs` is enabled)
+3. **Welcome**: A welcome message is posted to the server's system channel, optionally with a background image (only if `/config sysmsgs` is enabled; long messages are truncated to fit Discord's 2000-character limit)
 4. **Debug**: If debug mode is enabled, a diagnostic summary is posted to the audit channel showing what succeeded, failed, or was skipped
 
 Roles are only assigned if:
@@ -219,6 +219,8 @@ Roles are only assigned if:
 If a role cannot be assigned, the error is logged and the onboarding continues for other roles and steps.
 
 **Onboarding Tracking**: The bot records when a member is pending membership screening (when they join pending, on any update showing them pending, and via a startup sweep that fetches each server's members after login). If the bot doesn't have the member's previous state cached, it onboards them only when a pending state was recorded and they haven't been onboarded yet; otherwise it skips (logged). Onboarding clears the pending marker and records `onboardedAt`, so nobody is onboarded twice. Members already in the server before the upgrade are never re-onboarded. Leaving the server deletes the profile, so a rejoin is onboarded again. Known limitation: a member who was already pending at deploy time and completes screening before the startup sweep records them, while not cached, won't be onboarded automatically (an admin can assign roles manually).
+
+**Welcome Image**: The welcome image download is capped at 10 MB while streaming to prevent resource exhaustion.
 
 ### Audit Log
 
@@ -247,7 +249,7 @@ Each message posted by a human (non-bot, non-webhook) in any channel increments 
 
 Members can set their birthday using `/mybirthday set <day> <month>`. Birthdays are stored per-server.
 
-**Birthday Announcements**: On the configured schedule (default 9:00 AM daily), the bot checks all servers and posts birthday announcements in the announcements channel for members with birthdays today. If a member's birthday is Feb 29 and it's not a leap year, they are celebrated on Feb 28 instead.
+**Birthday Announcements**: On the configured schedule (default 9:00 AM daily), the bot checks all servers and posts birthday announcements in the announcements channel for members with birthdays today. If a member's birthday is Feb 29 and it's not a leap year, they are celebrated on Feb 28 instead. Birthday announcements are split across multiple messages if a single day's mentions would exceed Discord's 2000-character limit.
 
 **Birthday Calendar**: If configured, a calendar message lists the next upcoming birthdays (up to 10 birthdays). The calendar is automatically updated on the scheduled job by editing the message. It is also refreshed when a member with a birthday leaves. If the message or channel is missing, or the bot lacks access, the refresh logs a warning and an admin must fix permissions or run `/config birthdays create` again; a temporary Discord error never clears the stored calendar.
 
@@ -332,18 +334,19 @@ docker run --rm -v <volume>:/data alpine chown -R 1000:1000 /data
 
 Commands are re-registered once on the first start after upgrading. The command set changed in v3:
 
-**Renamed subcommands**:
+**Changed commands**:
 
-- `/simulate screen` → `/simulate onboard`
+- `/mybirthday` — v2 took `day` and `month` as options; v3 uses subcommands: `set <day> <month>` / `clear`
+- `/config welcome` — v2 had `set|get|clear` with a `content` choice (message/image); v3 has separate subcommands `set-message|set-image|get|clear|preview`
+- `/config birthdays` — v2 had `create|sync`; v3 added `remove`
+- `/config newroles` — v2 `set` took 1–2 roles; v3 `set` takes 1–3 roles
+- `/simulate screen` — renamed to `/simulate onboard`
 
-**New or changed subcommands**:
+**Unchanged**:
 
-- `/mybirthday set|clear` (unchanged)
-- `/config welcome set-message|set-image|get|clear|preview` (unchanged)
-- `/config newroles set` (now takes up to 3 roles)
-- `/config birthdays create|sync|remove` (unchanged)
-- `/config sysmsgs set <enabled>|get` (changed from toggle)
-- `/config debug set <enabled>|get` (changed from toggle)
+- `/config sysmsgs set <enabled>|get` — both v2 and v3 use this syntax
+- `/config debug set <enabled>|get` — both v2 and v3 use this syntax
+- `/config honeypot`, `/rolesince`, `/noroles`, `/post` — not in v2
 
 ### Releases
 
@@ -383,7 +386,7 @@ Slash commands are defined in `src/commands/`. Here's a minimal example:
 
 ```typescript
 // src/commands/info/hello.ts
-import { defineCommand } from '../../framework/command';
+import { defineCommand } from '../../framework/command.ts';
 
 export default defineCommand({
   name: 'hello',
@@ -418,7 +421,7 @@ channelSetting({
 
 Then ensure the field is defined in `src/db/schema.ts` and add a migration to add the column if needed. For a boolean setting, use `booleanSetting()` instead.
 
-**Migrations**: If adding a new config field, add a column to `serverConfigs` in `src/db/schema.ts` and a migration (see [Adding a Migration](#adding-a-migration)). Update settings with `updateConfig(ctx.app.db, serverId, { field: value })`.
+**Migrations**: If adding a new config field, add a column to `serverConfigs` in `src/db/schema.ts` and a migration (see [Adding a Migration](#adding-a-migration)). Update settings with `updateConfig(ctx.app, serverId, { field: value })`.
 
 ### Adding an Event
 
@@ -426,7 +429,7 @@ Events are defined in `src/events/`. Discord.js events are mapped automatically.
 
 ```typescript
 // src/events/myevent.ts
-import { defineEvent } from '../framework/event';
+import { defineEvent } from '../framework/event.ts';
 
 export default defineEvent({
   name: 'messageCreate', // discord.js event name
